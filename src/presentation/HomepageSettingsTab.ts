@@ -53,7 +53,12 @@ import type {
 } from "../domain/data/types";
 import { WEEKDAYS } from "../domain/plans/weeklyPlan";
 import { attachAccessibleLabel } from "./accessibility";
-import { BANNER_THEME_IDS } from "../domain/banner/banner";
+import { MarkdownFileSuggest } from "./MarkdownFileSuggest";
+import { VaultFileSuggest } from "./VaultFileSuggest";
+import {
+  BANNER_THEME_IDS,
+  isSupportedBannerImagePath
+} from "../domain/banner/banner";
 
 const isLocalePreference = (value: string): value is LocalePreference =>
   value === "auto" || value === "zh-cn" || value === "en";
@@ -122,6 +127,7 @@ export class HomepageSettingsTab extends PluginSettingTab {
   } | null = null;
   private fileGroupUndoTimer: number | null = null;
   private settingsScope: Component | null = null;
+  private suggestionFileCache: readonly TFile[] | null = null;
   private fileEntryStateUnsubscribe: (() => void) | null = null;
 
   public constructor(
@@ -146,6 +152,19 @@ export class HomepageSettingsTab extends PluginSettingTab {
     this.fileEntryStateUnsubscribe = null;
     this.settingsScope?.unload();
     this.settingsScope = new Component();
+    this.suggestionFileCache = null;
+    this.settingsScope.registerEvent(this.app.vault.on(
+      "create",
+      () => this.invalidateSuggestionFileCache()
+    ));
+    this.settingsScope.registerEvent(this.app.vault.on(
+      "delete",
+      () => this.invalidateSuggestionFileCache()
+    ));
+    this.settingsScope.registerEvent(this.app.vault.on(
+      "rename",
+      () => this.invalidateSuggestionFileCache()
+    ));
     this.clearFileGroupUndoTimer();
     const messages = this.localization.getMessages();
     const settings = this.application.getInterfaceAndStartupSettings();
@@ -385,6 +404,7 @@ export class HomepageSettingsTab extends PluginSettingTab {
     this.fileEntryStateUnsubscribe = null;
     this.settingsScope?.unload();
     this.settingsScope = null;
+    this.suggestionFileCache = null;
     this.clearFileGroupUndoTimer();
     this.selectedBannerTheme = this.application.getLayoutSettings().theme;
     super.hide();
@@ -1370,6 +1390,15 @@ export class HomepageSettingsTab extends PluginSettingTab {
           .onChange((value) => {
             vaultPath = value;
           });
+        this.registerInputSuggest(new VaultFileSuggest(
+          this.app,
+          text.inputEl,
+          () => this.getSuggestionFiles(),
+          (path) => {
+            vaultPath = path;
+          },
+          (file) => isSupportedBannerImagePath(file.path)
+        ));
       })
       .addButton((button) => {
         button
@@ -1677,6 +1706,14 @@ export class HomepageSettingsTab extends PluginSettingTab {
             .onChange((value) => {
               candidatePath = value;
             });
+          this.registerInputSuggest(new VaultFileSuggest(
+            this.app,
+            text.inputEl,
+            () => this.getSuggestionFiles(),
+            (path) => {
+              candidatePath = path;
+            }
+          ));
         })
         .addButton((button) => {
           button
@@ -1967,6 +2004,14 @@ export class HomepageSettingsTab extends PluginSettingTab {
           .onChange((value) => {
             candidatePath = value;
           });
+        this.registerInputSuggest(new VaultFileSuggest(
+          this.app,
+          text.inputEl,
+          () => this.getSuggestionFiles(),
+          (path) => {
+            candidatePath = path;
+          }
+        ));
       })
       .addButton((button) => {
         button
@@ -2881,6 +2926,14 @@ export class HomepageSettingsTab extends PluginSettingTab {
         .onChange((value) => {
           candidatePath = value;
         });
+      this.registerInputSuggest(new MarkdownFileSuggest(
+        this.app,
+        text.inputEl,
+        () => this.getSuggestionFiles(),
+        (path) => {
+          candidatePath = path;
+        }
+      ));
     });
     setting.addButton((button) => {
       button
@@ -2928,6 +2981,14 @@ export class HomepageSettingsTab extends PluginSettingTab {
         .onChange((value) => {
           candidatePath = value;
         });
+      this.registerInputSuggest(new MarkdownFileSuggest(
+        this.app,
+        text.inputEl,
+        () => this.getSuggestionFiles(),
+        (path) => {
+          candidatePath = path;
+        }
+      ));
     });
     setting.addButton((button) => {
       button
@@ -3078,6 +3139,26 @@ export class HomepageSettingsTab extends PluginSettingTab {
       case "configuration-unavailable":
         return messages.journalConfigurationUnavailable;
     }
+  }
+
+  private registerInputSuggest(suggest: { close(): void }): void {
+    const scope = this.settingsScope;
+    if (scope === null) {
+      suggest.close();
+      return;
+    }
+    scope.register(() => suggest.close());
+  }
+
+  private getSuggestionFiles(): readonly TFile[] {
+    if (this.suggestionFileCache === null) {
+      this.suggestionFileCache = this.app.vault.getFiles();
+    }
+    return this.suggestionFileCache;
+  }
+
+  private invalidateSuggestionFileCache(): void {
+    this.suggestionFileCache = null;
   }
 
   private clearFileGroupUndoTimer(): void {

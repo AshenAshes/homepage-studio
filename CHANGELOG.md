@@ -2,6 +2,13 @@
 
 All notable changes to Homepage Studio are documented in this file.
 
+## 1.0.2 — 2026-08-10
+
+### Fixed
+
+- Restored file-path autocomplete for Banner images, file groups, missing-file replacement, journals, and task sources.
+- File suggestions now share a lazy cache while settings are open and refresh after vault files are created, deleted, or renamed.
+
 ## 1.0.1 — 2026-08-10
 
 ### Changed
