@@ -2314,8 +2314,7 @@ export class HomepageSettingsTab extends PluginSettingTab {
         template,
         day,
         settings.editable,
-        messages,
-        error
+        messages
       );
     }
     if (this.pendingPlanTemplateFocusId === template.id) {
@@ -2330,8 +2329,7 @@ export class HomepageSettingsTab extends PluginSettingTab {
     template: WeeklyTemplate,
     day: Weekday,
     editable: boolean,
-    messages: Messages,
-    error: HTMLElement
+    messages: Messages
   ): void {
     const periods = template.days[day];
     const daySection = card.createEl("details", {
@@ -2358,7 +2356,6 @@ export class HomepageSettingsTab extends PluginSettingTab {
         periods.length,
         editable,
         messages,
-        error,
         {
           update: (update) => this.application.updateWeeklyPlanPeriod(
             template.id,
@@ -2500,7 +2497,6 @@ export class HomepageSettingsTab extends PluginSettingTab {
         template.periods.length,
         settings.editable,
         messages,
-        error,
         {
           update: (update) => this.application.updateDailyPlanPeriod(
             template.id,
@@ -2542,7 +2538,6 @@ export class HomepageSettingsTab extends PluginSettingTab {
     periodCount: number,
     editable: boolean,
     messages: Messages,
-    error: HTMLElement,
     operations: PlanPeriodOperations
   ): void {
     let label = period.label;
@@ -2558,6 +2553,14 @@ export class HomepageSettingsTab extends PluginSettingTab {
     });
     const actions = setting.controlEl.createDiv({
       cls: "homepage-studio-plan-period-actions"
+    });
+    const localError = actions.createEl("p", {
+      cls: "homepage-studio-plan-settings-error "
+        + "homepage-studio-plan-period-error",
+      attr: {
+        role: "alert",
+        "aria-live": "polite"
+      }
     });
     setting
       .addText((text) => {
@@ -2618,7 +2621,7 @@ export class HomepageSettingsTab extends PluginSettingTab {
               next.type === "valid"
                 ? operations.update(next.period)
                 : next,
-              error,
+              localError,
               messages
             );
           });
@@ -2631,7 +2634,7 @@ export class HomepageSettingsTab extends PluginSettingTab {
           .onClick(() => {
             this.handlePlanMutation(
               operations.move(-1),
-              error,
+              localError,
               messages
             );
           });
@@ -2644,7 +2647,7 @@ export class HomepageSettingsTab extends PluginSettingTab {
           .onClick(() => {
             this.handlePlanMutation(
               operations.move(1),
-              error,
+              localError,
               messages
             );
           });
@@ -2658,7 +2661,7 @@ export class HomepageSettingsTab extends PluginSettingTab {
           .onClick(() => {
             this.handlePlanMutation(
               operations.remove(),
-              error,
+              localError,
               messages
             );
           });

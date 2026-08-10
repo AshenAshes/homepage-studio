@@ -2381,6 +2381,13 @@ button.homepage-studio-settings-tab:focus-visible {
   gap: var(--size-4-2);
 }
 
+.homepage-studio-plan-period-actions .homepage-studio-plan-period-error {
+  flex: 1 1 16rem;
+  align-self: center;
+  margin-inline-end: auto;
+  text-align: start;
+}
+
 .homepage-studio-plan-period-setting input {
   min-width: 5.25rem;
 }

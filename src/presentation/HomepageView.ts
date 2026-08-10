@@ -49,6 +49,17 @@ export class HomepageView extends ItemView {
     const snapshot = this.application.getSnapshot();
     const scrollTop = this.contentEl.scrollTop;
     const scrollLeft = this.contentEl.scrollLeft;
+    const journalEditor = this.contentEl.querySelector<HTMLTextAreaElement>(
+      ".homepage-studio-journal-editor"
+    );
+    const journalSelection = journalEditor !== null
+      && this.contentEl.ownerDocument.activeElement === journalEditor
+      ? {
+        start: journalEditor.selectionStart,
+        end: journalEditor.selectionEnd,
+        direction: journalEditor.selectionDirection
+      }
+      : null;
     const restoreScrollPosition = (): void => {
       this.contentEl.scrollTop = scrollTop;
       this.contentEl.scrollLeft = scrollLeft;
@@ -173,6 +184,19 @@ export class HomepageView extends ItemView {
         },
         renderScope
       );
+      if (journalSelection !== null) {
+        const nextEditor = this.contentEl.querySelector<HTMLTextAreaElement>(
+          ".homepage-studio-journal-editor"
+        );
+        if (nextEditor !== null) {
+          nextEditor.focus({ preventScroll: true });
+          nextEditor.setSelectionRange(
+            journalSelection.start,
+            journalSelection.end,
+            journalSelection.direction
+          );
+        }
+      }
       restoreScrollPosition();
       return;
     }

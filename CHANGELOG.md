@@ -2,6 +2,14 @@
 
 All notable changes to Homepage Studio are documented in this file.
 
+## 1.0.3 — 2026-08-10
+
+### Fixed
+
+- Kept journal editor focus and caret position stable after Chinese IME input and autosave.
+- Prevented a journal's own save event from rebuilding the active editor unnecessarily.
+- Moved daily and weekly plan period validation messages next to the affected Save period button.
+
 ## 1.0.2 — 2026-08-10
 
 ### Fixed

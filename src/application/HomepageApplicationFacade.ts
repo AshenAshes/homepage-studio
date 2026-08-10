@@ -812,6 +812,15 @@ export class HomepageApplicationFacade {
               (section) => section.dateKey === selectedDateKey
             );
             const hadUnsavedDraft = this.journalDrafts.hasUnsavedDraft();
+            const draft = this.journalDrafts.getState();
+            const loadedSectionMatchesDraft = nextSection !== undefined
+              && draft.type !== "idle"
+              && draft.target.path === result.path
+              && draft.target.dateKey === selectedDateKey
+              && draft.target.content === nextSection.content;
+            const selectedSectionPresenceChanged = (
+              previousSection === undefined
+            ) !== (nextSection === undefined);
             this.journalRuntimeState = {
               type: "ready",
               path: result.path,
@@ -825,6 +834,10 @@ export class HomepageApplicationFacade {
               || (
                 !hadUnsavedDraft
                 && previousSection?.revision !== nextSection?.revision
+                && (
+                  !loadedSectionMatchesDraft
+                  || selectedSectionPresenceChanged
+                )
               )
             ) {
               this.notifyJournalRuntime();

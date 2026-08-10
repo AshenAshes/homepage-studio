@@ -1497,10 +1497,24 @@ const renderModule = (
       });
       attachAccessibleLabel(editor, journal, module.journal.editorLabel);
       editor.value = module.journal.content;
-      scope.registerDomEvent(editor, "input", () => {
+      let isComposing = false;
+      scope.registerDomEvent(editor, "compositionstart", () => {
+        isComposing = true;
+      });
+      scope.registerDomEvent(editor, "compositionend", () => {
+        isComposing = false;
         actions.updateJournalDraft(editor.value);
       });
+      scope.registerDomEvent(editor, "input", () => {
+        if (!isComposing) {
+          actions.updateJournalDraft(editor.value);
+        }
+      });
       scope.registerDomEvent(editor, "blur", () => {
+        if (isComposing) {
+          isComposing = false;
+          actions.updateJournalDraft(editor.value);
+        }
         actions.flushJournalDraft();
       });
     } else {
