@@ -2,6 +2,19 @@
 
 All notable changes to Homepage Studio are documented in this file.
 
+## 1.0.1 — 2026-08-10
+
+### Changed
+
+- Removed vault-wide file enumeration from settings path inputs; paths are now validated by direct lookup.
+- Removed system clipboard access. Conflict drafts and diagnostic reports remain selectable in the interface for manual recovery.
+- Replaced CSS features that are only partially supported by the Obsidian 1.7.4 compatibility scanner.
+
+### Release
+
+- Added GitHub artifact provenance attestations for `main.js` and `styles.css`.
+- Release titles now contain only the version number.
+
 ## 1.0.0 — 2026-08-10
 
 ### Added

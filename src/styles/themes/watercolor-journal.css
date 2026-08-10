@@ -117,7 +117,6 @@
   border: 0;
   border-radius: 50%;
   background: var(--homepage-watercolor-wash-blue);
-  clip-path: none;
   filter: blur(3rem);
   opacity: 0.42;
   transform: none;
@@ -128,7 +127,6 @@
   border: 0;
   border-radius: 50%;
   background: var(--homepage-watercolor-wash-sage);
-  clip-path: none;
   filter: blur(3.5rem);
   opacity: 0.38;
   transform: none;

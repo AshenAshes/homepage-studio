@@ -98,10 +98,6 @@ export class HomepageView extends ItemView {
           setJournalViewMode: (viewMode) => {
             this.application.setJournalViewMode(viewMode);
           },
-          copyJournalDraft: () => {
-            void this.contentEl.ownerDocument.defaultView?.navigator.clipboard
-              .writeText(this.application.getJournalDraftText());
-          },
           reloadJournalDraft: () => {
             this.application.reloadJournalDraft();
           },
@@ -155,13 +151,6 @@ export class HomepageView extends ItemView {
           },
           showMoreFileGroupEntries: () => {
             this.application.showMoreFileGroupEntries();
-          },
-          copyTaskConflictDraft: () => {
-            const draft = this.application.getTaskConflictDraftText();
-            if (draft !== null) {
-              void this.contentEl.ownerDocument.defaultView?.navigator.clipboard
-                .writeText(draft);
-            }
           },
           reloadTaskSource: () => {
             void this.application.reloadTaskSource();
@@ -236,11 +225,15 @@ export class HomepageView extends ItemView {
       }
       if (snapshot.recoveryActions !== null) {
         const recoveryActions = snapshot.recoveryActions;
+        diagnostics.createEl("pre", {
+          cls: "homepage-studio-diagnostic-report",
+          text: this.application.getDiagnosticReport(),
+          attr: {
+            tabindex: "0"
+          }
+        });
         const actions = diagnostics.createDiv({
           cls: "homepage-studio-recovery-actions"
-        });
-        const copyButton = actions.createEl("button", {
-          text: recoveryActions.copyDiagnosticsLabel
         });
         const dataManagementButton = actions.createEl("button", {
           text: recoveryActions.openDataManagementLabel
@@ -251,34 +244,6 @@ export class HomepageView extends ItemView {
         const resetButton = actions.createEl("button", {
           cls: "mod-warning",
           text: recoveryActions.resetLabel
-        });
-        const copyStatus = diagnostics.createEl("p", {
-          cls: "homepage-studio-recovery-copy-status",
-          attr: {
-            role: "status",
-            "aria-live": "polite"
-          }
-        });
-        renderScope.registerDomEvent(copyButton, "click", () => {
-          const clipboard = this.contentEl.ownerDocument.defaultView?.navigator
-            .clipboard;
-          if (clipboard === undefined) {
-            copyStatus.setText(
-              recoveryActions.diagnosticsCopyFailedLabel
-            );
-            return;
-          }
-          void clipboard.writeText(
-            this.application.getDiagnosticReport()
-          ).then(() => {
-            copyStatus.setText(
-              recoveryActions.diagnosticsCopiedLabel
-            );
-          }).catch(() => {
-            copyStatus.setText(
-              recoveryActions.diagnosticsCopyFailedLabel
-            );
-          });
         });
         renderScope.registerDomEvent(dataManagementButton, "click", () => {
           this.application.openSettings("data-management");

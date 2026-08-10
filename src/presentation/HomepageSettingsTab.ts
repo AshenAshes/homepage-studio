@@ -36,8 +36,6 @@ import type { LocalizationService } from "../application/services/LocalizationSe
 import type { LocalePreference } from "../domain/data/types";
 import type { HeatmapCountType } from "../application/services/HeatmapTrackingService";
 import type { Messages } from "../localization/messages";
-import { MarkdownFileSuggest } from "./MarkdownFileSuggest";
-import { VaultFileSuggest } from "./VaultFileSuggest";
 import {
   formatPlanMinute,
   normalizePlanLabel,
@@ -55,10 +53,7 @@ import type {
 } from "../domain/data/types";
 import { WEEKDAYS } from "../domain/plans/weeklyPlan";
 import { attachAccessibleLabel } from "./accessibility";
-import {
-  BANNER_THEME_IDS,
-  isSupportedBannerImagePath
-} from "../domain/banner/banner";
+import { BANNER_THEME_IDS } from "../domain/banner/banner";
 
 const isLocalePreference = (value: string): value is LocalePreference =>
   value === "auto" || value === "zh-cn" || value === "en";
@@ -107,9 +102,6 @@ type PlanPeriodInputResult =
   | { readonly type: "invalid-end-time" };
 
 export class HomepageSettingsTab extends PluginSettingTab {
-  private readonly journalSuggestions: MarkdownFileSuggest[] = [];
-  private readonly taskSuggestions: MarkdownFileSuggest[] = [];
-  private readonly vaultFileSuggestions: VaultFileSuggest[] = [];
   private activeSection: HomepageSettingsSection = "interface";
   private selectedBannerTheme: ThemeId = "klein-blue";
   private focusActiveTabAfterRender = false;
@@ -155,9 +147,6 @@ export class HomepageSettingsTab extends PluginSettingTab {
     this.settingsScope?.unload();
     this.settingsScope = new Component();
     this.clearFileGroupUndoTimer();
-    this.closeJournalSuggestions();
-    this.closeTaskSuggestions();
-    this.closeVaultFileSuggestions();
     const messages = this.localization.getMessages();
     const settings = this.application.getInterfaceAndStartupSettings();
     const targetSection = this.settingsNavigation?.consumeRequestedSection()
@@ -397,9 +386,6 @@ export class HomepageSettingsTab extends PluginSettingTab {
     this.settingsScope?.unload();
     this.settingsScope = null;
     this.clearFileGroupUndoTimer();
-    this.closeJournalSuggestions();
-    this.closeTaskSuggestions();
-    this.closeVaultFileSuggestions();
     this.selectedBannerTheme = this.application.getLayoutSettings().theme;
     super.hide();
   }
@@ -749,27 +735,13 @@ export class HomepageSettingsTab extends PluginSettingTab {
       text: this.application.getDiagnosticReport()
     });
     report.setAttribute("tabindex", "0");
-    const copyStatus = diagnostics.createEl("p", {
-      cls: "homepage-studio-data-copy-status",
-      attr: {
-        role: "status",
-        "aria-live": "polite"
-      }
-    });
     const diagnosticActions = diagnostics.createDiv({
       cls: "homepage-studio-data-actions"
-    });
-    const copy = diagnosticActions.createEl("button", {
-      text: messages.copyDiagnostics,
-      attr: { type: "button" }
     });
     const reload = diagnosticActions.createEl("button", {
       text: messages.reloadPluginData,
       attr: { type: "button" }
     });
-    copy.onclick = () => {
-      void this.copyDiagnosticReport(copyStatus, messages);
-    };
     reload.onclick = () => {
       void this.application.reloadPluginData().then(() => {
         this.refreshSettings();
@@ -799,24 +771,6 @@ export class HomepageSettingsTab extends PluginSettingTab {
           });
         button.buttonEl.addClass("mod-warning");
       });
-  }
-
-  private async copyDiagnosticReport(
-    status: HTMLElement,
-    messages: Messages
-  ): Promise<void> {
-    const clipboard = this.containerEl.ownerDocument.defaultView?.navigator
-      .clipboard;
-    if (clipboard === undefined) {
-      status.setText(messages.diagnosticsCopyFailed);
-      return;
-    }
-    try {
-      await clipboard.writeText(this.application.getDiagnosticReport());
-      status.setText(messages.diagnosticsCopied);
-    } catch {
-      status.setText(messages.diagnosticsCopyFailed);
-    }
   }
 
   private renderLayoutSettings(
@@ -1416,15 +1370,6 @@ export class HomepageSettingsTab extends PluginSettingTab {
           .onChange((value) => {
             vaultPath = value;
           });
-        const suggestion = new VaultFileSuggest(
-          this.app,
-          text.inputEl,
-          (path) => {
-            vaultPath = path;
-          },
-          (file) => isSupportedBannerImagePath(file.path)
-        );
-        this.vaultFileSuggestions.push(suggestion);
       })
       .addButton((button) => {
         button
@@ -1732,14 +1677,6 @@ export class HomepageSettingsTab extends PluginSettingTab {
             .onChange((value) => {
               candidatePath = value;
             });
-          const suggestion = new VaultFileSuggest(
-            this.app,
-            text.inputEl,
-            (path) => {
-              candidatePath = path;
-            }
-          );
-          this.vaultFileSuggestions.push(suggestion);
         })
         .addButton((button) => {
           button
@@ -2030,14 +1967,6 @@ export class HomepageSettingsTab extends PluginSettingTab {
           .onChange((value) => {
             candidatePath = value;
           });
-        const suggestion = new VaultFileSuggest(
-          this.app,
-          text.inputEl,
-          (path) => {
-            candidatePath = path;
-          }
-        );
-        this.vaultFileSuggestions.push(suggestion);
       })
       .addButton((button) => {
         button
@@ -2952,14 +2881,6 @@ export class HomepageSettingsTab extends PluginSettingTab {
         .onChange((value) => {
           candidatePath = value;
         });
-      const suggestion = new MarkdownFileSuggest(
-        this.app,
-        text.inputEl,
-        (path) => {
-          candidatePath = path;
-        }
-      );
-      this.journalSuggestions.push(suggestion);
     });
     setting.addButton((button) => {
       button
@@ -3007,14 +2928,6 @@ export class HomepageSettingsTab extends PluginSettingTab {
         .onChange((value) => {
           candidatePath = value;
         });
-      const suggestion = new MarkdownFileSuggest(
-        this.app,
-        text.inputEl,
-        (path) => {
-          candidatePath = path;
-        }
-      );
-      this.taskSuggestions.push(suggestion);
     });
     setting.addButton((button) => {
       button
@@ -3164,24 +3077,6 @@ export class HomepageSettingsTab extends PluginSettingTab {
         return messages.journalSourceIoError;
       case "configuration-unavailable":
         return messages.journalConfigurationUnavailable;
-    }
-  }
-
-  private closeJournalSuggestions(): void {
-    for (const suggestion of this.journalSuggestions.splice(0)) {
-      suggestion.close();
-    }
-  }
-
-  private closeTaskSuggestions(): void {
-    for (const suggestion of this.taskSuggestions.splice(0)) {
-      suggestion.close();
-    }
-  }
-
-  private closeVaultFileSuggestions(): void {
-    for (const suggestion of this.vaultFileSuggestions.splice(0)) {
-      suggestion.close();
     }
   }
 

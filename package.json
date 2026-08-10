@@ -1,6 +1,6 @@
 {
   "name": "homepage-studio",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "A modular desktop homepage for journals, tasks, plans, file groups, and writing activity.",
   "main": "main.js",

@@ -215,13 +215,13 @@
   width: 28%;
   border: 0;
   border-inline: 1px solid var(--homepage-paper-border);
+  border-radius: 0;
   background:
     repeating-linear-gradient(
       90deg,
       transparent 0 2.5rem,
       var(--homepage-paper-border) 2.5rem calc(2.5rem + 1px)
     );
-  clip-path: none;
   opacity: 0.8;
   transform: none;
 }
@@ -230,8 +230,8 @@
   inset: auto 0 16%;
   height: 1px;
   border: 0;
+  border-radius: 0;
   background: var(--homepage-paper-subline);
-  clip-path: none;
   transform: none;
 }
 

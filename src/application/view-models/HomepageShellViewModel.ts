@@ -164,7 +164,6 @@ export interface HomepageModuleViewModel {
     readonly conflict: {
       readonly title: string;
       readonly description: string;
-      readonly copyLabel: string;
       readonly reloadLabel: string;
       readonly openSourceLabel: string;
     } | null;
@@ -188,7 +187,8 @@ export interface HomepageModuleViewModel {
     readonly conflict: {
       readonly title: string;
       readonly description: string;
-      readonly copyLabel: string | null;
+      readonly draftLabel: string;
+      readonly draftText: string | null;
       readonly reloadLabel: string;
       readonly openSourceLabel: string;
     } | null;
@@ -1104,7 +1104,6 @@ export const createHomepageShellViewModel = (
                 ? {
                   title: messages.journalConflictTitle,
                   description: messages.journalConflictDescription,
-                  copyLabel: messages.journalCopyDraft,
                   reloadLabel: messages.journalReloadExternal,
                   openSourceLabel: messages.journalOpenSource
                 }
@@ -1160,11 +1159,10 @@ export const createHomepageShellViewModel = (
                 ? {
                   title: messages.tasksConflictTitle,
                   description: messages.tasksConflictDescription,
-                  copyLabel: interactionState.type === "conflict"
-                    ? interactionState.draftText === null
-                      ? null
-                      : messages.tasksCopyDraft
-                    : messages.tasksCopyDraft,
+                  draftLabel: messages.tasksConflictDraftLabel,
+                  draftText: interactionState.type === "conflict"
+                    ? interactionState.draftText
+                    : null,
                   reloadLabel: messages.tasksReloadExternal,
                   openSourceLabel: messages.tasksOpenSource
                 }

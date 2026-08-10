@@ -101,7 +101,6 @@ export interface Messages {
   readonly journalEmptyPreview: string;
   readonly journalConflictTitle: string;
   readonly journalConflictDescription: string;
-  readonly journalCopyDraft: string;
   readonly journalReloadExternal: string;
   readonly journalOpenSource: string;
   readonly journalWriteMissing: string;
@@ -170,7 +169,7 @@ export interface Messages {
   readonly tasksConflict: string;
   readonly tasksConflictTitle: string;
   readonly tasksConflictDescription: string;
-  readonly tasksCopyDraft: string;
+  readonly tasksConflictDraftLabel: string;
   readonly tasksReloadExternal: string;
   readonly tasksOpenSource: string;
   readonly tasksWriteFailed: string;
@@ -369,9 +368,6 @@ export interface Messages {
   readonly reloadPluginData: string;
   readonly resetPluginData: string;
   readonly openDataManagement: string;
-  readonly copyDiagnostics: string;
-  readonly diagnosticsCopied: string;
-  readonly diagnosticsCopyFailed: string;
   readonly resetDataTitle: string;
   readonly resetDataDescription: string;
   readonly continueResetData: string;

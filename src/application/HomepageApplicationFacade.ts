@@ -156,9 +156,6 @@ export interface HomepageSnapshot {
   readonly recoveryActions: {
     readonly reloadLabel: string;
     readonly resetLabel: string;
-    readonly copyDiagnosticsLabel: string;
-    readonly diagnosticsCopiedLabel: string;
-    readonly diagnosticsCopyFailedLabel: string;
     readonly openDataManagementLabel: string;
   } | null;
 }
@@ -649,9 +646,6 @@ export class HomepageApplicationFacade {
         recoveryActions: {
           reloadLabel: messages.reloadPluginData,
           resetLabel: messages.resetPluginData,
-          copyDiagnosticsLabel: messages.copyDiagnostics,
-          diagnosticsCopiedLabel: messages.diagnosticsCopied,
-          diagnosticsCopyFailedLabel: messages.diagnosticsCopyFailed,
           openDataManagementLabel: messages.openDataManagement
         }
       };
@@ -1178,14 +1172,6 @@ export class HomepageApplicationFacade {
   public showMoreArchivedTasks(): void {
     this.archivedTaskVisibleLimit += TASK_PAGE_SIZE;
     this.notifyTaskRuntime();
-  }
-
-  public getTaskConflictDraftText(): string | null {
-    return this.taskInteractionState.type === "conflict"
-      ? this.taskInteractionState.draftText
-      : this.taskInteractionState.type === "editing"
-        ? this.taskInteractionState.text
-        : null;
   }
 
   public async reloadTaskSource(): Promise<void> {
@@ -2717,11 +2703,6 @@ export class HomepageApplicationFacade {
   public reloadJournalDraft(): void {
     this.journalDrafts.discardAndBegin(this.createJournalDraftTarget());
     this.notifyJournalRuntime();
-  }
-
-  public getJournalDraftText(): string {
-    const state = this.journalDrafts.getState();
-    return state.type === "idle" ? "" : state.target.content;
   }
 
   public disposeJournalDrafts(): Promise<void> {

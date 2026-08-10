@@ -20,7 +20,6 @@ interface HomepageShellActions {
   updateJournalDraft(content: string): void;
   flushJournalDraft(): void;
   setJournalViewMode(viewMode: "edit" | "preview"): void;
-  copyJournalDraft(): void;
   reloadJournalDraft(): void;
   deleteJournalEntry(): void;
   addTask(text: string): Promise<boolean>;
@@ -39,7 +38,6 @@ interface HomepageShellActions {
   showMoreTasks(): void;
   showMoreArchivedTasks(): void;
   showMoreFileGroupEntries(): void;
-  copyTaskConflictDraft(): void;
   reloadTaskSource(): void;
   openTaskSource(path: string): void;
   deleteTask(target: TaskTarget, text: string): void;
@@ -1471,10 +1469,6 @@ const renderModule = (
       const conflictActions = conflict.createDiv({
         cls: "homepage-studio-journal-conflict-actions"
       });
-      const copy = conflictActions.createEl("button", {
-        text: module.journal.conflict.copyLabel,
-        attr: { type: "button" }
-      });
       const reload = conflictActions.createEl("button", {
         text: module.journal.conflict.reloadLabel,
         attr: { type: "button" }
@@ -1482,9 +1476,6 @@ const renderModule = (
       const openSource = conflictActions.createEl("button", {
         text: module.journal.conflict.openSourceLabel,
         attr: { type: "button" }
-      });
-      scope.registerDomEvent(copy, "click", () => {
-        actions.copyJournalDraft();
       });
       scope.registerDomEvent(reload, "click", () => {
         actions.reloadJournalDraft();
@@ -1549,19 +1540,19 @@ const renderModule = (
         cls: "homepage-studio-task-conflict-description",
         text: module.tasks.conflict.description
       });
+      if (module.tasks.conflict.draftText !== null) {
+        conflict.createEl("pre", {
+          cls: "homepage-studio-task-conflict-draft",
+          text: module.tasks.conflict.draftText,
+          attr: {
+            tabindex: "0",
+            "aria-label": module.tasks.conflict.draftLabel
+          }
+        });
+      }
       const conflictActions = conflict.createDiv({
         cls: "homepage-studio-task-conflict-actions"
       });
-      if (module.tasks.conflict.copyLabel !== null) {
-        const copy = conflictActions.createEl("button", {
-          cls: "homepage-studio-task-conflict-button",
-          text: module.tasks.conflict.copyLabel,
-          attr: { type: "button" }
-        });
-        scope.registerDomEvent(copy, "click", () => {
-          actions.copyTaskConflictDraft();
-        });
-      }
       const reload = conflictActions.createEl("button", {
         cls: "homepage-studio-task-conflict-button",
         text: module.tasks.conflict.reloadLabel,
