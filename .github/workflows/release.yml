@@ -48,8 +48,6 @@ jobs:
               echo "publish=false" >> "${GITHUB_OUTPUT}"
               exit 0
             fi
-
-            git checkout --detach "refs/tags/${tag}"
           fi
 
           manifest_version="$(node -p "require('./manifest.json').version")"
@@ -97,6 +95,13 @@ jobs:
               exit 1
             fi
           done
+
+          if [[ "${GITHUB_REF_TYPE}" != "tag" ]]; then
+            if ! git diff --exit-code "refs/tags/${{ steps.release.outputs.tag }}" -- main.js manifest.json styles.css; then
+              echo "Recovery build assets differ from tag '${{ steps.release.outputs.tag }}'." >&2
+              exit 1
+            fi
+          fi
 
       - name: Publish GitHub release
         if: steps.release.outputs.publish == 'true'

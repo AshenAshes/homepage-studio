@@ -8,8 +8,7 @@
       "ES2021"
     ],
     "types": [
-      "node",
-      "vitest/globals"
+      "node"
     ],
     "strict": true,
     "noImplicitAny": true,
@@ -34,8 +33,6 @@
     "noEmit": true
   },
   "include": [
-    "src/**/*.ts",
-    "tests/**/*.ts",
-    "vitest.config.ts"
+    "src/**/*.ts"
   ]
 }
