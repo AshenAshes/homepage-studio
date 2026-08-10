@@ -1,0 +1,35 @@
+{
+  "name": "homepage-studio",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A modular desktop homepage for journals, tasks, plans, file groups, and writing activity.",
+  "main": "main.js",
+  "scripts": {
+    "dev": "node esbuild.config.mjs",
+    "build": "node esbuild.config.mjs production",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --max-warnings 0",
+    "lint:css": "stylelint \"src/**/*.css\"",
+    "verify": "npm run typecheck && npm run lint && npm run lint:css && npm run build"
+  },
+  "keywords": [
+    "obsidian",
+    "homepage",
+    "dashboard"
+  ],
+  "author": "Aluxes",
+  "license": "MIT",
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@eslint/json": "^2.0.1",
+    "@types/node": "^26.1.1",
+    "esbuild": "^0.28.1",
+    "eslint": "^10.8.0",
+    "eslint-plugin-obsidianmd": "0.4.0",
+    "obsidian": "1.8.7",
+    "stylelint": "^17.14.1",
+    "stylelint-config-standard": "^40.0.0",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.65.0"
+  }
+}

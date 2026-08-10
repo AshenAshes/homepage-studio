@@ -1,0 +1,795 @@
+/* watercolor-journal theme. */
+/* stylelint-disable no-descending-specificity, no-duplicate-selectors */
+.homepage-studio[data-theme="watercolor-journal"][data-appearance="light"],
+.theme-light .homepage-studio[data-theme="watercolor-journal"][data-appearance="auto"] {
+  --homepage-watercolor-paper: #faf8f5;
+  --homepage-watercolor-rose: #e8a598;
+  --homepage-watercolor-sage: #88ab92;
+  --homepage-watercolor-lavender: #b39bc8;
+  --homepage-watercolor-wash-blue: rgb(74 111 165 / 20%);
+  --homepage-watercolor-wash-rose: rgb(232 165 152 / 25%);
+  --homepage-watercolor-wash-sage: rgb(136 171 146 / 20%);
+  --homepage-watercolor-wash-lavender: rgb(179 155 200 / 18%);
+  --homepage-watercolor-nested-surface: rgb(255 255 255 / 40%);
+  --homepage-watercolor-fold: rgb(255 255 255 / 52%);
+  --homepage-watercolor-on-accent: #fff;
+  --homepage-klein: #4a6fa5;
+  --homepage-page: var(--homepage-watercolor-paper);
+  --homepage-surface: rgb(250 248 245 / 85%);
+  --homepage-surface-raised: rgb(255 255 255 / 70%);
+  --homepage-text: #2b3e55;
+  --homepage-muted: #3a4f66;
+  --homepage-faint: #7b8ba0;
+  --homepage-border: rgb(74 111 165 / 20%);
+  --homepage-border-subtle: rgb(74 111 165 / 10%);
+  --homepage-focus: #4a6fa5;
+  --homepage-task-row: rgb(255 255 255 / 70%);
+  --homepage-heatmap-level-1: rgb(74 111 165 / 25%);
+  --homepage-heatmap-level-2: rgb(74 111 165 / 50%);
+  --homepage-heatmap-level-3: rgb(74 111 165 / 75%);
+  --homepage-heatmap-level-4: #2b4c7e;
+  --homepage-corner: 1.5rem;
+  --homepage-banner-text: #2b3e55;
+  --homepage-banner-muted: #4a6fa5;
+  --homepage-banner-border: rgb(74 111 165 / 20%);
+  --homepage-banner-image-scrim-start: rgb(250 248 245 / 86%);
+  --homepage-banner-image-scrim-end: rgb(250 248 245 / 16%);
+}
+
+.homepage-studio[data-theme="watercolor-journal"][data-appearance="dark"],
+.theme-dark .homepage-studio[data-theme="watercolor-journal"][data-appearance="auto"] {
+  --homepage-watercolor-paper: #0f141d;
+  --homepage-watercolor-rose: #e8a598;
+  --homepage-watercolor-sage: #88ab92;
+  --homepage-watercolor-lavender: #b39bc8;
+  --homepage-watercolor-wash-blue: rgb(100 145 210 / 25%);
+  --homepage-watercolor-wash-rose: rgb(232 165 152 / 15%);
+  --homepage-watercolor-wash-sage: rgb(136 171 146 / 15%);
+  --homepage-watercolor-wash-lavender: rgb(179 155 200 / 15%);
+  --homepage-watercolor-nested-surface: rgb(25 34 50 / 75%);
+  --homepage-watercolor-fold: rgb(100 145 210 / 10%);
+  --homepage-watercolor-on-accent: #fff;
+  --homepage-klein: #7aa2dc;
+  --homepage-page: var(--homepage-watercolor-paper);
+  --homepage-surface: rgb(20 27 40 / 85%);
+  --homepage-surface-raised: rgb(25 34 50 / 75%);
+  --homepage-text: #e2e8f0;
+  --homepage-muted: #bac6d6;
+  --homepage-faint: #75849a;
+  --homepage-border: rgb(100 145 210 / 25%);
+  --homepage-border-subtle: rgb(100 145 210 / 20%);
+  --homepage-focus: #8cb9f5;
+  --homepage-task-row: rgb(25 34 50 / 75%);
+  --homepage-heatmap-level-1: rgb(100 145 210 / 35%);
+  --homepage-heatmap-level-2: rgb(100 145 210 / 60%);
+  --homepage-heatmap-level-3: rgb(100 145 210 / 82%);
+  --homepage-heatmap-level-4: #8cb9f5;
+  --homepage-corner: 1.5rem;
+  --homepage-banner-text: #e2e8f0;
+  --homepage-banner-muted: #9bbce8;
+  --homepage-banner-border: rgb(100 145 210 / 25%);
+  --homepage-banner-image-scrim-start: rgb(15 20 29 / 88%);
+  --homepage-banner-image-scrim-end: rgb(15 20 29 / 16%);
+}
+
+.homepage-studio[data-theme="watercolor-journal"],
+.view-content.homepage-studio[data-theme="watercolor-journal"] {
+  --homepage-watercolor-marker-blue: rgb(74 111 165 / 40%);
+  --homepage-watercolor-marker-blue-strong: rgb(74 111 165 / 60%);
+  --homepage-watercolor-marker-rose: rgb(232 165 152 / 60%);
+  --homepage-watercolor-marker-sage: rgb(136 171 146 / 60%);
+  --homepage-watercolor-marker-lavender: rgb(179 155 200 / 60%);
+  --homepage-watercolor-tag-rose: rgb(232 165 152 / 20%);
+  --homepage-watercolor-tag-sage: rgb(136 171 146 / 20%);
+  --homepage-watercolor-tag-lavender: rgb(179 155 200 / 20%);
+  --homepage-watercolor-completed: #94a3b8;
+
+  background:
+    radial-gradient(circle at -4rem -5rem, var(--homepage-watercolor-wash-rose), transparent 30rem),
+    radial-gradient(circle at calc(100% + 9rem) 34%, var(--homepage-watercolor-wash-blue), transparent 35rem),
+    radial-gradient(circle at 30% calc(100% + 7rem), var(--homepage-watercolor-wash-sage), transparent 33rem),
+    var(--homepage-page);
+}
+
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-banner {
+  margin-top: calc(var(--size-4-4) * -1);
+  border: var(--border-width) solid var(--homepage-banner-border);
+  border-radius: var(--homepage-corner);
+  background: var(--homepage-surface);
+  box-shadow: 0 0.25rem 1.25rem rgb(74 111 165 / 12%);
+}
+
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-banner::before {
+  content: none;
+}
+
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-banner-art {
+  background:
+    radial-gradient(ellipse at 29% 42%, var(--homepage-watercolor-wash-blue), transparent 39%),
+    radial-gradient(ellipse at 43% 46%, var(--homepage-watercolor-wash-rose), transparent 45%),
+    radial-gradient(ellipse at 80% 61%, var(--homepage-watercolor-wash-sage), transparent 35%),
+    radial-gradient(ellipse at 91% 66%, var(--homepage-watercolor-wash-lavender), transparent 36%),
+    var(--homepage-surface);
+}
+
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-banner-art::before {
+  inset: -42% 38% -55% -18%;
+  border: 0;
+  border-radius: 50%;
+  background: var(--homepage-watercolor-wash-blue);
+  clip-path: none;
+  filter: blur(3rem);
+  opacity: 0.42;
+  transform: none;
+}
+
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-banner-art::after {
+  inset: -10% -12% -52% 58%;
+  border: 0;
+  border-radius: 50%;
+  background: var(--homepage-watercolor-wash-sage);
+  clip-path: none;
+  filter: blur(3.5rem);
+  opacity: 0.38;
+  transform: none;
+}
+
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-banner-architecture {
+  background: linear-gradient(
+    150deg,
+    transparent 0 83%,
+    var(--homepage-watercolor-fold) 83% 100%
+  );
+  opacity: 0.72;
+}
+
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-banner-architecture::before {
+  content: none;
+}
+
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-banner-architecture::after {
+  content: none;
+}
+
+.homepage-studio[data-theme="watercolor-journal"]
+  .homepage-studio-heatmap-detail-icon {
+  display: none;
+}
+
+.homepage-studio[data-theme="watercolor-journal"]
+  button.homepage-studio-file-group-entry {
+  border: var(--border-width) solid var(--homepage-border-subtle);
+  border-radius: 0.75rem;
+  background: var(--homepage-surface-raised);
+  box-shadow: 0 0.125rem 0.5rem rgb(74 111 165 / 5%);
+  transition:
+    border-color 400ms ease-out,
+    box-shadow 400ms ease-out;
+}
+
+.homepage-studio[data-theme="watercolor-journal"]
+  button.homepage-studio-file-group-entry::before {
+  content: none;
+}
+
+.homepage-studio[data-theme="watercolor-journal"]
+  .homepage-studio-file-group-entry-name {
+  transition: none;
+}
+
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-shell {
+  gap: var(--size-4-8);
+  width: min(100%, 72rem);
+}
+
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-masthead {
+  padding-inline: var(--size-4-2);
+  padding-bottom: var(--size-4-2);
+  border-bottom: 0;
+}
+
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-title {
+  color: var(--homepage-text);
+  font-family: Georgia, "Songti SC", SimSun, serif;
+  font-size: 1.5rem;
+  font-weight: 300;
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-control-label {
+  border-left: 0;
+  color: var(--homepage-klein);
+  font-family: Georgia, "Songti SC", SimSun, serif;
+  font-style: italic;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-coordinate {
+  color: var(--homepage-klein);
+  font-family: Georgia, serif;
+  font-style: italic;
+  letter-spacing: 0.02em;
+}
+
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-klein-mark {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    var(--homepage-klein) 0 28%,
+    var(--homepage-watercolor-wash-blue) 32% 62%,
+    transparent 68%
+  );
+  filter: blur(0.5px);
+  box-shadow: none;
+  transform: none;
+}
+
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-settings-button {
+  width: 2.5rem;
+  min-width: 2.5rem;
+  height: 2.5rem;
+  min-height: 2.5rem;
+  border-color: var(--homepage-border);
+  border-radius: 1.25rem;
+  background: var(--homepage-surface-raised);
+  box-shadow: 0 0.125rem 0.625rem rgb(74 111 165 / 10%);
+}
+
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-module {
+  min-height: 18rem;
+  padding: var(--size-4-8);
+  border: var(--border-width) solid var(--homepage-border-subtle);
+  border-radius: var(--homepage-corner);
+  background: var(--homepage-surface);
+  box-shadow: 0 0.25rem 1.25rem rgb(74 111 165 / 12%);
+  backdrop-filter: blur(0.75rem);
+}
+
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-module[data-size="compact"] {
+  grid-column: span 4;
+}
+
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-module[data-size="standard"] {
+  grid-column: span 6;
+}
+
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-module[data-size="expanded"] {
+  grid-column: span 8;
+}
+
+.homepage-studio[data-theme="watercolor-journal"]
+  .homepage-studio-module[data-module="file-groups"] {
+  grid-column: 1 / -1;
+}
+
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-module-title-marker {
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 50%;
+  background: var(--homepage-watercolor-marker-blue);
+  box-shadow: none;
+  transform: none;
+}
+
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-module-header {
+  min-height: 2.5rem;
+  padding-bottom: var(--size-4-3);
+  border-bottom-color: var(--homepage-border-subtle);
+}
+
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-module-title {
+  font-family: Georgia, "Songti SC", SimSun, serif;
+  font-size: 1.25rem;
+  font-weight: 300;
+  letter-spacing: 0.03em;
+}
+
+.homepage-studio[data-theme="watercolor-journal"]
+  .homepage-studio-module[data-module="current-plan"]
+  .homepage-studio-module-title-marker {
+  background: var(--homepage-watercolor-marker-rose);
+}
+
+.homepage-studio[data-theme="watercolor-journal"]
+  .homepage-studio-module[data-module="journal"]
+  .homepage-studio-module-title-marker {
+  background: var(--homepage-watercolor-marker-sage);
+}
+
+.homepage-studio[data-theme="watercolor-journal"]
+  .homepage-studio-module[data-module="tasks"]
+  .homepage-studio-module-title-marker {
+  background: var(--homepage-watercolor-marker-lavender);
+}
+
+.homepage-studio[data-theme="watercolor-journal"]
+  .homepage-studio-module[data-module="file-groups"]
+  .homepage-studio-module-title-marker {
+  background: var(--homepage-watercolor-marker-blue-strong);
+}
+
+.homepage-studio[data-theme="watercolor-journal"]
+  .homepage-studio-module[data-state="unconfigured"] {
+  border-style: dashed;
+}
+
+.homepage-studio[data-theme="watercolor-journal"]
+  .homepage-studio-plan-schedule-item[data-state="current"] {
+  border-inline-start: 2px solid var(--homepage-focus);
+  font-weight: var(--font-medium);
+}
+
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-journal-conflict,
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-task-conflict {
+  border: 3px double var(--text-error);
+  border-style: double;
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      transparent 0 0.5rem,
+      rgb(164 63 72 / 5%) 0.5rem 1rem
+    ),
+    var(--homepage-surface-raised);
+}
+
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-banner[data-height="compact"] {
+  min-height: 9rem;
+}
+
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-banner[data-height="standard"] {
+  min-height: 11.25rem;
+}
+
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-banner[data-height="tall"] {
+  min-height: 13.75rem;
+}
+
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-banner-content {
+  inset:
+    auto
+    calc(var(--size-4-8) + var(--size-4-2))
+    calc(var(--size-4-8) + var(--size-4-2));
+}
+
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-banner-title-group {
+  gap: var(--size-4-2);
+}
+
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-banner-title {
+  max-width: 42rem;
+  color: var(--homepage-banner-text);
+  font-family: Georgia, "Songti SC", SimSun, serif;
+  font-size: 2.25rem;
+  font-weight: 300;
+  letter-spacing: 0.04em;
+}
+
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-banner-subtitle {
+  order: -1;
+  color: var(--homepage-banner-muted);
+  font-family: var(--font-interface-theme);
+  font-size: 0.6875rem;
+  font-weight: var(--font-normal);
+  letter-spacing: 0.12em;
+}
+
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-banner-temporal {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-1);
+  padding: var(--size-4-2) var(--size-4-4);
+  border: var(--border-width) solid var(--homepage-border);
+  border-radius: 2rem;
+  color: var(--homepage-muted);
+  background: var(--homepage-surface-raised);
+  box-shadow: 0 0.125rem 0.625rem rgb(74 111 165 / 10%);
+  font-family: Georgia, "Songti SC", SimSun, serif;
+  font-style: normal;
+  text-align: start;
+}
+
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-banner-date {
+  color: var(--homepage-muted);
+  font-weight: 300;
+}
+
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-heatmap {
+  --homepage-heatmap-cell-size: 0.625rem;
+  --homepage-heatmap-cell-gap: 0.1875rem;
+
+  gap: var(--size-4-4);
+}
+
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-heatmap-cell {
+  border-radius: 50%;
+}
+
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-heatmap-detail {
+  padding: var(--size-4-3) var(--size-4-4);
+  border: var(--border-width) solid var(--homepage-border);
+  border-radius: 1rem;
+  background: var(--homepage-surface-raised);
+  box-shadow: 0 0.125rem 0.625rem rgb(74 111 165 / 8%);
+}
+
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-plan-active {
+  border: var(--border-width) solid var(--homepage-border);
+  border-radius: 1rem;
+  background: var(--homepage-surface-raised);
+  box-shadow: 0 0.125rem 0.625rem rgb(74 111 165 / 8%);
+}
+
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-plan-primary {
+  font-family: Georgia, "Songti SC", SimSun, serif;
+  font-weight: 300;
+}
+
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-plan-progress {
+  height: 0.375rem;
+  border-radius: 1rem;
+}
+
+.homepage-studio[data-theme="watercolor-journal"]
+  .homepage-studio-plan-progress::-webkit-progress-value {
+  background: linear-gradient(
+    90deg,
+    var(--homepage-klein),
+    var(--homepage-watercolor-rose)
+  );
+}
+
+.homepage-studio[data-theme="watercolor-journal"]
+  .homepage-studio-plan-progress::-moz-progress-bar {
+  background: linear-gradient(
+    90deg,
+    var(--homepage-klein),
+    var(--homepage-watercolor-rose)
+  );
+}
+
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-plan-next,
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-plan-schedule-item {
+  border: var(--border-width) solid var(--homepage-border-subtle);
+  border-radius: 1rem;
+  background: var(--homepage-watercolor-nested-surface);
+}
+
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-journal-editor,
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-journal-preview {
+  border: var(--border-width) solid var(--homepage-border);
+  border-radius: 1rem;
+  background: var(--homepage-surface-raised);
+}
+
+.homepage-studio[data-theme="watercolor-journal"]
+  button.homepage-studio-journal-icon-button {
+  border-color: var(--homepage-border);
+  border-radius: 50%;
+  background: var(--homepage-surface-raised);
+}
+
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-journal-modes {
+  overflow: hidden;
+  border: var(--border-width) solid var(--homepage-border);
+  border-radius: 2rem;
+  background: var(--homepage-surface-raised);
+}
+
+.homepage-studio[data-theme="watercolor-journal"]
+  button.homepage-studio-journal-mode {
+  min-height: 2rem;
+  padding-inline: var(--size-4-3);
+  border: 0;
+  border-bottom: 0;
+  border-radius: 0;
+  color: var(--homepage-muted);
+  background: transparent;
+  font-family: var(--font-interface-theme);
+  font-weight: 300;
+}
+
+.homepage-studio[data-theme="watercolor-journal"]
+  button.homepage-studio-journal-mode:hover {
+  color: var(--homepage-klein);
+  background: var(--homepage-watercolor-nested-surface);
+}
+
+.homepage-studio[data-theme="watercolor-journal"]
+  button.homepage-studio-journal-mode
+  + button.homepage-studio-journal-mode {
+  border-inline-start: var(--border-width) solid var(--homepage-border);
+}
+
+.homepage-studio[data-theme="watercolor-journal"]
+  button.homepage-studio-journal-mode[data-active="true"] {
+  border-bottom: 0;
+  color: var(--homepage-klein);
+  background: var(--homepage-watercolor-wash-blue);
+}
+
+.homepage-studio[data-theme="watercolor-journal"]
+  input.homepage-studio-task-add-input,
+.homepage-studio[data-theme="watercolor-journal"]
+  input.homepage-studio-task-edit-input {
+  height: 2.5rem;
+  padding-inline: var(--size-4-4);
+  border-radius: 1.25rem;
+  background: var(--homepage-surface-raised);
+}
+
+.homepage-studio[data-theme="watercolor-journal"]
+  button.homepage-studio-task-add-button {
+  min-height: 2.5rem;
+  padding-inline: var(--size-4-4);
+  border-color: var(--homepage-klein);
+  border-radius: 1.25rem;
+  color: var(--homepage-watercolor-on-accent);
+  background: var(--homepage-klein);
+  box-shadow: 0 0.25rem 1rem rgb(74 111 165 / 16%);
+  transition:
+    box-shadow 150ms ease,
+    transform 150ms ease;
+}
+
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-task {
+  min-height: 2.5rem;
+  border: var(--border-width) solid var(--homepage-border-subtle);
+  border-radius: 1rem;
+  background: var(--homepage-task-row);
+  box-shadow: 0 0.125rem 0.5rem rgb(74 111 165 / 6%);
+}
+
+.homepage-studio[data-theme="watercolor-journal"]
+  button.homepage-studio-task-checkbox {
+  width: 1rem;
+  min-width: 1rem;
+  height: 1rem;
+  min-height: 1rem;
+  flex-basis: 1rem;
+  border-color: var(--homepage-border);
+  border-radius: 50%;
+}
+
+.homepage-studio[data-theme="watercolor-journal"]
+  button.homepage-studio-task-header-button,
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-task-progress {
+  color: var(--homepage-klein);
+  font-family: var(--font-interface-theme);
+  font-weight: 300;
+}
+
+.homepage-studio[data-theme="watercolor-journal"]
+  button.homepage-studio-task-header-button:hover {
+  color: var(--homepage-watercolor-rose);
+  text-decoration: none;
+}
+
+.homepage-studio[data-theme="watercolor-journal"]
+  .homepage-studio-task[data-completed="true"]
+  .homepage-studio-task-body,
+.homepage-studio[data-theme="watercolor-journal"]
+  .homepage-studio-task[data-completed="true"]
+  .homepage-studio-task-body a,
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-task-archived,
+.homepage-studio[data-theme="watercolor-journal"]
+  .homepage-studio-task.homepage-studio-task-archived
+  .homepage-studio-task-body,
+.homepage-studio[data-theme="watercolor-journal"]
+  .homepage-studio-task.homepage-studio-task-archived
+  .homepage-studio-task-body a,
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-task-archive-icon,
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-task-archive-icon svg {
+  color: var(--homepage-watercolor-completed);
+}
+
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-task-actions {
+  opacity: 0.55;
+  pointer-events: auto;
+}
+
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-file-groups {
+  gap: var(--size-4-6);
+}
+
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-file-group {
+  gap: var(--size-4-3);
+  padding: var(--size-4-4);
+  border: var(--border-width) solid var(--homepage-border-subtle);
+  border-radius: 1rem;
+  background: var(--homepage-watercolor-nested-surface);
+}
+
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-file-group-title {
+  color: var(--homepage-klein);
+  font-family: Georgia, "Songti SC", SimSun, serif;
+  font-size: var(--font-ui-medium);
+  letter-spacing: 0.02em;
+}
+
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-file-group-title-marker {
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 50%;
+}
+
+.homepage-studio[data-theme="watercolor-journal"]
+  .homepage-studio-file-group:nth-child(3n + 1)
+  .homepage-studio-file-group-title-marker {
+  background: var(--homepage-watercolor-rose);
+}
+
+.homepage-studio[data-theme="watercolor-journal"]
+  .homepage-studio-file-group:nth-child(3n + 2)
+  .homepage-studio-file-group-title-marker {
+  background: var(--homepage-watercolor-sage);
+}
+
+.homepage-studio[data-theme="watercolor-journal"]
+  .homepage-studio-file-group:nth-child(3n)
+  .homepage-studio-file-group-title-marker {
+  background: var(--homepage-watercolor-lavender);
+}
+
+.homepage-studio[data-theme="watercolor-journal"]
+  button.homepage-studio-file-groups-manage {
+  color: var(--homepage-klein);
+  font-family: var(--font-interface-theme);
+  font-size: var(--font-ui-smaller);
+  font-weight: 300;
+  letter-spacing: 0;
+}
+
+.homepage-studio[data-theme="watercolor-journal"]
+  button.homepage-studio-file-groups-manage:hover {
+  color: var(--homepage-watercolor-rose);
+  text-decoration: none;
+}
+
+.homepage-studio[data-theme="watercolor-journal"]
+  button.homepage-studio-file-group-entry:not(:disabled):hover {
+  z-index: 1;
+  border-color: var(--homepage-border);
+  box-shadow: 0 0.25rem 0.9375rem rgb(74 111 165 / 15%);
+}
+
+.homepage-studio[data-theme="watercolor-journal"]
+  button.homepage-studio-file-group-entry:focus-visible
+  .homepage-studio-file-group-entry-name,
+.homepage-studio[data-theme="watercolor-journal"]
+  button.homepage-studio-file-group-entry:not(:disabled):hover
+  .homepage-studio-file-group-entry-name {
+  transform: none;
+}
+
+.homepage-studio[data-theme="watercolor-journal"]
+  .homepage-studio-file-group-entry-parent,
+.homepage-studio[data-theme="watercolor-journal"]
+  .homepage-studio-file-group-entry-status {
+  display: inline-flex;
+  min-height: 1.25rem;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  border-radius: 1rem;
+  color: var(--homepage-muted);
+  background: var(--homepage-watercolor-wash-blue);
+  font-family: var(--font-interface-theme);
+  font-size: 0.625rem;
+  font-weight: 300;
+}
+
+.homepage-studio[data-theme="watercolor-journal"]
+  .homepage-studio-file-group:nth-child(3n + 1)
+  .homepage-studio-file-group-entry-parent {
+  background: var(--homepage-watercolor-tag-rose);
+}
+
+.homepage-studio[data-theme="watercolor-journal"]
+  .homepage-studio-file-group:nth-child(3n + 2)
+  .homepage-studio-file-group-entry-parent {
+  background: var(--homepage-watercolor-tag-sage);
+}
+
+.homepage-studio[data-theme="watercolor-journal"]
+  .homepage-studio-file-group:nth-child(3n)
+  .homepage-studio-file-group-entry-parent {
+  background: var(--homepage-watercolor-tag-lavender);
+}
+
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-empty-state {
+  border: var(--border-width) dashed var(--homepage-border);
+  border-radius: 1rem;
+  background: var(--homepage-surface-raised);
+}
+
+.homepage-studio[data-theme="watercolor-journal"]
+  button.homepage-studio-heatmap-file:not(:disabled):hover {
+  background: none;
+  box-shadow: inset 0 -1px currentcolor;
+  text-decoration: none;
+}
+
+.homepage-studio[data-theme="watercolor-journal"]
+  button.homepage-studio-task-add-button:hover {
+  box-shadow: 0 0.375rem 1.25rem rgb(74 111 165 / 22%);
+  transform: translateY(-1px);
+}
+
+.homepage-studio[data-theme="watercolor-journal"]
+  button.homepage-studio-task-add-button:active {
+  transform: translateY(1px);
+}
+
+@container homepage-studio (max-width: 1099px) {
+  .homepage-studio[data-theme="watercolor-journal"] .homepage-studio-banner {
+    margin-top: 0;
+  }
+
+  .homepage-studio[data-theme="watercolor-journal"] .homepage-studio-modules {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+
+  .homepage-studio[data-theme="watercolor-journal"]
+    .homepage-studio-module[data-size="compact"] {
+    grid-column: span 4;
+  }
+
+  .homepage-studio[data-theme="watercolor-journal"]
+    .homepage-studio-module[data-size="standard"] {
+    grid-column: span 6;
+  }
+
+  .homepage-studio[data-theme="watercolor-journal"]
+    .homepage-studio-module[data-size="expanded"] {
+    grid-column: span 8;
+  }
+}
+
+@container homepage-studio (max-width: 1023px) {
+  .homepage-studio[data-theme="watercolor-journal"] .homepage-studio-modules {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .homepage-studio[data-theme="watercolor-journal"]
+    .homepage-studio-module[data-size] {
+    grid-column: 1;
+  }
+
+  .homepage-studio[data-theme="watercolor-journal"]
+    .homepage-studio-banner[data-height="tall"] {
+    min-height: 11.5rem;
+  }
+}
+
+@container homepage-studio (max-width: 719px) {
+  .homepage-studio[data-theme="watercolor-journal"] .homepage-studio-banner-content {
+    inset: auto var(--size-4-4) var(--size-4-4);
+  }
+
+  .homepage-studio[data-theme="watercolor-journal"] .homepage-studio-banner-title {
+    max-width: 26rem;
+    font-size: 1.5rem;
+  }
+
+  .homepage-studio[data-theme="watercolor-journal"] .homepage-studio-modules {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .homepage-studio[data-theme="watercolor-journal"]
+    .homepage-studio-module[data-size] {
+    grid-column: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .homepage-studio[data-theme="watercolor-journal"] .homepage-studio-banner-art::before,
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-banner-art::after,
+.homepage-studio[data-theme="watercolor-journal"] .homepage-studio-banner-architecture {
+    animation: none;
+    transition: none;
+  }
+}
+/* stylelint-enable no-descending-specificity, no-duplicate-selectors */

@@ -1,0 +1,1399 @@
+/* cosmic-cartography theme. */
+/* stylelint-disable no-descending-specificity, no-duplicate-selectors */
+.homepage-studio[data-theme="cosmic-cartography"] {
+  --homepage-cosmic-bg: #060608;
+  --homepage-cosmic-module: rgb(12 12 16 / 100%);
+  --homepage-cosmic-elevated: #101014;
+  --homepage-cosmic-text: #d8d8dc;
+  --homepage-cosmic-secondary: #707078;
+  --homepage-cosmic-muted: #3e3e44;
+  --homepage-cosmic-border: rgb(200 200 210 / 7%);
+  --homepage-cosmic-border-strong: rgb(200 200 210 / 14%);
+  --homepage-cosmic-orbit: rgb(200 200 210 / 6%);
+  --homepage-cosmic-accent: #c4913a;
+  --homepage-cosmic-accent-dim: rgb(196 145 58 / 30%);
+  --homepage-cosmic-caret: #e0a84f;
+  --homepage-caret: var(--homepage-cosmic-caret);
+  --homepage-cosmic-geometry-line: rgb(216 216 220 / 32%);
+  --homepage-cosmic-geometry-point: rgb(216 216 220 / 68%);
+  --homepage-cosmic-geometry-ring: rgb(196 145 58 / 62%);
+  --homepage-cosmic-heatmap-0: #0e0e12;
+  --homepage-cosmic-heatmap-1: rgb(200 200 210 / 8%);
+  --homepage-cosmic-heatmap-2: rgb(200 200 210 / 20%);
+  --homepage-cosmic-heatmap-3: rgb(200 200 210 / 40%);
+  --homepage-cosmic-heatmap-4: rgb(200 200 210 / 75%);
+  --homepage-page: var(--homepage-cosmic-bg);
+  --homepage-surface: var(--homepage-cosmic-module);
+  --homepage-surface-raised: var(--homepage-cosmic-elevated);
+  --homepage-text: var(--homepage-cosmic-text);
+  --homepage-muted: var(--homepage-cosmic-secondary);
+  --homepage-faint: var(--homepage-cosmic-muted);
+  --homepage-border: var(--homepage-cosmic-border);
+  --homepage-border-subtle: var(--homepage-cosmic-border);
+  --homepage-focus: var(--homepage-cosmic-accent);
+  --homepage-klein: var(--homepage-cosmic-accent);
+  --homepage-task-row: transparent;
+  --homepage-heatmap-level-1: var(--homepage-cosmic-heatmap-1);
+  --homepage-heatmap-level-2: var(--homepage-cosmic-heatmap-2);
+  --homepage-heatmap-level-3: var(--homepage-cosmic-heatmap-3);
+  --homepage-heatmap-level-4: var(--homepage-cosmic-heatmap-4);
+  --homepage-corner: 0;
+  --homepage-banner-height-compact: 10rem;
+  --homepage-banner-height-standard: 15rem;
+  --homepage-banner-height-tall: 20rem;
+  --homepage-banner-night: var(--homepage-cosmic-bg);
+  --homepage-banner-text: var(--homepage-cosmic-text);
+  --homepage-banner-muted: var(--homepage-cosmic-secondary);
+  --homepage-banner-border: var(--homepage-cosmic-border);
+
+  min-width: 20rem;
+  padding-inline: 2rem;
+  background: var(--homepage-cosmic-bg);
+  color: var(--homepage-cosmic-text);
+  font-family: var(--font-interface-theme), Inter, sans-serif;
+  font-weight: 300;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"][data-appearance="light"],
+.theme-light .homepage-studio[data-theme="cosmic-cartography"][data-appearance="auto"] {
+  --homepage-cosmic-bg: #f4f3f0;
+  --homepage-cosmic-module: rgb(232 230 226 / 100%);
+  --homepage-cosmic-elevated: #faf9f7;
+  --homepage-cosmic-text: #1a1a1e;
+  --homepage-cosmic-secondary: #6a6a70;
+  --homepage-cosmic-muted: #a5a5aa;
+  --homepage-cosmic-border: rgb(0 0 0 / 7%);
+  --homepage-cosmic-border-strong: rgb(0 0 0 / 14%);
+  --homepage-cosmic-orbit: rgb(0 0 0 / 4%);
+  --homepage-cosmic-accent: #9a7030;
+  --homepage-cosmic-accent-dim: rgb(154 112 48 / 20%);
+  --homepage-cosmic-caret: #704700;
+  --homepage-cosmic-geometry-line: rgb(26 26 30 / 34%);
+  --homepage-cosmic-geometry-point: rgb(26 26 30 / 72%);
+  --homepage-cosmic-geometry-ring: rgb(154 112 48 / 66%);
+  --homepage-cosmic-heatmap-0: #eae8e4;
+  --homepage-cosmic-heatmap-1: rgb(0 0 0 / 6%);
+  --homepage-cosmic-heatmap-2: rgb(0 0 0 / 15%);
+  --homepage-cosmic-heatmap-3: rgb(0 0 0 / 30%);
+  --homepage-cosmic-heatmap-4: rgb(0 0 0 / 55%);
+}
+
+.homepage-studio[data-theme="cosmic-cartography"][data-appearance="dark"],
+.theme-dark .homepage-studio[data-theme="cosmic-cartography"][data-appearance="auto"] {
+  --homepage-cosmic-bg: #060608;
+  --homepage-cosmic-module: rgb(12 12 16 / 100%);
+  --homepage-cosmic-elevated: #101014;
+  --homepage-cosmic-text: #d8d8dc;
+  --homepage-cosmic-secondary: #707078;
+  --homepage-cosmic-muted: #3e3e44;
+  --homepage-cosmic-border: rgb(200 200 210 / 7%);
+  --homepage-cosmic-border-strong: rgb(200 200 210 / 14%);
+  --homepage-cosmic-orbit: rgb(200 200 210 / 6%);
+  --homepage-cosmic-accent: #c4913a;
+  --homepage-cosmic-accent-dim: rgb(196 145 58 / 30%);
+  --homepage-cosmic-caret: #e0a84f;
+  --homepage-cosmic-geometry-line: rgb(216 216 220 / 32%);
+  --homepage-cosmic-geometry-point: rgb(216 216 220 / 68%);
+  --homepage-cosmic-geometry-ring: rgb(196 145 58 / 62%);
+  --homepage-cosmic-heatmap-0: #0e0e12;
+  --homepage-cosmic-heatmap-1: rgb(200 200 210 / 8%);
+  --homepage-cosmic-heatmap-2: rgb(200 200 210 / 20%);
+  --homepage-cosmic-heatmap-3: rgb(200 200 210 / 40%);
+  --homepage-cosmic-heatmap-4: rgb(200 200 210 / 75%);
+}
+
+.view-content.homepage-studio[data-theme="cosmic-cartography"] {
+  overflow-x: hidden;
+  background: var(--homepage-cosmic-bg);
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-shell {
+  position: relative;
+  gap: 1.5rem;
+  width: min(100%, 75rem);
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-background {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-shell > :not(.homepage-studio-cosmic-background) {
+  position: relative;
+  z-index: 1;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-background-svg {
+  position: absolute;
+  width: clamp(10rem, 15vw, 13rem);
+  height: auto;
+  aspect-ratio: 3 / 2;
+  overflow: visible;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-background-svg[data-position="left-high"] {
+  top: 19%;
+  left: 0;
+  width: clamp(10.75rem, 15vw, 12.5rem);
+  transform: translateX(-73%) rotate(-13deg);
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-background-svg[data-position="right-mid-high"] {
+  top: 42%;
+  right: 0;
+  width: clamp(9rem, 13vw, 10.75rem);
+  transform: translateX(87%) rotate(9deg);
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-background-svg[data-position="left-mid-low"] {
+  top: 61%;
+  left: 0;
+  width: clamp(11rem, 16vw, 13rem);
+  transform: translateX(-91%) rotate(17deg);
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-background-svg[data-position="right-deep"] {
+  top: 77%;
+  right: 0;
+  width: clamp(9.75rem, 14vw, 11.5rem);
+  transform: translateX(68%) rotate(-19deg);
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-bottom-art {
+  position: relative;
+  min-height: 12rem;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-bottom-art .homepage-studio-cosmic-background-svg {
+  position: absolute;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-bottom-art .homepage-studio-cosmic-background-svg[data-position="bottom-offset"] {
+  top: 1.5rem;
+  left: 7%;
+  width: 13rem;
+  transform: rotate(-7deg);
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-bottom-art .homepage-studio-cosmic-background-svg[data-position="bottom-full"] {
+  top: 0.5rem;
+  left: 61%;
+  width: 11.25rem;
+  transform: rotate(7deg);
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-background-segment {
+  fill: none;
+  stroke: var(--homepage-cosmic-geometry-line);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.25px;
+  vector-effect: non-scaling-stroke;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-background-ring {
+  fill: var(--homepage-cosmic-bg);
+  stroke: var(--homepage-cosmic-geometry-ring);
+  stroke-width: 1px;
+  vector-effect: non-scaling-stroke;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-background-orbit {
+  fill: none;
+  stroke: var(--homepage-cosmic-border-strong);
+  stroke-dasharray: 4 8;
+  stroke-width: 0.75px;
+  vector-effect: non-scaling-stroke;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-background-halo {
+  fill: var(--homepage-cosmic-accent-dim);
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-background-anchor {
+  fill: var(--homepage-cosmic-accent);
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-background-point {
+  fill: var(--homepage-cosmic-geometry-point);
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-masthead {
+  min-height: 2rem;
+  padding-bottom: 0.625rem;
+  border-bottom-color: var(--homepage-cosmic-border);
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-klein-mark {
+  width: 0.35rem;
+  height: 0.35rem;
+  background: var(--homepage-cosmic-accent);
+  transform: rotate(45deg);
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-title,
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-control-label,
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-coordinate {
+  color: var(--homepage-cosmic-secondary);
+  font-family: var(--font-monospace-theme), monospace;
+  font-size: 0.625rem;
+  font-weight: 300;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-control-label {
+  border-left-color: var(--homepage-cosmic-border);
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-coordinate {
+  color: var(--homepage-cosmic-muted);
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-settings-button {
+  border-color: var(--homepage-cosmic-border-strong);
+  border-radius: 0;
+  color: var(--homepage-cosmic-secondary);
+  background: transparent;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-settings-button:hover,
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-settings-button:focus-visible {
+  border-color: var(--homepage-cosmic-accent);
+  color: var(--homepage-cosmic-accent);
+  background: transparent;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-banner {
+  border-color: var(--homepage-cosmic-border-strong);
+  border-radius: 0;
+  background: var(--homepage-cosmic-bg);
+  box-shadow: none;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-banner::before,
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-banner-architecture,
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-banner-art::before {
+  display: none;
+  content: none;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-banner-art {
+  background: var(--homepage-cosmic-bg);
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-banner-art::after {
+  background: linear-gradient(
+    to bottom,
+    transparent 58%,
+    var(--homepage-cosmic-bg) 100%
+  );
+  content: "";
+  opacity: 0.7;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-banner[data-image-state="loaded"]::after {
+  background: rgb(6 6 8 / 24%);
+  content: "";
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-orbits {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  color: var(--homepage-cosmic-orbit);
+  shape-rendering: geometricprecision;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-orbit {
+  stroke: currentcolor;
+  stroke-width: 0.5;
+  vector-effect: non-scaling-stroke;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-star {
+  fill: var(--homepage-cosmic-secondary);
+  opacity: 0.45;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-anchor {
+  fill: var(--homepage-cosmic-accent);
+  opacity: 0.8;
+  transform-box: view-box;
+  transform-origin: 870px 85px;
+  animation: homepage-studio-cosmic-anchor-pulse 8s ease-in-out infinite;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-anchor circle:last-child {
+  fill: none;
+  stroke: var(--homepage-cosmic-accent);
+  stroke-width: 0.3;
+  opacity: 0.35;
+}
+
+@keyframes homepage-studio-cosmic-anchor-pulse {
+  0%,
+  100% {
+    opacity: 0.65;
+    transform: scale(0.96);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-banner-content {
+  inset: 0;
+  display: block;
+  padding: 1.75rem;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-banner-title-group {
+  position: absolute;
+  inset: 1.75rem auto auto 1.75rem;
+  gap: 0.375rem;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-banner-title {
+  color: var(--homepage-cosmic-secondary);
+  font-family: var(--font-monospace-theme), monospace;
+  font-size: 0.6875rem;
+  font-weight: 300;
+  letter-spacing: 0.3em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-banner-subtitle {
+  color: var(--homepage-cosmic-muted);
+  font-family: var(--font-monospace-theme), monospace;
+  font-size: 0.5625rem;
+  font-weight: 300;
+  letter-spacing: 0.12em;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-banner-temporal {
+  position: absolute;
+  inset: auto auto 1.75rem 1.75rem;
+  display: grid;
+  gap: 0.125rem;
+  margin: 0;
+  color: var(--homepage-cosmic-secondary);
+  font-family: var(--font-monospace-theme), monospace;
+  font-size: 0.6875rem;
+  font-weight: 300;
+  line-height: 1.3;
+  text-align: start;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-banner-date {
+  color: var(--homepage-cosmic-secondary);
+  font-weight: 300;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-banner-weekday {
+  color: var(--homepage-cosmic-muted);
+  font-size: 0.5625rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-banner-time {
+  color: var(--homepage-cosmic-accent);
+  font-size: 0.5625rem;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-modules {
+  gap: 1px;
+  background: var(--homepage-cosmic-border);
+  counter-reset: homepage-cosmic-module;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-module {
+  min-height: 18rem;
+  gap: 0;
+  padding: 1.75rem 1.5rem;
+  border: 0;
+  border-radius: 0;
+  background: var(--homepage-cosmic-module);
+  box-shadow: none;
+  counter-increment: homepage-cosmic-module;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-module[data-size="compact"] {
+  grid-column: span 5;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-module[data-size="expanded"] {
+  grid-column: span 7;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-module[data-module="heatmap"] {
+  grid-column: 1 / -1;
+  min-height: 20rem;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-module[data-module="file-groups"] {
+  min-height: 18rem;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-module::before,
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-module::after {
+  position: absolute;
+  z-index: 2;
+  inset-inline: 0;
+  height: 0.5rem;
+  background-repeat: no-repeat;
+  pointer-events: none;
+  content: "";
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-module::before {
+  top: 0;
+  background-image:
+    linear-gradient(var(--homepage-cosmic-border-strong), var(--homepage-cosmic-border-strong)),
+    linear-gradient(var(--homepage-cosmic-border-strong), var(--homepage-cosmic-border-strong)),
+    linear-gradient(var(--homepage-cosmic-border-strong), var(--homepage-cosmic-border-strong)),
+    linear-gradient(var(--homepage-cosmic-border-strong), var(--homepage-cosmic-border-strong));
+  background-position: left top, left top, right top, right top;
+  background-size: 0.5rem 0.5px, 0.5px 0.5rem, 0.5rem 0.5px, 0.5px 0.5rem;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-module::after {
+  bottom: 0;
+  background-image:
+    linear-gradient(var(--homepage-cosmic-border-strong), var(--homepage-cosmic-border-strong)),
+    linear-gradient(var(--homepage-cosmic-border-strong), var(--homepage-cosmic-border-strong)),
+    linear-gradient(var(--homepage-cosmic-border-strong), var(--homepage-cosmic-border-strong)),
+    linear-gradient(var(--homepage-cosmic-border-strong), var(--homepage-cosmic-border-strong));
+  background-position: left bottom, left bottom, right bottom, right bottom;
+  background-size: 0.5rem 0.5px, 0.5px 0.5rem, 0.5rem 0.5px, 0.5px 0.5rem;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-module-header {
+  min-height: 0;
+  align-items: start;
+  padding-bottom: 1.25rem;
+  border-bottom: 0;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-module-title-group {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, auto);
+  align-items: baseline;
+  gap: 0.75rem 0;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-module-title-group::after {
+  grid-column: 1 / -1;
+  width: 1.25rem;
+  height: 1px;
+  background: var(--homepage-cosmic-border-strong);
+  content: "";
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-module-title-marker {
+  display: inline-flex;
+  width: auto;
+  height: auto;
+  align-items: baseline;
+  background: transparent;
+  font-weight: 300;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-module-title-marker::before {
+  color: var(--homepage-cosmic-accent);
+  content: counter(homepage-cosmic-module, decimal-leading-zero);
+  font-family: var(--font-monospace-theme), monospace;
+  font-size: 0.8125rem;
+  letter-spacing: 0.04em;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-module-title-marker::after {
+  margin-inline: 0.5rem;
+  color: var(--homepage-cosmic-muted);
+  content: "/";
+  font-family: var(--font-interface-theme), Inter, sans-serif;
+  font-size: 0.8125rem;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-module-title-icon {
+  display: none;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-module-title {
+  overflow: visible;
+  grid-column: 2 / -1;
+  margin: 0;
+  color: var(--homepage-cosmic-text);
+  font-family: var(--font-interface-theme), Inter, sans-serif;
+  font-size: 0.9375rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-module-controls {
+  color: var(--homepage-cosmic-secondary);
+  font-family: var(--font-monospace-theme), monospace;
+  font-size: 0.5625rem;
+  font-weight: 300;
+  letter-spacing: 0.06em;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-module-controls button {
+  color: var(--homepage-cosmic-secondary);
+  font-weight: 300;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-module-controls button:hover,
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-module-controls button:focus-visible {
+  color: var(--homepage-cosmic-accent);
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-heatmap {
+  --homepage-heatmap-cell-size: 0.625rem;
+  --homepage-heatmap-cell-gap: 0.2rem;
+
+  padding-top: 0;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-heatmap-summary {
+  justify-content: end;
+  margin-bottom: 1.25rem;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-heatmap-range {
+  display: none;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-heatmap-range,
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-heatmap-today-label,
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-heatmap-month,
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-heatmap-weekday {
+  color: var(--homepage-cosmic-secondary);
+  font-family: var(--font-monospace-theme), monospace;
+  font-size: 0.625rem;
+  font-weight: 300;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-heatmap-today-value {
+  color: var(--homepage-cosmic-text);
+  font-family: var(--font-monospace-theme), monospace;
+  font-size: 1rem;
+  font-weight: 400;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-heatmap-viewport {
+  overflow: auto;
+  padding-bottom: 0.375rem;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-heatmap-cell {
+  border: 1px solid var(--homepage-cosmic-border-strong);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-heatmap-cell[data-level="0"] {
+  background: var(--homepage-cosmic-heatmap-0);
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-heatmap-cell[data-level="1"] {
+  background: var(--homepage-cosmic-heatmap-1);
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-heatmap-cell[data-level="2"] {
+  background: var(--homepage-cosmic-heatmap-2);
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-heatmap-cell[data-level="3"] {
+  background: var(--homepage-cosmic-heatmap-3);
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-heatmap-cell[data-level="4"] {
+  background: var(--homepage-cosmic-heatmap-4);
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] [data-today="true"].homepage-studio-heatmap-cell {
+  box-shadow: inset 0 0 0 1px var(--homepage-cosmic-accent);
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-heatmap-cell:focus-visible {
+  outline: 1px solid var(--homepage-cosmic-accent);
+  outline-offset: 2px;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-heatmap-legend {
+  justify-content: end;
+  color: var(--homepage-cosmic-secondary);
+  font-family: Georgia, "Songti SC", serif;
+  font-size: 0.6875rem;
+  font-weight: 300;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-heatmap-detail {
+  gap: 0.5rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  font-family: var(--font-monospace-theme), monospace;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-heatmap-detail[data-open="true"] {
+  margin-top: 1rem;
+  padding-top: 0.875rem;
+  border-top: 0.5px solid var(--homepage-cosmic-border-strong);
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-heatmap-detail-date-label,
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-heatmap-detail-total,
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-heatmap-file-title,
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-heatmap-file-value {
+  color: var(--homepage-cosmic-secondary);
+  font-weight: 300;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] button.homepage-studio-heatmap-file {
+  color: var(--homepage-cosmic-secondary);
+  font-weight: 300;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] button.homepage-studio-heatmap-file:hover,
+.homepage-studio[data-theme="cosmic-cartography"] button.homepage-studio-heatmap-file:focus-visible {
+  color: var(--homepage-cosmic-accent);
+  text-decoration: none;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-heatmap-detail-files {
+  max-height: 9rem;
+  align-items: center;
+  flex-flow: row wrap;
+  gap: 0.375rem 0;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-heatmap-detail-files li:not(:first-child)::before {
+  display: block;
+  width: 0;
+  height: 1.125rem;
+  margin-inline: 0.75rem;
+  border-inline-start: 1px dashed var(--homepage-cosmic-border-strong);
+  content: "";
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] button.homepage-studio-heatmap-file {
+  display: grid;
+  width: clamp(9rem, 16vw, 12rem);
+  grid-template-columns: minmax(0, 1fr) auto;
+  justify-content: initial;
+  column-gap: 0.75rem;
+  padding-block: 0.125rem;
+  text-align: start;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-heatmap-file-value {
+  justify-self: end;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-plan {
+  position: relative;
+  min-width: 0;
+  padding-top: 0.125rem;
+  padding-inline-start: 0;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-plan::before {
+  display: none;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-plan-template {
+  display: block;
+  margin-bottom: 1rem;
+  color: var(--homepage-cosmic-muted);
+  font-family: var(--font-monospace-theme), monospace;
+  font-size: 0.625rem;
+  font-weight: 300;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-plan-current {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0 0.75rem;
+  margin-bottom: 1.25rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-plan-primary {
+  grid-column: 1 / -1;
+  margin: 0 0 0.25rem;
+  color: var(--homepage-cosmic-text);
+  font-size: 1.25rem;
+  font-weight: 300;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-plan-current-time {
+  grid-column: 1 / -1;
+  margin-bottom: 0.875rem;
+  color: var(--homepage-cosmic-secondary);
+  font-family: var(--font-monospace-theme), monospace;
+  font-size: 0.75rem;
+  font-weight: 300;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-plan-progress {
+  position: relative;
+  grid-column: 1 / -1;
+  width: 100%;
+  height: 1px;
+  background: var(--homepage-cosmic-border-strong);
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-plan-progress-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--homepage-cosmic-accent);
+  transition: width 1s ease-out;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-plan-progress-dot {
+  position: absolute;
+  top: 50%;
+  width: 0.3125rem;
+  height: 0.3125rem;
+  border-radius: 50%;
+  background: var(--homepage-cosmic-accent);
+  transform: translate(-50%, -50%);
+  transition: left 1s ease-out;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-plan-progress-pct {
+  grid-column: 1 / -1;
+  justify-self: end;
+  margin-top: 0.5rem;
+  color: var(--homepage-cosmic-secondary);
+  font-family: var(--font-monospace-theme), monospace;
+  font-size: 0.625rem;
+  font-weight: 300;
+  line-height: 1;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-plan-timeline {
+  position: relative;
+  display: block;
+  margin: 0;
+  padding: 0 0 0 1.25rem;
+  list-style: none;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-plan-timeline::before {
+  position: absolute;
+  z-index: 0;
+  top: 0.375rem;
+  bottom: 0.375rem;
+  left: 0.3125rem;
+  width: 0.5px;
+  background: var(--homepage-cosmic-border-strong);
+  content: "";
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-plan-item {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  gap: 0.625rem;
+  min-height: 0;
+  padding: 0.375rem 0 0.375rem 0.875rem;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-plan-item::before {
+  /* Demo 6 geometry: 20px list inset - 18px node offset + 3px radius = 5px axis offset. */
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: -1.125rem;
+  width: 0.375rem;
+  height: 0.375rem;
+  box-sizing: border-box;
+  border: 1px solid var(--homepage-cosmic-secondary);
+  border-radius: 50%;
+  background: var(--homepage-cosmic-bg);
+  content: "";
+  transform: translateY(-50%);
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-plan-item[data-state="past"]::before {
+  border-color: var(--homepage-cosmic-muted);
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-plan-item[data-state="current"]::before {
+  border-color: var(--homepage-cosmic-accent);
+  background: var(--homepage-cosmic-accent);
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-plan-item-time,
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-plan-item-status {
+  color: var(--homepage-cosmic-secondary);
+  font-family: var(--font-monospace-theme), monospace;
+  font-size: 0.6875rem;
+  font-weight: 300;
+  flex-shrink: 0;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-plan-item-label {
+  color: var(--homepage-cosmic-text);
+  font-size: 0.8125rem;
+  font-weight: 300;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-plan-item[data-state="past"] .homepage-studio-cosmic-plan-item-label,
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-plan-item[data-state="past"] .homepage-studio-cosmic-plan-item-status {
+  color: var(--homepage-cosmic-muted);
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-plan-item[data-state="current"] .homepage-studio-cosmic-plan-item-label,
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-plan-item[data-state="current"] .homepage-studio-cosmic-plan-item-status {
+  color: var(--homepage-cosmic-accent);
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-plan-item[data-state="current"] .homepage-studio-cosmic-plan-item-time {
+  color: var(--homepage-cosmic-secondary);
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-plan-empty {
+  color: var(--homepage-cosmic-secondary);
+  font-family: var(--font-monospace-theme), monospace;
+  font-size: 0.6875rem;
+  font-weight: 300;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-journal,
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-file-groups {
+  padding-top: 0;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-tasks {
+  padding-top: 1rem;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-journal-toolbar {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-block: 0.75rem 0.125rem;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-journal-navigation {
+  display: contents;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-journal-date-group {
+  order: 1;
+  min-width: max-content;
+  justify-content: flex-start;
+  margin-inline-end: auto;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-journal-modes {
+  order: 2;
+  flex: 0 0 auto;
+  border-bottom: 0;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] button.homepage-studio-journal-delete {
+  order: 3;
+  flex: 0 0 auto;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-journal-navigation > button:first-child {
+  order: 4;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-journal-navigation > button:last-child {
+  order: 5;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-journal-date {
+  color: var(--homepage-cosmic-text);
+  font-family: var(--font-monospace-theme), monospace;
+  font-size: 0.75rem;
+  font-weight: 300;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-journal-weekday {
+  color: var(--homepage-cosmic-muted);
+  font-family: var(--font-monospace-theme), monospace;
+  font-size: 0.625rem;
+  font-weight: 300;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] button.homepage-studio-journal-icon-button,
+.homepage-studio[data-theme="cosmic-cartography"] button.homepage-studio-journal-mode,
+.homepage-studio[data-theme="cosmic-cartography"] button.homepage-studio-journal-delete {
+  border-radius: 0;
+  color: var(--homepage-cosmic-secondary);
+  background: transparent;
+  font-family: var(--font-monospace-theme), monospace;
+  font-weight: 300;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] button.homepage-studio-journal-icon-button {
+  width: 1.75rem;
+  min-width: 1.75rem;
+  height: 1.75rem;
+  min-height: 1.75rem;
+  border: 1px solid var(--homepage-cosmic-border-strong);
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-journal-button-icon {
+  display: inline-flex;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] button.homepage-studio-journal-mode {
+  padding-inline: 0.5rem;
+  border-bottom-width: 1px;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] button.homepage-studio-journal-mode + button.homepage-studio-journal-mode {
+  border-left: 0;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] button.homepage-studio-journal-icon-button:hover,
+.homepage-studio[data-theme="cosmic-cartography"] button.homepage-studio-journal-mode:hover,
+.homepage-studio[data-theme="cosmic-cartography"] button.homepage-studio-journal-delete:hover,
+.homepage-studio[data-theme="cosmic-cartography"] button.homepage-studio-journal-mode[data-active="true"] {
+  border-color: var(--homepage-cosmic-accent);
+  color: var(--homepage-cosmic-accent);
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-journal-editor,
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-journal-preview {
+  min-height: 13.75rem;
+  padding: 0.25rem 0.125rem;
+  border: 0;
+  border-radius: 0;
+  color: var(--homepage-cosmic-text);
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 1.6875rem,
+    var(--homepage-cosmic-border) 1.6875rem,
+    var(--homepage-cosmic-border) 1.75rem
+  );
+  box-shadow: none;
+  caret-color: var(--homepage-caret);
+  font-family: var(--font-interface-theme), Inter, sans-serif;
+  font-weight: 300;
+  line-height: 1.75rem;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] textarea.homepage-studio-journal-editor:focus,
+.homepage-studio[data-theme="cosmic-cartography"] textarea.homepage-studio-journal-editor:focus-visible {
+  border: 0;
+  border-radius: 0;
+  box-shadow: 0 -2px 8px var(--homepage-cosmic-accent-dim);
+  outline: none;
+  outline-offset: 0;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-task-list {
+  position: relative;
+  gap: 0;
+  padding-left: 1.5rem;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-task-list::before {
+  position: absolute;
+  top: 0.5rem;
+  bottom: 0.5rem;
+  left: 0.4375rem;
+  width: 0.5px;
+  background: var(--homepage-cosmic-border-strong);
+  content: "";
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-task {
+  position: relative;
+  min-height: 2rem;
+  padding: 0.4375rem 0;
+  border: 0;
+  background: transparent;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-task:hover,
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-task:focus-within {
+  background: transparent;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] button.homepage-studio-task-checkbox {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: -1.375rem;
+  width: 0.625rem;
+  min-width: 0.625rem;
+  height: 0.625rem;
+  min-height: 0.625rem;
+  box-sizing: border-box;
+  border: 1px solid var(--homepage-cosmic-secondary);
+  border-color: var(--homepage-cosmic-secondary);
+  border-radius: 50%;
+  background: var(--homepage-cosmic-module);
+  transform: translateY(-50%);
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] button.homepage-studio-task-checkbox::after {
+  display: none;
+  content: none;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] button.homepage-studio-task-checkbox:hover,
+.homepage-studio[data-theme="cosmic-cartography"] button.homepage-studio-task-checkbox[data-checked="true"] {
+  border-color: var(--homepage-cosmic-accent);
+  background: var(--homepage-cosmic-accent);
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-task-body {
+  min-width: 0;
+  flex: 1 1 auto;
+  color: var(--homepage-cosmic-text);
+  font-family: var(--font-interface-theme), Inter, sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 300;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-task::after {
+  display: none;
+  content: none;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-task-actions {
+  order: 3;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-task[data-completed="true"] .homepage-studio-task-body {
+  color: var(--homepage-cosmic-muted);
+  opacity: 0.55;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-task-archive {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-task-archive-list {
+  padding-left: 0;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-task-archive-list::before {
+  display: none;
+  content: none;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-task.homepage-studio-task-archived .homepage-studio-task-body,
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-task.homepage-studio-task-archived .homepage-studio-task-body a {
+  color: var(--homepage-cosmic-muted);
+  opacity: 0.55;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-task-actions {
+  opacity: 0;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-task:hover .homepage-studio-task-actions,
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-task:focus-within .homepage-studio-task-actions,
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-task[data-editing="true"] .homepage-studio-task-actions {
+  opacity: 1;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] input.homepage-studio-task-add-input,
+.homepage-studio[data-theme="cosmic-cartography"] input.homepage-studio-task-edit-input {
+  height: 2.125rem;
+  border: 0;
+  border-bottom: 1px solid var(--homepage-cosmic-border-strong);
+  border-radius: 0;
+  color: var(--homepage-cosmic-text);
+  background: transparent;
+  font-family: var(--font-monospace-theme), monospace;
+  font-size: 0.6875rem;
+  font-weight: 300;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] input.homepage-studio-task-add-input:focus,
+.homepage-studio[data-theme="cosmic-cartography"] input.homepage-studio-task-edit-input:focus {
+  border-bottom-color: var(--homepage-cosmic-accent);
+  box-shadow: none;
+  outline: none;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] input.homepage-studio-task-add-input::placeholder {
+  color: var(--homepage-cosmic-muted);
+  font-weight: 300;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] button.homepage-studio-task-add-button,
+.homepage-studio[data-theme="cosmic-cartography"] button.homepage-studio-task-text-button {
+  min-height: 2.125rem;
+  border: 1px solid var(--homepage-cosmic-border-strong);
+  border-radius: 0;
+  color: var(--homepage-cosmic-secondary);
+  background: transparent;
+  font-family: var(--font-monospace-theme), monospace;
+  font-size: 0.625rem;
+  font-weight: 300;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] button.homepage-studio-task-add-button:hover,
+.homepage-studio[data-theme="cosmic-cartography"] button.homepage-studio-task-text-button:hover {
+  border-color: var(--homepage-cosmic-accent);
+  color: var(--homepage-cosmic-accent);
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-file-groups {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-file-group {
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 0.5px dashed var(--homepage-cosmic-border-strong);
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-file-group:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-file-group-title {
+  min-height: 0;
+  gap: 0;
+  padding-bottom: 0;
+  border-bottom: 0;
+  color: var(--homepage-cosmic-text);
+  font-family: var(--font-interface-theme), Inter, sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 300;
+  letter-spacing: 0.04em;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-file-group-title-marker {
+  display: none;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-file-group-title-index {
+  display: inline-flex;
+  align-items: baseline;
+  color: var(--homepage-cosmic-accent);
+  font-family: var(--font-monospace-theme), monospace;
+  font-size: 0.625rem;
+  font-weight: 300;
+  letter-spacing: 0.12em;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-file-group-title-index::after {
+  margin-inline: 0.5rem;
+  color: var(--homepage-cosmic-muted);
+  content: "/";
+  font-family: var(--font-interface-theme), Inter, sans-serif;
+  letter-spacing: normal;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-file-group-title-name {
+  color: var(--homepage-cosmic-text);
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-file-group-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.125rem 1.5rem;
+  border: 0;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] button.homepage-studio-file-group-entry {
+  min-height: 1.875rem;
+  padding: 0.25rem 0 0.25rem 0.75rem;
+  border: 0;
+  color: var(--homepage-cosmic-secondary);
+  background: transparent;
+  font-family: var(--font-interface-theme), Inter, sans-serif;
+  font-size: 0.75rem;
+  font-weight: 300;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] button.homepage-studio-file-group-entry:hover,
+.homepage-studio[data-theme="cosmic-cartography"] button.homepage-studio-file-group-entry:focus-visible {
+  color: var(--homepage-cosmic-text);
+  background: transparent;
+  box-shadow: none;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] button.homepage-studio-file-group-entry::before {
+  display: block;
+  top: 50%;
+  left: 0;
+  width: 0.1875rem;
+  height: 0.1875rem;
+  border-radius: 50%;
+  background: transparent;
+  content: "";
+  transform: translateY(-50%);
+  transition: background 150ms ease;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] button.homepage-studio-file-group-entry:hover::before,
+.homepage-studio[data-theme="cosmic-cartography"] button.homepage-studio-file-group-entry:focus-visible::before {
+  background: var(--homepage-cosmic-accent);
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-file-group-entry-name {
+  overflow: visible;
+  transform: none;
+  text-decoration: none;
+  transition: color 150ms ease;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] button.homepage-studio-file-group-entry:hover .homepage-studio-file-group-entry-name,
+.homepage-studio[data-theme="cosmic-cartography"] button.homepage-studio-file-group-entry:focus-visible .homepage-studio-file-group-entry-name {
+  color: var(--homepage-cosmic-text);
+  transform: none;
+  text-decoration: none;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-file-group-entry-parent,
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-file-group-entry-status {
+  color: var(--homepage-cosmic-muted);
+  font-family: var(--font-monospace-theme), monospace;
+  font-size: 0.5625rem;
+  font-weight: 300;
+  transition: color 150ms ease;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] button.homepage-studio-file-group-entry:hover .homepage-studio-file-group-entry-parent,
+.homepage-studio[data-theme="cosmic-cartography"] button.homepage-studio-file-group-entry:focus-visible .homepage-studio-file-group-entry-parent {
+  color: var(--homepage-cosmic-text);
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-empty-state {
+  border: 1px dashed var(--homepage-cosmic-border-strong);
+  border-radius: 0;
+  background: transparent;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-scroll-spacer {
+  height: 8rem;
+  min-height: 8rem;
+  flex-basis: 8rem;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"][data-cosmic-page-visible="false"] .homepage-studio-cosmic-anchor,
+.homepage-studio[data-theme="cosmic-cartography"][data-cosmic-window-focused="false"] .homepage-studio-cosmic-anchor {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-anchor {
+    animation: none;
+  }
+}
+
+@container homepage-studio (max-width: 899px) {
+  .homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-module[data-size="expanded"],
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-module[data-size="compact"] {
+    grid-column: 1 / -1;
+  }
+
+  .homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-file-groups {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@container homepage-studio (max-width: 719px) {
+  .homepage-studio[data-theme="cosmic-cartography"] {
+    padding-inline: 1rem;
+  }
+
+  .homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-banner-content {
+    padding: 1rem;
+  }
+
+  .homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-banner-title-group,
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-banner-temporal {
+    inset-inline-start: 1rem;
+  }
+
+  .homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-banner-title-group {
+    inset-block-start: 1rem;
+  }
+
+  .homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-banner-temporal {
+    inset-block-end: 1rem;
+  }
+
+  .homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-module {
+    padding: 1.25rem 1rem;
+  }
+
+  .homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-file-groups {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-background-svg[data-position^="left"],
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-background-svg[data-position^="right"] {
+    display: none;
+  }
+
+  .homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-bottom-art {
+    min-height: 10.5rem;
+  }
+
+  .homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-bottom-art .homepage-studio-cosmic-background-svg[data-position="bottom-offset"] {
+    top: 2.25rem;
+    left: 0.75rem;
+    width: 9.75rem;
+  }
+
+  .homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-cosmic-bottom-art .homepage-studio-cosmic-background-svg[data-position="bottom-full"] {
+    top: 0.5rem;
+    right: 0.25rem;
+    left: auto;
+    width: 8rem;
+  }
+
+}
+
+@container homepage-studio (max-width: 359px) {
+  .homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-masthead-controls {
+    gap: 0.375rem;
+  }
+
+  .homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-coordinate {
+    display: none;
+  }
+}
+/* stylelint-enable no-descending-specificity, no-duplicate-selectors */

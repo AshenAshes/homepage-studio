@@ -1,0 +1,12 @@
+node_modules/
+coverage/
+*.map
+*.log
+.eslintcache
+.stylelintcache
+.tmp/
+
+.DS_Store
+.env
+.env.*
+!.env.example
