@@ -1,3 +1,10 @@
+import {
+  isMondayTaskDateKey,
+  isTaskDateKey,
+  type TaskRecurrence
+} from "./taskRecurrence";
+export type { TaskRecurrence } from "./taskRecurrence";
+
 export type TaskSourceDiagnosticCode =
   | "TASK-DUPLICATE-REGION"
   | "TASK-MISSING-ACTIVE"
@@ -6,7 +13,11 @@ export type TaskSourceDiagnosticCode =
   | "TASK-SECTION-ORDER"
   | "TASK-UNEXPECTED-HEADING"
   | "TASK-INVALID-CONTENT"
-  | "TASK-ARCHIVE-INCOMPLETE";
+  | "TASK-ARCHIVE-INCOMPLETE"
+  | "TASK-RECURRING-METADATA"
+  | "TASK-RECURRING-PERIOD"
+  | "TASK-RECURRING-WEEK-PERIOD"
+  | "TASK-RECURRING-ARCHIVE";
 
 export interface TaskSourceDiagnostic {
   readonly code: TaskSourceDiagnosticCode;
@@ -31,6 +42,8 @@ export interface HomepageTaskRecord {
   readonly rawLine: string;
   readonly text: string;
   readonly completed: boolean;
+  readonly recurrence: TaskRecurrence | null;
+  readonly period: string | null;
   readonly target: TaskTarget;
 }
 
@@ -77,6 +90,8 @@ interface StructuralHeading {
 
 const STRUCTURAL_HEADING = /^(#{1,3})(?!#)(?:[ \t]+(.*?))?[ \t]*$/u;
 const TASK_LINE = /^- \[([ xX])\] (.+)$/u;
+const RECURRING_TASK_SUFFIX = /^(.*?) \[homepage-studio-repeat:: (daily|weekly)\] \[homepage-studio-period:: (\d{4}-\d{2}-\d{2})\]$/u;
+const RESERVED_RECURRING_FIELD = /\[homepage-studio-(?:repeat|period)::/u;
 const FENCE_OPEN = /^ {0,3}(`{3,}|~{3,})/u;
 
 const scanLines = (source: string): readonly SourceLine[] => {
@@ -199,6 +214,44 @@ const parseSectionTasks = (
       continue;
     }
     const completed = marker.toLowerCase() === "x";
+    const recurring = RECURRING_TASK_SUFFIX.exec(text);
+    if (
+      (recurring === null && RESERVED_RECURRING_FIELD.test(text))
+      || (recurring?.[1] !== undefined
+        && RESERVED_RECURRING_FIELD.test(recurring[1]))
+    ) {
+      diagnostics.push({
+        code: "TASK-RECURRING-METADATA",
+        line: line.number,
+        details: "Recurring task fields must be complete, ordered, and at the end of the task line."
+      });
+    }
+    const recurrence = recurring?.[2] as TaskRecurrence | undefined;
+    const period = recurring?.[3];
+    if (period !== undefined && !isTaskDateKey(period)) {
+      diagnostics.push({
+        code: "TASK-RECURRING-PERIOD",
+        line: line.number,
+        details: "Recurring task period must be a real YYYY-MM-DD date."
+      });
+    } else if (
+      recurrence === "weekly"
+      && period !== undefined
+      && !isMondayTaskDateKey(period)
+    ) {
+      diagnostics.push({
+        code: "TASK-RECURRING-WEEK-PERIOD",
+        line: line.number,
+        details: "Weekly task period must be a Monday."
+      });
+    }
+    if (section === "archive" && recurring !== null) {
+      diagnostics.push({
+        code: "TASK-RECURRING-ARCHIVE",
+        line: line.number,
+        details: "Recurring tasks must remain in Active."
+      });
+    }
     if (section === "archive" && !completed) {
       diagnostics.push({
         code: "TASK-ARCHIVE-INCOMPLETE",
@@ -212,8 +265,10 @@ const parseSectionTasks = (
       lineStart: line.structuralStart,
       lineEnd: line.end,
       rawLine: line.structuralText,
-      text,
-      completed
+      text: recurring?.[1] ?? text,
+      completed,
+      recurrence: recurrence ?? null,
+      period: period ?? null
     });
   }
   return tasks;

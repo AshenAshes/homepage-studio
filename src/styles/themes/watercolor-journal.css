@@ -20,6 +20,7 @@
   --homepage-text: #2b3e55;
   --homepage-muted: #3a4f66;
   --homepage-faint: #7b8ba0;
+  --homepage-recurring-task: #64758b;
   --homepage-border: rgb(74 111 165 / 20%);
   --homepage-border-subtle: rgb(74 111 165 / 10%);
   --homepage-focus: #4a6fa5;
@@ -56,6 +57,7 @@
   --homepage-text: #e2e8f0;
   --homepage-muted: #bac6d6;
   --homepage-faint: #75849a;
+  --homepage-recurring-task: #95a4b8;
   --homepage-border: rgb(100 145 210 / 25%);
   --homepage-border-subtle: rgb(100 145 210 / 20%);
   --homepage-focus: #8cb9f5;

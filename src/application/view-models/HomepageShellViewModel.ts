@@ -196,6 +196,8 @@ export interface HomepageModuleViewModel {
       readonly target: TaskTarget;
       readonly text: string;
       readonly completed: boolean;
+      readonly recurrence: "daily" | "weekly" | null;
+      readonly recurrenceLabel: string | null;
       readonly editingText: string | null;
       readonly checkboxLabel: string;
       readonly editLabel: string;
@@ -704,7 +706,7 @@ export const createHomepageShellViewModel = (
     ? taskInput.taskSource.tasks.filter((task) => task.section === "archive")
     : [];
   const completedTaskRecords = activeTaskRecords.filter(
-    (task) => task.completed
+    (task) => task.completed && task.recurrence === null
   );
   const interactionState = taskInteraction?.state ?? { type: "idle" };
   const editingRecord = interactionState.type === "editing" && taskReady
@@ -1139,7 +1141,8 @@ export const createHomepageShellViewModel = (
                     .toString()
                 )
                 .replace("{total}", activeTaskRecords.length.toString()),
-              archiveAllLabel: completedTaskRecords.length === 0
+              archiveAllLabel: !data.tasks.showCompleted
+                || completedTaskRecords.length === 0
                 ? null
                 : messages.tasksArchiveAll,
               archiveToggleLabel: archivedTaskRecords.length === 0
@@ -1179,28 +1182,46 @@ export const createHomepageShellViewModel = (
               items: taskItems.slice(
                 0,
                 taskInteraction?.visibleLimit ?? taskItems.length
-              ).map((task) => ({
-                target: task.target,
-                text: task.text,
-                completed: task.completed,
-                editingText:
-                  interactionState.type === "editing"
-                  && editingRecord?.lineStart === task.lineStart
-                    ? interactionState.text
+              ).map((task) => {
+                const recurrenceLabel = task.recurrence === "daily"
+                  ? messages.tasksRecurringDaily
+                  : task.recurrence === "weekly"
+                    ? messages.tasksRecurringWeekly
+                    : null;
+                const accessibleText = recurrenceLabel === null
+                  ? task.text
+                  : `${task.text}, ${recurrenceLabel}`;
+                return {
+                  target: task.target,
+                  text: task.text,
+                  completed: task.completed,
+                  recurrence: task.recurrence,
+                  recurrenceLabel,
+                  editingText:
+                    interactionState.type === "editing"
+                    && editingRecord?.lineStart === task.lineStart
+                      ? interactionState.text
+                      : null,
+                  checkboxLabel: (
+                    task.completed
+                      ? messages.tasksReopen
+                      : messages.tasksComplete
+                  ).replace("{task}", accessibleText),
+                  editLabel: messages.tasksEdit.replace(
+                    "{task}",
+                    accessibleText
+                  ),
+                  archiveLabel: task.completed && task.recurrence === null
+                    ? messages.tasksArchive.replace("{task}", task.text)
                     : null,
-                checkboxLabel: (
-                  task.completed
-                    ? messages.tasksReopen
-                    : messages.tasksComplete
-                ).replace("{task}", task.text),
-                editLabel: messages.tasksEdit.replace("{task}", task.text),
-                archiveLabel: task.completed
-                  ? messages.tasksArchive.replace("{task}", task.text)
-                  : null,
-                deleteLabel: messages.tasksDelete.replace("{task}", task.text),
-                saveLabel: messages.tasksSaveEdit,
-                cancelLabel: messages.cancel
-              })),
+                  deleteLabel: messages.tasksDelete.replace(
+                    "{task}",
+                    accessibleText
+                  ),
+                  saveLabel: messages.tasksSaveEdit,
+                  cancelLabel: messages.cancel
+                };
+              }),
               archivedItems: archivedTaskRecords.slice(
                 0,
                 taskInteraction?.archivedVisibleLimit

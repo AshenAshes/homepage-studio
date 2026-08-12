@@ -28,6 +28,7 @@
   --homepage-text: var(--homepage-cosmic-text);
   --homepage-muted: var(--homepage-cosmic-secondary);
   --homepage-faint: var(--homepage-cosmic-muted);
+  --homepage-recurring-task: var(--homepage-cosmic-secondary);
   --homepage-border: var(--homepage-cosmic-border);
   --homepage-border-subtle: var(--homepage-cosmic-border);
   --homepage-focus: var(--homepage-cosmic-accent);

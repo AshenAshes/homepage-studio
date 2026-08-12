@@ -16,7 +16,7 @@ Homepage Studio is a desktop-only homepage for Obsidian. It brings writing activ
 
 - Writing heatmap with daily totals and per-file change details.
 - Single-file journal using `## YYYY-MM-DD` date sections.
-- Active and archived tasks stored in a bounded Markdown section.
+- One-time tasks plus daily and weekly tasks that reset from the local calendar, all stored in a bounded Markdown section.
 - Daily and weekly plan templates, including overnight time blocks.
 - Manually curated file groups with rename and missing-file recovery.
 - Vault-image and optional remote-image banners with offline theme fallbacks.
@@ -62,7 +62,7 @@ Homepage Studio reads or writes only explicitly configured sources:
 
 - Plugin settings and module state are stored in the plugin's own `data.json`. Previous valid state is backed up before the first write of a session and before destructive reset or migration operations.
 - The journal source is one Markdown file divided by second-level date headings such as `## 2026-08-10`.
-- The task source is one Markdown file with a Homepage-managed active/archive boundary.
+- The task source is one Markdown file with a Homepage-managed active/archive boundary. One-time tasks can be archived; recurring tasks stay active and keep their cycle state in the file.
 - File groups contain explicit vault file paths; the plugin does not build a full-vault content index.
 - The heatmap records positive net growth from Markdown files edited while open in the Obsidian editor. It does not count synchronization, imports, external edits, or non-Markdown files.
 - Vault banners stay local. A remote banner URL is the only optional external request and is used only when the user configures that URL. Homepage Studio has no analytics, telemetry, crash reporting, or background update service.

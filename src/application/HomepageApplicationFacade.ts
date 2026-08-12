@@ -60,10 +60,16 @@ import type {
 } from "./services/TaskSourceService";
 import type { TaskMutation } from "../domain/tasks/taskOperations";
 import type {
+  TaskRecurrence,
   TaskSourceDiagnostic,
   TaskSourceDocument,
   TaskTarget
 } from "../domain/tasks/taskSource";
+import {
+  taskPeriodKeyFor,
+  taskPeriodKeysForDate,
+  type TaskPeriodKeys
+} from "../domain/tasks/taskRecurrence";
 import {
   normalizeDailyTemplate,
   normalizePlanLabel,
@@ -303,6 +309,14 @@ export interface TaskSettings {
   readonly editable: boolean;
   readonly filePath: string | null;
   readonly showCompleted: boolean;
+  readonly recurringEditable: boolean;
+  readonly recurringState: TaskRuntimeState["type"];
+  readonly recurringTasks: readonly {
+    readonly target: TaskTarget;
+    readonly text: string;
+    readonly recurrence: TaskRecurrence;
+  }[];
+  readonly diagnostics: readonly TaskSourceDiagnostic[];
 }
 
 export interface DailyPlanSettings {
@@ -563,6 +577,7 @@ export class HomepageApplicationFacade {
   private archivedTaskVisibleLimit = TASK_PAGE_SIZE;
   private fileEntryVisibleLimit = FILE_ENTRY_PAGE_SIZE;
   private readonly taskRuntimeListeners = new Set<() => void>();
+  private requestRecurringTaskRefresh = (): void => undefined;
   private readonly fileEntryRuntimeListeners = new Set<() => void>();
   private readonly bannerRuntimeListeners = new Set<() => void>();
   private removedFileEntry: {
@@ -914,14 +929,40 @@ export class HomepageApplicationFacade {
     let disposed = false;
     let configuredPath = "";
     let generation = 0;
+    let periodSignature = "";
+    let refreshFailureEpisode = "";
     let stopWatching = (): void => undefined;
+
+    const setRefreshFailure = (
+      result: TaskSourceMutationResult,
+      path: string
+    ): void => {
+      const episode = `${path}:${result.type}`;
+      if (episode !== refreshFailureEpisode) {
+        refreshFailureEpisode = episode;
+        this.taskWriteFailure.notify(result.type, path);
+      }
+      if (result.type === "missing-source") {
+        this.setTaskRuntimeState(result);
+      } else if (result.type === "missing-region") {
+        this.setTaskRuntimeState({ type: "missing-region", path });
+      } else if (result.type === "invalid-source") {
+        this.setTaskRuntimeState({
+          type: "invalid-source",
+          path,
+          diagnostics: result.diagnostics
+        });
+      } else if (result.type === "io-error") {
+        this.setTaskRuntimeState({ type: "io-error", path });
+      }
+    };
 
     const loadPath = (path: string, announceLoading: boolean): void => {
       const currentGeneration = ++generation;
       if (announceLoading) {
         this.setTaskRuntimeState({ type: "loading", path });
       }
-      void this.taskSource.load(path).then((result) => {
+      void this.taskSource.load(path).then(async (result) => {
         if (
           disposed
           || currentGeneration !== generation
@@ -929,27 +970,83 @@ export class HomepageApplicationFacade {
         ) {
           return;
         }
-        this.setTaskRuntimeState(result.type === "loaded"
-          ? {
+        if (result.type !== "loaded") {
+          this.setTaskRuntimeState(result);
+          const episode = `${path}:${result.type}`;
+          if (episode !== refreshFailureEpisode) {
+            refreshFailureEpisode = episode;
+            this.taskWriteFailure.notify(result.type, path);
+          }
+          return;
+        }
+        const periodKeys = this.getCurrentTaskPeriodKeys();
+        if (periodKeys === null) {
+          this.setTaskRuntimeState({
             type: "ready",
             path: result.path,
             taskSource: result.taskSource
+          });
+          return;
+        }
+        const refreshed = await this.taskSource.mutate(path, {
+          type: "refresh-recurring",
+          periodKeys
+        });
+        if (
+          disposed
+          || currentGeneration !== generation
+          || configuredPath !== path
+        ) {
+          return;
+        }
+        if (refreshed.type !== "applied" && refreshed.type !== "noop") {
+          setRefreshFailure(refreshed, path);
+          return;
+        }
+        const latest = refreshed.type === "applied"
+          ? await this.taskSource.load(path)
+          : result;
+        if (
+          disposed
+          || currentGeneration !== generation
+          || configuredPath !== path
+        ) {
+          return;
+        }
+        refreshFailureEpisode = "";
+        this.setTaskRuntimeState(latest.type === "loaded"
+          ? {
+            type: "ready",
+            path: latest.path,
+            taskSource: latest.taskSource
           }
-          : result);
+          : latest);
       });
     };
 
     const bindConfiguration = (): void => {
       const state = this.store.getState();
       const path = state.mode === "ready"
-        && this.isModuleVisible(state.data, "tasks")
         ? state.data.tasks.filePath
         : null;
       const nextPath = path ?? "";
       if (nextPath === configuredPath) {
+        const periodKeys = this.getCurrentTaskPeriodKeys();
+        const nextSignature = periodKeys === null
+          ? ""
+          : `${periodKeys.daily}|${periodKeys.weekly}`;
+        if (path !== null && nextSignature !== periodSignature) {
+          periodSignature = nextSignature;
+          loadPath(path, false);
+        }
         return;
       }
       configuredPath = nextPath;
+      const periodKeys = this.getCurrentTaskPeriodKeys();
+      periodSignature = periodKeys === null
+        ? ""
+        : `${periodKeys.daily}|${periodKeys.weekly}`;
+      refreshFailureEpisode = "";
       this.taskInteractionState = { type: "idle" };
       this.taskArchiveVisible = false;
       this.taskVisibleLimit = TASK_PAGE_SIZE;
@@ -979,28 +1076,67 @@ export class HomepageApplicationFacade {
     };
 
     const unsubscribe = this.store.subscribeState(bindConfiguration);
+    const requestRefresh = (): void => {
+      if (!disposed && configuredPath !== "") {
+        loadPath(configuredPath, false);
+      }
+    };
+    this.requestRecurringTaskRefresh = requestRefresh;
     bindConfiguration();
     return () => {
       disposed = true;
       generation += 1;
       unsubscribe();
       stopWatching();
+      if (this.requestRecurringTaskRefresh === requestRefresh) {
+        this.requestRecurringTaskRefresh = () => undefined;
+      }
     };
+  }
+
+  public refreshRecurringTasks(): void {
+    this.requestRecurringTaskRefresh();
   }
 
   public getTaskSettings(): TaskSettings {
     const state = this.store.getState();
+    const recurringTasks = this.taskRuntimeState.type === "ready"
+      ? this.taskRuntimeState.taskSource.tasks.flatMap((task) =>
+        task.section === "active" && task.recurrence !== null
+          ? [{
+            target: task.target,
+            text: task.text,
+            recurrence: task.recurrence
+          }]
+          : []
+      )
+      : [];
+    const diagnostics = this.taskRuntimeState.type === "invalid-source"
+      ? this.taskRuntimeState.diagnostics
+      : [];
     return state.mode === "ready"
       ? {
         editable: true,
         filePath: state.data.tasks.filePath,
-        showCompleted: state.data.tasks.showCompleted
+        showCompleted: state.data.tasks.showCompleted,
+        recurringEditable: this.taskRuntimeState.type === "ready",
+        recurringState: this.taskRuntimeState.type,
+        recurringTasks,
+        diagnostics
       }
       : {
         editable: false,
         filePath: null,
-        showCompleted: true
+        showCompleted: true,
+        recurringEditable: false,
+        recurringState: "unconfigured",
+        recurringTasks: [],
+        diagnostics: []
       };
+  }
+
+  public subscribeTaskSettings(listener: () => void): () => void {
+    return this.subscribeTaskRuntime(listener);
   }
 
   public setShowCompletedTasks(showCompleted: boolean): void {
@@ -1067,6 +1203,21 @@ export class HomepageApplicationFacade {
     return this.mutateTask({ type: "add", text });
   }
 
+  public addRecurringTask(
+    text: string,
+    recurrence: TaskRecurrence
+  ): Promise<TaskSourceMutationResult> {
+    const periodKeys = this.getCurrentTaskPeriodKeys();
+    return periodKeys === null
+      ? Promise.resolve({ type: "invalid-task", reason: "invalid-period" })
+      : this.mutateTask({
+        type: "add-recurring",
+        text,
+        recurrence,
+        period: taskPeriodKeyFor(recurrence, periodKeys)
+      });
+  }
+
   public editTask(
     target: TaskTarget,
     text: string
@@ -1083,6 +1234,38 @@ export class HomepageApplicationFacade {
       target,
       completed
     });
+  }
+
+  public setRecurringTaskType(
+    target: TaskTarget,
+    recurrence: TaskRecurrence
+  ): Promise<TaskSourceMutationResult> {
+    const periodKeys = this.getCurrentTaskPeriodKeys();
+    return periodKeys === null
+      ? Promise.resolve({ type: "invalid-task", reason: "invalid-period" })
+      : this.mutateTask({
+        type: "set-recurrence",
+        target,
+        recurrence,
+        period: taskPeriodKeyFor(recurrence, periodKeys)
+      });
+  }
+
+  public updateRecurringTask(
+    target: TaskTarget,
+    text: string,
+    recurrence: TaskRecurrence
+  ): Promise<TaskSourceMutationResult> {
+    const periodKeys = this.getCurrentTaskPeriodKeys();
+    return periodKeys === null
+      ? Promise.resolve({ type: "invalid-task", reason: "invalid-period" })
+      : this.mutateTask({
+        type: "update-recurring",
+        target,
+        text,
+        recurrence,
+        period: taskPeriodKeyFor(recurrence, periodKeys)
+      }, text);
   }
 
   public async deleteTask(
@@ -1156,7 +1339,10 @@ export class HomepageApplicationFacade {
     }
     const targets = runtime.taskSource.tasks
       .filter(
-        (task) => task.section === "active" && task.completed
+        (task) =>
+          task.section === "active"
+          && task.completed
+          && task.recurrence === null
       )
       .map((task) => task.target);
     return this.mutateTask({
@@ -3057,7 +3243,7 @@ export class HomepageApplicationFacade {
   }
 
   private notifyTaskRuntime(): void {
-    for (const listener of this.taskRuntimeListeners) {
+    for (const listener of [...this.taskRuntimeListeners]) {
       listener();
     }
   }
@@ -3126,6 +3312,18 @@ export class HomepageApplicationFacade {
       this.selectedJournalDateKey = todayKey;
     }
     return this.selectedJournalDateKey;
+  }
+
+  private getCurrentTaskPeriodKeys(): TaskPeriodKeys | null {
+    const dateKey = this.store.getLocalTime()?.dateKey;
+    if (dateKey === undefined) {
+      return null;
+    }
+    try {
+      return taskPeriodKeysForDate(dateKey);
+    } catch {
+      return null;
+    }
   }
 
   private syncJournalDraft(): void {

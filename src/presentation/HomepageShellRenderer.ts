@@ -1621,12 +1621,22 @@ const renderModule = (
           cls: "homepage-studio-task-actions"
         });
         if (item.editingText === null) {
+          const content = body.createDiv({
+            cls: "homepage-studio-task-content"
+          });
           actions.renderMarkdown(
             item.text,
             module.tasks.path,
-            body,
+            content,
             scope
           );
+          if (item.recurrenceLabel !== null) {
+            body.createSpan({
+              cls: "homepage-studio-task-recurrence",
+              text: item.recurrenceLabel,
+              attr: { "aria-hidden": "true" }
+            });
+          }
           const edit = rowActions.createEl("button", {
             cls: "homepage-studio-task-icon-button",
             attr: {
@@ -1683,6 +1693,13 @@ const renderModule = (
           });
           attachAccessibleLabel(editInput, body, item.editLabel);
           editInput.value = item.editingText;
+          if (item.recurrenceLabel !== null) {
+            body.createSpan({
+              cls: "homepage-studio-task-recurrence",
+              text: item.recurrenceLabel,
+              attr: { "aria-hidden": "true" }
+            });
+          }
           const save = rowActions.createEl("button", {
             cls: "homepage-studio-task-text-button",
             text: item.saveLabel,

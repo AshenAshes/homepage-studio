@@ -24,6 +24,7 @@
   --homepage-text: var(--homepage-archive-text);
   --homepage-muted: var(--homepage-archive-muted);
   --homepage-faint: var(--homepage-archive-faint);
+  --homepage-recurring-task: var(--homepage-archive-muted);
   --homepage-border: var(--homepage-archive-line);
   --homepage-border-subtle: var(--homepage-archive-border);
   --homepage-focus: var(--homepage-archive-accent-strong);

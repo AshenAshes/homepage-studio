@@ -131,6 +131,17 @@ export interface Messages {
   readonly tasksCreateFile: string;
   readonly tasksShowCompleted: string;
   readonly tasksShowCompletedDescription: string;
+  readonly tasksRecurringHeading: string;
+  readonly tasksRecurringDescription: string;
+  readonly tasksRecurringCreate: string;
+  readonly tasksRecurringCreateDescription: string;
+  readonly tasksRecurringTaskName: string;
+  readonly tasksRecurringNamePlaceholder: string;
+  readonly tasksRecurringType: string;
+  readonly tasksRecurringAdd: string;
+  readonly tasksRecurringSave: string;
+  readonly tasksRecurringEmpty: string;
+  readonly tasksRecurringUnavailable: string;
   readonly tasksSourceActivated: string;
   readonly tasksSourceMissing: string;
   readonly tasksSourceInvalid: string;
@@ -158,6 +169,8 @@ export interface Messages {
   readonly tasksAddPlaceholder: string;
   readonly tasksAdd: string;
   readonly tasksNoActive: string;
+  readonly tasksRecurringDaily: string;
+  readonly tasksRecurringWeekly: string;
   readonly tasksComplete: string;
   readonly tasksReopen: string;
   readonly tasksEdit: string;

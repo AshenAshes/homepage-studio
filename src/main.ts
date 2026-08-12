@@ -228,6 +228,7 @@ export default class HomepageStudioPlugin extends Plugin {
         return;
       }
       clock.refresh();
+      application.refreshRecurringTasks();
       clock.start();
     };
     const bindClockWindow = (targetWindow: Window): void => {

@@ -2,14 +2,26 @@ import {
   createMinimalTaskSource,
   parseHomepageTaskSource,
   type HomepageTaskRecord,
+  type TaskRecurrence,
   type TaskSourceDiagnostic,
   type TaskSourceDocument,
   type TaskTarget
 } from "./taskSource";
+import {
+  isMondayTaskDateKey,
+  isTaskDateKey,
+  type TaskPeriodKeys
+} from "./taskRecurrence";
 
 export type TaskMutation =
   | { readonly type: "append-region" }
   | { readonly type: "add"; readonly text: string }
+  | {
+    readonly type: "add-recurring";
+    readonly text: string;
+    readonly recurrence: TaskRecurrence;
+    readonly period: string;
+  }
   | {
     readonly type: "edit";
     readonly target: TaskTarget;
@@ -19,6 +31,23 @@ export type TaskMutation =
     readonly type: "set-completed";
     readonly target: TaskTarget;
     readonly completed: boolean;
+  }
+  | {
+    readonly type: "set-recurrence";
+    readonly target: TaskTarget;
+    readonly recurrence: TaskRecurrence;
+    readonly period: string;
+  }
+  | {
+    readonly type: "update-recurring";
+    readonly target: TaskTarget;
+    readonly text: string;
+    readonly recurrence: TaskRecurrence;
+    readonly period: string;
+  }
+  | {
+    readonly type: "refresh-recurring";
+    readonly periodKeys: TaskPeriodKeys;
   }
   | { readonly type: "archive"; readonly target: TaskTarget }
   | {
@@ -41,7 +70,15 @@ export type TaskMutationResult =
   }
   | {
     readonly type: "invalid-task";
-    readonly reason: "empty" | "multiline" | "not-completed" | "not-archived";
+    readonly reason:
+      | "empty"
+      | "multiline"
+      | "reserved-metadata"
+      | "invalid-period"
+      | "not-completed"
+      | "not-archived"
+      | "not-recurring"
+      | "recurring";
   }
   | {
     readonly type: "conflict";
@@ -53,6 +90,9 @@ const validateText = (
 ): Extract<TaskMutationResult, { readonly type: "invalid-task" }> | null => {
   if (/[\r\n]/u.test(text)) {
     return { type: "invalid-task", reason: "multiline" };
+  }
+  if (/\[homepage-studio-(?:repeat|period)::/u.test(text)) {
+    return { type: "invalid-task", reason: "reserved-metadata" };
   }
   return text.trim() === ""
     ? { type: "invalid-task", reason: "empty" }
@@ -121,11 +161,23 @@ const locateTarget = (
 
 const insertTask = (
   taskSource: TaskSourceDocument,
-  text: string
+  text: string,
+  recurrence?: TaskRecurrence,
+  period?: string
 ): TaskMutationResult => {
   const invalid = validateText(text);
   if (invalid !== null) {
     return invalid;
+  }
+  if (
+    recurrence !== undefined
+    && (
+      period === undefined
+      || !isTaskDateKey(period)
+      || (recurrence === "weekly" && !isMondayTaskDateKey(period))
+    )
+  ) {
+    return { type: "invalid-task", reason: "invalid-period" };
   }
   const activeTasks = taskSource.tasks.filter(
     (task) => task.section === "active"
@@ -135,10 +187,13 @@ const insertTask = (
   const prefix = last === undefined
     ? taskSource.newline
     : "";
+  const taskText = recurrence === undefined || period === undefined
+    ? text
+    : `${text} [homepage-studio-repeat:: ${recurrence}] [homepage-studio-period:: ${period}]`;
   const source = [
     taskSource.source.slice(0, offset),
     prefix,
-    `- [ ] ${text}`,
+    `- [ ] ${taskText}`,
     taskSource.newline,
     taskSource.source.slice(offset)
   ].join("");
@@ -161,6 +216,47 @@ const replaceLine = (
       taskSource.source.slice(task.lineStart + task.rawLine.length)
     ].join("")
   };
+};
+
+const taskBody = (
+  task: HomepageTaskRecord,
+  text: string = task.text
+): string => task.recurrence === null || task.period === null
+  ? text
+  : `${text} [homepage-studio-repeat:: ${task.recurrence}] [homepage-studio-period:: ${task.period}]`;
+
+const refreshRecurringTasks = (
+  taskSource: TaskSourceDocument,
+  periodKeys: TaskPeriodKeys
+): TaskMutationResult => {
+  if (
+    !isTaskDateKey(periodKeys.daily)
+    || !isMondayTaskDateKey(periodKeys.weekly)
+  ) {
+    return { type: "invalid-task", reason: "invalid-period" };
+  }
+  const staleTasks = taskSource.tasks.filter((task) =>
+    task.recurrence !== null
+    && task.period !== periodKeys[task.recurrence]
+  );
+  if (staleTasks.length === 0) {
+    return { type: "noop" };
+  }
+  const parts: string[] = [];
+  let cursor = 0;
+  for (const task of staleTasks) {
+    const recurrence = task.recurrence;
+    if (recurrence === null) {
+      continue;
+    }
+    parts.push(taskSource.source.slice(cursor, task.lineStart));
+    parts.push(
+      `- [ ] ${task.text} [homepage-studio-repeat:: ${recurrence}] [homepage-studio-period:: ${periodKeys[recurrence]}]`
+    );
+    cursor = task.lineStart + task.rawLine.length;
+  }
+  parts.push(taskSource.source.slice(cursor));
+  return { type: "applied", source: parts.join("") };
 };
 
 const locateTargets = (
@@ -277,15 +373,29 @@ export const mutateHomepageTaskSource = (
   if (mutation.type === "add") {
     return insertTask(taskSource, mutation.text);
   }
+  if (mutation.type === "add-recurring") {
+    return insertTask(
+      taskSource,
+      mutation.text,
+      mutation.recurrence,
+      mutation.period
+    );
+  }
+  if (mutation.type === "refresh-recurring") {
+    return refreshRecurringTasks(taskSource, mutation.periodKeys);
+  }
   if (mutation.type === "archive-completed") {
     const locatedTasks = locateTargets(taskSource, mutation.targets);
     if ("type" in locatedTasks) {
       return locatedTasks;
     }
-    return locatedTasks.every(
+    const archivable = locatedTasks.filter(
+      (task) => task.recurrence === null
+    );
+    return archivable.every(
       (task) => task.section === "active" && task.completed
     )
-      ? moveTasks(taskSource, locatedTasks, "archive")
+      ? moveTasks(taskSource, archivable, "archive")
       : { type: "invalid-task", reason: "not-completed" };
   }
   const located = locateTarget(taskSource, mutation.target);
@@ -300,17 +410,49 @@ export const mutateHomepageTaskSource = (
     return replaceLine(
       taskSource,
       located,
-      `- [${located.completed ? "x" : " "}] ${mutation.text}`
+      `- [${located.completed ? "x" : " "}] ${taskBody(located, mutation.text)}`
     );
   }
   if (mutation.type === "set-completed") {
     return replaceLine(
       taskSource,
       located,
-      `- [${mutation.completed ? "x" : " "}] ${located.text}`
+      `- [${mutation.completed ? "x" : " "}] ${taskBody(located)}`
+    );
+  }
+  if (
+    mutation.type === "set-recurrence"
+    || mutation.type === "update-recurring"
+  ) {
+    if (located.recurrence === null) {
+      return { type: "invalid-task", reason: "not-recurring" };
+    }
+    const text = mutation.type === "update-recurring"
+      ? mutation.text
+      : located.text;
+    const invalid = validateText(text);
+    if (invalid !== null) {
+      return invalid;
+    }
+    if (
+      !isTaskDateKey(mutation.period)
+      || (
+        mutation.recurrence === "weekly"
+        && !isMondayTaskDateKey(mutation.period)
+      )
+    ) {
+      return { type: "invalid-task", reason: "invalid-period" };
+    }
+    return replaceLine(
+      taskSource,
+      located,
+      `- [${located.completed ? "x" : " "}] ${text} [homepage-studio-repeat:: ${mutation.recurrence}] [homepage-studio-period:: ${mutation.period}]`
     );
   }
   if (mutation.type === "archive") {
+    if (located.recurrence !== null) {
+      return { type: "invalid-task", reason: "recurring" };
+    }
     return located.section === "active" && located.completed
       ? moveTasks(taskSource, [located], "archive")
       : { type: "invalid-task", reason: "not-completed" };

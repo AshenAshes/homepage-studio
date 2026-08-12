@@ -18,6 +18,7 @@
   --homepage-text: #101216;
   --homepage-muted: #484e5a;
   --homepage-faint: #989ea8;
+  --homepage-recurring-task: #666d78;
   --homepage-border: var(--homepage-celestial-line-bright);
   --homepage-border-subtle: var(--homepage-celestial-line);
   --homepage-focus: var(--homepage-celestial-accent);
@@ -53,6 +54,7 @@
   --homepage-text: #e1e6ed;
   --homepage-muted: #848c9a;
   --homepage-faint: #454b57;
+  --homepage-recurring-task: #929aaa;
   --homepage-border: var(--homepage-celestial-line-bright);
   --homepage-border-subtle: var(--homepage-celestial-line);
   --homepage-focus: var(--homepage-celestial-accent);
@@ -87,6 +89,7 @@
   --homepage-text: #e1e6ed;
   --homepage-muted: #848c9a;
   --homepage-faint: #454b57;
+  --homepage-recurring-task: #929aaa;
   --homepage-border: var(--homepage-celestial-line-bright);
   --homepage-border-subtle: var(--homepage-celestial-line);
   --homepage-focus: var(--homepage-celestial-accent);

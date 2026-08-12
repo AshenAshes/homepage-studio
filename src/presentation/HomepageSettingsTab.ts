@@ -28,12 +28,15 @@ import type {
   TaskSettings,
   TaskSourceActivationResult
 } from "../application/HomepageApplicationFacade";
+import type { TaskSourceMutationResult } from
+  "../application/services/TaskSourceService";
 import type {
   HomepageSettingsSection,
   SettingsSectionRequestPort
 } from "../application/ports/SettingsNavigation";
 import type { LocalizationService } from "../application/services/LocalizationService";
 import type { LocalePreference } from "../domain/data/types";
+import type { TaskRecurrence } from "../domain/tasks/taskSource";
 import type { HeatmapCountType } from "../application/services/HeatmapTrackingService";
 import type { Messages } from "../localization/messages";
 import {
@@ -89,6 +92,9 @@ const isAppearanceMode = (
 const isModuleSize = (value: string): value is ModuleSize =>
   value === "compact" || value === "standard" || value === "expanded";
 
+const isTaskRecurrence = (value: string): value is TaskRecurrence =>
+  value === "daily" || value === "weekly";
+
 interface PlanPeriodOperations {
   readonly update: (
     update: Omit<PlanPeriod, "id">
@@ -129,6 +135,7 @@ export class HomepageSettingsTab extends PluginSettingTab {
   private settingsScope: Component | null = null;
   private suggestionFileCache: readonly TFile[] | null = null;
   private fileEntryStateUnsubscribe: (() => void) | null = null;
+  private taskStateUnsubscribe: (() => void) | null = null;
 
   public constructor(
     app: App,
@@ -150,6 +157,8 @@ export class HomepageSettingsTab extends PluginSettingTab {
   public override display(): void {
     this.fileEntryStateUnsubscribe?.();
     this.fileEntryStateUnsubscribe = null;
+    this.taskStateUnsubscribe?.();
+    this.taskStateUnsubscribe = null;
     this.settingsScope?.unload();
     this.settingsScope = new Component();
     this.suggestionFileCache = null;
@@ -270,6 +279,12 @@ export class HomepageSettingsTab extends PluginSettingTab {
               this.application.setShowCompletedTasks(value);
             });
         });
+      this.renderRecurringTaskSettings(taskSettings, messages);
+      this.taskStateUnsubscribe = this.application.subscribeTaskSettings(() => {
+        if (this.activeSection === "tasks") {
+          this.display();
+        }
+      });
     }
 
     if (this.activeSection === "plans") {
@@ -402,6 +417,8 @@ export class HomepageSettingsTab extends PluginSettingTab {
   public override hide(): void {
     this.fileEntryStateUnsubscribe?.();
     this.fileEntryStateUnsubscribe = null;
+    this.taskStateUnsubscribe?.();
+    this.taskStateUnsubscribe = null;
     this.settingsScope?.unload();
     this.settingsScope = null;
     this.suggestionFileCache = null;
@@ -2966,6 +2983,224 @@ export class HomepageSettingsTab extends PluginSettingTab {
           );
         });
     });
+  }
+
+  private renderRecurringTaskSettings(
+    settings: TaskSettings,
+    messages: Messages
+  ): void {
+    const region = this.containerEl.createDiv({
+      cls: "homepage-studio-recurring-task-settings"
+    });
+    new Setting(region)
+      .setName(messages.tasksRecurringHeading)
+      .setDesc(messages.tasksRecurringDescription)
+      .setHeading();
+    const error = region.createEl("p", {
+      cls: "homepage-studio-recurring-task-error",
+      attr: {
+        role: "alert",
+        "aria-live": "polite"
+      }
+    });
+    const diagnostic = settings.diagnostics[0];
+    if (diagnostic !== undefined) {
+      error.setText(messages.tasksSourceInvalid
+        .replace("{line}", String(diagnostic.line))
+        .replace("{code}", diagnostic.code));
+    } else if (settings.recurringState !== "ready") {
+      error.setText(messages.tasksRecurringUnavailable);
+    }
+
+    let newName = "";
+    let newRecurrence: TaskRecurrence = "daily";
+    let newNameInput: HTMLInputElement | null = null;
+    new Setting(region)
+      .setName(messages.tasksRecurringCreate)
+      .setDesc(messages.tasksRecurringCreateDescription)
+      .then((setting) => {
+        setting.settingEl.addClass(
+          "homepage-studio-recurring-task-create"
+        );
+      })
+      .addText((text) => {
+        newNameInput = text.inputEl;
+        text
+          .setPlaceholder(messages.tasksRecurringNamePlaceholder)
+          .setDisabled(!settings.recurringEditable)
+          .onChange((value) => {
+            newName = value;
+          });
+        attachAccessibleLabel(
+          text.inputEl,
+          region,
+          messages.tasksRecurringTaskName
+        );
+      })
+      .addDropdown((dropdown) => {
+        dropdown
+          .addOption("daily", messages.tasksRecurringDaily)
+          .addOption("weekly", messages.tasksRecurringWeekly)
+          .setValue(newRecurrence)
+          .setDisabled(!settings.recurringEditable)
+          .onChange((value) => {
+            if (isTaskRecurrence(value)) {
+              newRecurrence = value;
+            }
+          });
+        attachAccessibleLabel(
+          dropdown.selectEl,
+          region,
+          messages.tasksRecurringType
+        );
+      })
+      .addButton((button) => {
+        button
+          .setButtonText(messages.tasksRecurringAdd)
+          .setDisabled(!settings.recurringEditable)
+          .onClick(() => {
+            button.setDisabled(true);
+            void this.application.addRecurringTask(
+              newName.trim(),
+              newRecurrence
+            ).then((result) => {
+              const description = this.describeTaskMutationResult(
+                result,
+                messages
+              );
+              error.setText(description);
+              if (result.type !== "applied") {
+                button.setDisabled(false);
+                newNameInput?.focus();
+              }
+            });
+          });
+      });
+
+    if (
+      settings.recurringState === "ready"
+      && settings.recurringTasks.length === 0
+    ) {
+      region.createEl("p", {
+        cls: "homepage-studio-recurring-task-empty",
+        text: messages.tasksRecurringEmpty
+      });
+    }
+
+    for (const task of settings.recurringTasks) {
+      let name = task.text;
+      let recurrence = task.recurrence;
+      let nameInput: HTMLInputElement | null = null;
+      new Setting(region)
+        .setName(messages.tasksRecurringTaskName)
+        .then((setting) => {
+          setting.settingEl.addClass(
+            "homepage-studio-recurring-task-row"
+          );
+        })
+        .addText((text) => {
+          nameInput = text.inputEl;
+          text
+            .setValue(name)
+            .setDisabled(!settings.recurringEditable)
+            .onChange((value) => {
+              name = value;
+            });
+          attachAccessibleLabel(
+            text.inputEl,
+            region,
+            messages.tasksRecurringTaskName
+          );
+        })
+        .addDropdown((dropdown) => {
+          dropdown
+            .addOption("daily", messages.tasksRecurringDaily)
+            .addOption("weekly", messages.tasksRecurringWeekly)
+            .setValue(recurrence)
+            .setDisabled(!settings.recurringEditable)
+            .onChange((value) => {
+              if (isTaskRecurrence(value)) {
+                recurrence = value;
+              }
+            });
+          attachAccessibleLabel(
+            dropdown.selectEl,
+            region,
+            messages.tasksRecurringType
+          );
+        })
+        .addButton((button) => {
+          button
+            .setButtonText(messages.tasksRecurringSave)
+            .setDisabled(!settings.recurringEditable)
+            .onClick(() => {
+              button.setDisabled(true);
+              void this.application.updateRecurringTask(
+                task.target,
+                name.trim(),
+                recurrence
+              ).then((result) => {
+                error.setText(this.describeTaskMutationResult(
+                  result,
+                  messages
+                ));
+                if (result.type !== "applied") {
+                  button.setDisabled(false);
+                  nameInput?.focus();
+                }
+              });
+            });
+        })
+        .addButton((button) => {
+          button
+            .setButtonText(messages.tasksConfirmDelete)
+            .setDisabled(!settings.recurringEditable)
+            .onClick(() => {
+              button.setDisabled(true);
+              void this.application.deleteTask(
+                task.target,
+                task.text
+              ).then((result) => {
+                error.setText(this.describeTaskMutationResult(
+                  result,
+                  messages
+                ));
+                if (result.type !== "applied") {
+                  button.setDisabled(false);
+                }
+              });
+            });
+        });
+    }
+  }
+
+  private describeTaskMutationResult(
+    result: TaskSourceMutationResult,
+    messages: Messages
+  ): string {
+    switch (result.type) {
+      case "applied":
+      case "noop":
+        return "";
+      case "invalid-task":
+        return messages.tasksInvalidTask;
+      case "conflict":
+        return messages.tasksConflict;
+      case "invalid-source": {
+        const diagnostic = result.diagnostics[0];
+        return diagnostic === undefined
+          ? messages.tasksSourceInvalidUnknown
+          : messages.tasksSourceInvalid
+            .replace("{line}", String(diagnostic.line))
+            .replace("{code}", diagnostic.code);
+      }
+      case "missing-source":
+        return messages.tasksSourceMissing.replace("{path}", result.path);
+      case "missing-region":
+        return messages.tasksMissingRegionDescription;
+      case "io-error":
+        return messages.tasksSourceIoError.replace("{path}", result.path);
+    }
   }
 
   private addTaskFileControl(

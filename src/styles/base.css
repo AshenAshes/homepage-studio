@@ -6,6 +6,7 @@
   --homepage-text: var(--text-normal);
   --homepage-muted: var(--text-muted);
   --homepage-faint: var(--text-faint);
+  --homepage-recurring-task: var(--homepage-muted);
   --homepage-border: var(--background-modifier-border);
   --homepage-border-subtle: var(--background-modifier-border);
   --homepage-focus: var(--interactive-accent);
@@ -1451,16 +1452,38 @@
 }
 
 .homepage-studio-task-body {
+  display: flex;
   flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 0.5em;
   min-width: 0;
   color: var(--homepage-text);
   font-size: 0.8125rem;
   line-height: var(--line-height-normal);
 }
 
+.homepage-studio-task-content {
+  min-width: 0;
+}
+
+.homepage-studio-task-recurrence {
+  flex: 0 0 auto;
+  color: var(--homepage-recurring-task);
+  font-size: 0.85em;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  line-height: inherit;
+  text-decoration: none;
+}
+
 .homepage-studio-task[data-completed="true"] .homepage-studio-task-body,
 .homepage-studio-task[data-completed="true"] .homepage-studio-task-body a {
   color: var(--homepage-faint);
+}
+
+.homepage-studio-task[data-completed="true"] .homepage-studio-task-content,
+.homepage-studio-task[data-completed="true"] .homepage-studio-task-content a {
   text-decoration: line-through;
 }
 
@@ -1469,6 +1492,14 @@
 }
 
 .homepage-studio-task-body > :last-child {
+  margin-bottom: 0;
+}
+
+.homepage-studio-task-content > :first-child {
+  margin-top: 0;
+}
+
+.homepage-studio-task-content > :last-child {
   margin-bottom: 0;
 }
 
@@ -2050,6 +2081,41 @@
 .homepage-studio-plan-settings {
   display: grid;
   gap: var(--size-4-2);
+}
+
+.homepage-studio-recurring-task-settings {
+  display: grid;
+  gap: var(--size-4-2);
+  margin-top: var(--size-4-4);
+}
+
+.homepage-studio-recurring-task-error {
+  margin: 0;
+  color: var(--text-error);
+  font-size: var(--font-ui-small);
+}
+
+.homepage-studio-recurring-task-error:empty {
+  display: none;
+}
+
+.homepage-studio-recurring-task-create,
+.homepage-studio-recurring-task-row {
+  padding-inline: var(--size-4-3);
+  border: var(--border-width) solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  background: var(--background-secondary);
+}
+
+.homepage-studio-recurring-task-create .setting-item-control,
+.homepage-studio-recurring-task-row .setting-item-control {
+  flex-wrap: wrap;
+}
+
+.homepage-studio-recurring-task-empty {
+  margin: var(--size-4-2) 0;
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
 }
 
 .homepage-studio-banner-settings {
