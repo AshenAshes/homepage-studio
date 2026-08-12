@@ -2,6 +2,19 @@
 
 All notable changes to Homepage Studio are documented in this file.
 
+## 1.1.0 — 2026-08-13
+
+### Added
+
+- Added daily and weekly recurring Homepage tasks managed from plugin settings.
+- Reset recurring task completion automatically at the start of each day or week while keeping task files queryable.
+
+### Fixed
+
+- Stabilized recurring task parsing, conflict reporting, serialized writes, and startup refresh behavior.
+- Completed settings search coverage for recurring-task and template-related options.
+- Preserved task input surfaces when hovering in the Klein blue and Celestial orbit themes.
+
 ## 1.0.3 — 2026-08-10
 
 ### Fixed
