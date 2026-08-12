@@ -1785,23 +1785,25 @@ const renderModule = (
       });
     };
     scope.registerDomEvent(addButton, "click", () => {
-      if (addForm.getAttribute("data-open") !== "true") {
-        setAddFormOpen(true);
-        return;
-      }
       if (addInput.value.trim() !== "") {
         submitNewTask();
+        return;
+      }
+      if (addForm.getAttribute("data-open") !== "true") {
+        setAddFormOpen(true);
         return;
       }
       setAddFormOpen(false);
     });
     scope.registerDomEvent(addForm, "submit", (event) => {
       event.preventDefault();
-      if (addForm.getAttribute("data-open") !== "true") {
-        setAddFormOpen(true);
+      if (addInput.value.trim() !== "") {
+        submitNewTask();
         return;
       }
-      submitNewTask();
+      if (addForm.getAttribute("data-open") !== "true") {
+        setAddFormOpen(true);
+      }
     });
     scope.registerDomEvent(addInput, "keydown", (event) => {
       if (event.key === "Escape") {
