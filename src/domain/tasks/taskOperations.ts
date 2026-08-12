@@ -91,7 +91,7 @@ const validateText = (
   if (/[\r\n]/u.test(text)) {
     return { type: "invalid-task", reason: "multiline" };
   }
-  if (/\[homepage-studio-(?:repeat|period)::/u.test(text)) {
+  if (/\[homepage-studio-(?:repeat|period)\b/u.test(text)) {
     return { type: "invalid-task", reason: "reserved-metadata" };
   }
   return text.trim() === ""
@@ -187,13 +187,10 @@ const insertTask = (
   const prefix = last === undefined
     ? taskSource.newline
     : "";
-  const taskText = recurrence === undefined || period === undefined
-    ? text
-    : `${text} [homepage-studio-repeat:: ${recurrence}] [homepage-studio-period:: ${period}]`;
   const source = [
     taskSource.source.slice(0, offset),
     prefix,
-    `- [ ] ${taskText}`,
+    serializeTaskLine(false, text, recurrence, period),
     taskSource.newline,
     taskSource.source.slice(offset)
   ].join("");
@@ -218,12 +215,27 @@ const replaceLine = (
   };
 };
 
-const taskBody = (
-  task: HomepageTaskRecord,
-  text: string = task.text
-): string => task.recurrence === null || task.period === null
+const serializeTaskBody = (
+  text: string,
+  recurrence?: TaskRecurrence | null,
+  period?: string | null
+): string => recurrence === undefined
+  || recurrence === null
+  || period === undefined
+  || period === null
   ? text
-  : `${text} [homepage-studio-repeat:: ${task.recurrence}] [homepage-studio-period:: ${task.period}]`;
+  : `${text} [homepage-studio-repeat:: ${recurrence}] [homepage-studio-period:: ${period}]`;
+
+const serializeTaskLine = (
+  completed: boolean,
+  text: string,
+  recurrence?: TaskRecurrence | null,
+  period?: string | null
+): string => `- [${completed ? "x" : " "}] ${serializeTaskBody(
+  text,
+  recurrence,
+  period
+)}`;
 
 const refreshRecurringTasks = (
   taskSource: TaskSourceDocument,
@@ -250,9 +262,12 @@ const refreshRecurringTasks = (
       continue;
     }
     parts.push(taskSource.source.slice(cursor, task.lineStart));
-    parts.push(
-      `- [ ] ${task.text} [homepage-studio-repeat:: ${recurrence}] [homepage-studio-period:: ${periodKeys[recurrence]}]`
-    );
+    parts.push(serializeTaskLine(
+      false,
+      task.text,
+      recurrence,
+      periodKeys[recurrence]
+    ));
     cursor = task.lineStart + task.rawLine.length;
   }
   parts.push(taskSource.source.slice(cursor));
@@ -410,14 +425,24 @@ export const mutateHomepageTaskSource = (
     return replaceLine(
       taskSource,
       located,
-      `- [${located.completed ? "x" : " "}] ${taskBody(located, mutation.text)}`
+      serializeTaskLine(
+        located.completed,
+        mutation.text,
+        located.recurrence,
+        located.period
+      )
     );
   }
   if (mutation.type === "set-completed") {
     return replaceLine(
       taskSource,
       located,
-      `- [${mutation.completed ? "x" : " "}] ${taskBody(located)}`
+      serializeTaskLine(
+        mutation.completed,
+        located.text,
+        located.recurrence,
+        located.period
+      )
     );
   }
   if (
@@ -446,7 +471,12 @@ export const mutateHomepageTaskSource = (
     return replaceLine(
       taskSource,
       located,
-      `- [${located.completed ? "x" : " "}] ${text} [homepage-studio-repeat:: ${mutation.recurrence}] [homepage-studio-period:: ${mutation.period}]`
+      serializeTaskLine(
+        located.completed,
+        text,
+        mutation.recurrence,
+        mutation.period
+      )
     );
   }
   if (mutation.type === "archive") {

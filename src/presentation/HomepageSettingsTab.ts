@@ -95,6 +95,13 @@ const isModuleSize = (value: string): value is ModuleSize =>
 const isTaskRecurrence = (value: string): value is TaskRecurrence =>
   value === "daily" || value === "weekly";
 
+const normalizeSettingsSearchText = (value: string): string =>
+  value
+    .normalize("NFKC")
+    .toLocaleLowerCase()
+    .replace(/\s+/gu, "")
+    .replace(/模版/gu, "模板");
+
 interface PlanPeriodOperations {
   readonly update: (
     update: Omit<PlanPeriod, "id">
@@ -482,7 +489,10 @@ export class HomepageSettingsTab extends PluginSettingTab {
         keywords: [
           messages.tasksModuleTitle,
           messages.tasksFile,
-          messages.tasksShowCompleted
+          messages.tasksShowCompleted,
+          messages.tasksRecurringHeading,
+          messages.tasksRecurringCreate,
+          messages.tasksRecurringTaskName
         ]
       },
       {
@@ -639,7 +649,7 @@ export class HomepageSettingsTab extends PluginSettingTab {
       };
     });
     const renderSearchResults = (): HTMLButtonElement[] => {
-      const query = search.value.trim().toLocaleLowerCase();
+      const query = normalizeSettingsSearchText(search.value);
       resultsList.empty();
       if (query === "") {
         resultsRegion.setAttribute("hidden", "");
@@ -649,7 +659,7 @@ export class HomepageSettingsTab extends PluginSettingTab {
       const matches = sections.flatMap((section) =>
         section.keywords
           .filter((keyword) =>
-            keyword.toLocaleLowerCase().includes(query)
+            normalizeSettingsSearchText(keyword).includes(query)
           )
           .map((keyword) => ({
             section,
@@ -3008,6 +3018,26 @@ export class HomepageSettingsTab extends PluginSettingTab {
       error.setText(messages.tasksSourceInvalid
         .replace("{line}", String(diagnostic.line))
         .replace("{code}", diagnostic.code));
+    } else if (settings.recurringConflict) {
+      error.setText(messages.tasksConflict);
+    } else if (
+      settings.recurringState === "io-error"
+      && settings.filePath !== null
+    ) {
+      error.setText(messages.tasksSourceIoError.replace(
+        "{path}",
+        settings.filePath
+      ));
+    } else if (
+      settings.recurringState === "missing-source"
+      && settings.filePath !== null
+    ) {
+      error.setText(messages.tasksSourceMissing.replace(
+        "{path}",
+        settings.filePath
+      ));
+    } else if (settings.recurringState === "missing-region") {
+      error.setText(messages.tasksMissingRegionDescription);
     } else if (settings.recurringState !== "ready") {
       error.setText(messages.tasksRecurringUnavailable);
     }

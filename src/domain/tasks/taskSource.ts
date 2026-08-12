@@ -91,7 +91,7 @@ interface StructuralHeading {
 const STRUCTURAL_HEADING = /^(#{1,3})(?!#)(?:[ \t]+(.*?))?[ \t]*$/u;
 const TASK_LINE = /^- \[([ xX])\] (.+)$/u;
 const RECURRING_TASK_SUFFIX = /^(.*?) \[homepage-studio-repeat:: (daily|weekly)\] \[homepage-studio-period:: (\d{4}-\d{2}-\d{2})\]$/u;
-const RESERVED_RECURRING_FIELD = /\[homepage-studio-(?:repeat|period)::/u;
+const RESERVED_RECURRING_FIELD = /\[homepage-studio-(?:repeat|period)\b/u;
 const FENCE_OPEN = /^ {0,3}(`{3,}|~{3,})/u;
 
 const scanLines = (source: string): readonly SourceLine[] => {

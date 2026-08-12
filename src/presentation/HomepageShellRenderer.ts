@@ -1766,8 +1766,7 @@ const renderModule = (
       cls: "homepage-studio-task-add-input",
       attr: {
         type: "text",
-        placeholder: module.tasks.addPlaceholder,
-        "aria-hidden": "true"
+        placeholder: module.tasks.addPlaceholder
       }
     });
     attachAccessibleLabel(addInput, addForm, module.tasks.addPlaceholder);
@@ -1780,11 +1779,13 @@ const renderModule = (
       }
     });
     const setAddFormOpen = (open: boolean): void => {
+      if (!open && addInput.ownerDocument.activeElement === addInput) {
+        addButton.focus({ preventScroll: true });
+      }
       addForm.setAttribute("data-open", open.toString());
       addButton.setAttribute("aria-expanded", open.toString());
-      addInput.setAttribute("aria-hidden", (!open).toString());
       if (open) {
-        addInput.focus();
+        addInput.focus({ preventScroll: true });
       }
     };
     const submitNewTask = (): void => {

@@ -33,6 +33,10 @@ export class ObsidianMarkdownFile implements MarkdownFilePort {
     if (normalized === null) {
       return { type: "missing-source", path };
     }
+    const pendingMutation = this.mutationTails.get(normalized);
+    if (pendingMutation !== undefined) {
+      await pendingMutation;
+    }
     const file = this.app.vault.getAbstractFileByPath(normalized);
     if (!(file instanceof TFile)) {
       return { type: "missing-source", path: normalized };

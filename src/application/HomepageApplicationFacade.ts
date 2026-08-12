@@ -311,6 +311,7 @@ export interface TaskSettings {
   readonly showCompleted: boolean;
   readonly recurringEditable: boolean;
   readonly recurringState: TaskRuntimeState["type"];
+  readonly recurringConflict: boolean;
   readonly recurringTasks: readonly {
     readonly target: TaskTarget;
     readonly text: string;
@@ -937,7 +938,11 @@ export class HomepageApplicationFacade {
       result: TaskSourceMutationResult,
       path: string
     ): void => {
-      const episode = `${path}:${result.type}`;
+      const episode = result.type === "invalid-source"
+        ? `${path}:${result.type}:${result.diagnostics.map((diagnostic) =>
+          `${diagnostic.code}:${diagnostic.line}`
+        ).join("|")}`
+        : `${path}:${result.type}`;
       if (episode !== refreshFailureEpisode) {
         refreshFailureEpisode = episode;
         this.taskWriteFailure.notify(result.type, path);
@@ -972,15 +977,34 @@ export class HomepageApplicationFacade {
         }
         if (result.type !== "loaded") {
           this.setTaskRuntimeState(result);
-          const episode = `${path}:${result.type}`;
-          if (episode !== refreshFailureEpisode) {
-            refreshFailureEpisode = episode;
-            this.taskWriteFailure.notify(result.type, path);
+          if (!announceLoading) {
+            const episode = result.type === "invalid-source"
+              ? `${path}:${result.type}:${result.diagnostics.map(
+                (diagnostic) => `${diagnostic.code}:${diagnostic.line}`
+              ).join("|")}`
+              : `${path}:${result.type}`;
+            if (episode !== refreshFailureEpisode) {
+              refreshFailureEpisode = episode;
+              this.taskWriteFailure.notify(result.type, path);
+            }
           }
           return;
         }
         const periodKeys = this.getCurrentTaskPeriodKeys();
         if (periodKeys === null) {
+          this.setTaskRuntimeState({
+            type: "ready",
+            path: result.path,
+            taskSource: result.taskSource
+          });
+          return;
+        }
+        const hasStaleRecurringTask = result.taskSource.tasks.some((task) =>
+          task.recurrence !== null
+          && task.period !== periodKeys[task.recurrence]
+        );
+        if (!hasStaleRecurringTask) {
+          refreshFailureEpisode = "";
           this.setTaskRuntimeState({
             type: "ready",
             path: result.path,
@@ -1121,6 +1145,7 @@ export class HomepageApplicationFacade {
         showCompleted: state.data.tasks.showCompleted,
         recurringEditable: this.taskRuntimeState.type === "ready",
         recurringState: this.taskRuntimeState.type,
+        recurringConflict: this.taskInteractionState.type === "conflict",
         recurringTasks,
         diagnostics
       }
@@ -1130,6 +1155,7 @@ export class HomepageApplicationFacade {
         showCompleted: true,
         recurringEditable: false,
         recurringState: "unconfigured",
+        recurringConflict: false,
         recurringTasks: [],
         diagnostics: []
       };
