@@ -2,6 +2,12 @@
 
 All notable changes to Homepage Studio are documented in this file.
 
+## 1.1.1 — 2026-08-20
+
+### Fixed
+
+- Preserved the journal editor input session when the first entry of a new day is autosaved.
+
 ## 1.1.0 — 2026-08-13
 
 ### Added
