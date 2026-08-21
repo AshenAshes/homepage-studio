@@ -17,6 +17,31 @@ export type ReplaceFileGroupEntryPathResult =
   | { readonly type: "duplicate-path" }
   | { readonly type: "not-found" };
 
+export interface FileGroupEntryMoveAnchorTarget {
+  readonly targetGroupId: string;
+  readonly anchorEntryId: string;
+  readonly placement: "before" | "after";
+}
+
+export interface FileGroupEntryMoveEndTarget {
+  readonly targetGroupId: string;
+  readonly anchorEntryId: null;
+  readonly placement: "end";
+}
+
+export type FileGroupEntryMoveTarget =
+  | FileGroupEntryMoveAnchorTarget
+  | FileGroupEntryMoveEndTarget;
+
+export type MoveFileGroupEntryToResult =
+  | {
+    readonly type: "applied";
+    readonly groups: readonly FileGroup[];
+  }
+  | { readonly type: "duplicate-path" }
+  | { readonly type: "not-found" }
+  | { readonly type: "noop" };
+
 export interface FileEntryLabel {
   readonly id: string;
   readonly path: string;
@@ -69,27 +94,76 @@ export const moveFileGroup = (
   offset: FileGroupMoveOffset
 ): readonly FileGroup[] => moveItem(groups, groupId, offset);
 
-export const moveFileGroupEntry = (
+export const moveFileGroupEntryTo = (
   groups: readonly FileGroup[],
-  groupId: string,
+  sourceGroupId: string,
   entryId: string,
-  offset: FileGroupMoveOffset
-): readonly FileGroup[] => {
-  const groupIndex = groups.findIndex((group) => group.id === groupId);
-  const group = groups[groupIndex];
-  if (group === undefined) {
-    return groups;
+  target: FileGroupEntryMoveTarget
+): MoveFileGroupEntryToResult => {
+  const sourceGroupIndex = groups.findIndex(
+    (group) => group.id === sourceGroupId
+  );
+  const targetGroupIndex = groups.findIndex(
+    (group) => group.id === target.targetGroupId
+  );
+  const sourceGroup = groups[sourceGroupIndex];
+  const targetGroup = groups[targetGroupIndex];
+  const entry = sourceGroup?.entries.find(
+    (candidate) => candidate.id === entryId
+  );
+  if (
+    sourceGroup === undefined
+    || targetGroup === undefined
+    || entry === undefined
+  ) {
+    return { type: "not-found" };
   }
-  const entries = moveItem(group.entries, entryId, offset);
-  if (entries === group.entries) {
-    return groups;
+  if (targetGroup.entries.some((candidate) =>
+    candidate.id !== entryId && candidate.path === entry.path
+  )) {
+    return { type: "duplicate-path" };
+  }
+  const targetEntries = targetGroup.entries.filter(
+    (candidate) => candidate.id !== entryId
+  );
+  if (target.placement === "end") {
+    targetEntries.push(entry);
+  } else {
+    const anchorIndex = targetEntries.findIndex(
+      (candidate) => candidate.id === target.anchorEntryId
+    );
+    if (anchorIndex < 0) {
+      return { type: "not-found" };
+    }
+    targetEntries.splice(
+      anchorIndex + (target.placement === "after" ? 1 : 0),
+      0,
+      entry
+    );
+  }
+  if (
+    sourceGroupIndex === targetGroupIndex
+    && targetEntries.length === sourceGroup.entries.length
+    && targetEntries.every((candidate, index) =>
+      candidate === sourceGroup.entries[index]
+    )
+  ) {
+    return { type: "noop" };
   }
   const next = [...groups];
-  next[groupIndex] = {
-    ...group,
-    entries
+  if (sourceGroupIndex !== targetGroupIndex) {
+    next[sourceGroupIndex] = {
+      ...sourceGroup,
+      entries: sourceGroup.entries.filter(
+        (candidate) => candidate.id !== entryId
+      )
+    };
+  }
+  next[targetGroupIndex] = {
+    ...targetGroup,
+    entries: targetEntries
   };
-  return next;
+  return { type: "applied", groups: next };
 };
 
 export const replaceFileGroupEntryPath = (

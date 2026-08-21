@@ -350,6 +350,8 @@ export interface Messages {
   readonly fileGroupsFilePlaceholder: string;
   readonly fileGroupsAddFileAction: string;
   readonly fileGroupsRemoveFile: string;
+  readonly fileGroupsReorderFile: string;
+  readonly fileGroupsMoveEntryAnnouncement: string;
   readonly fileGroupsMoveGroupUp: string;
   readonly fileGroupsMoveGroupDown: string;
   readonly fileGroupsMoveFileUp: string;

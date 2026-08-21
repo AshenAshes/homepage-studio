@@ -2505,6 +2505,103 @@ button.homepage-studio-settings-tab:focus-visible {
   border-top: 0;
 }
 
+.homepage-studio-settings .homepage-studio-file-entry-reorder-live,
+.homepage-studio-settings .homepage-studio-file-entry-reorder-description {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.homepage-studio-settings .homepage-studio-file-entry-reorder-list {
+  display: grid;
+  gap: var(--size-4-2);
+}
+
+.homepage-studio-settings .homepage-studio-file-entry-reorder-item {
+  min-width: 0;
+}
+
+.homepage-studio-settings .homepage-studio-file-entry-reorder-surface {
+  cursor: grab;
+  user-select: none;
+}
+
+.homepage-studio-settings .homepage-studio-file-entry-reorder-surface:active {
+  cursor: grabbing;
+}
+
+.homepage-studio-settings
+  .homepage-studio-file-entry-reorder-surface:focus-visible {
+  border-radius: var(--radius-s);
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+
+.homepage-studio-settings .homepage-studio-file-entry-reorder-source
+  > .homepage-studio-file-group-entry-setting {
+  opacity: 0.35;
+}
+
+.homepage-studio-settings .homepage-studio-file-entry-reorder-ghost {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: var(--layer-popover);
+  width: var(--homepage-file-entry-ghost-width);
+  height: var(--homepage-file-entry-ghost-height);
+  pointer-events: none;
+  transform: translate3d(
+    var(--homepage-file-entry-ghost-x),
+    var(--homepage-file-entry-ghost-y),
+    0
+  );
+}
+
+.homepage-studio-settings
+  .homepage-studio-file-entry-reorder-ghost > .setting-item {
+  margin: 0;
+  border: var(--border-width) solid var(--interactive-accent);
+  border-radius: var(--radius-m);
+  background: var(--background-secondary);
+  box-shadow: var(--shadow-l);
+}
+
+.homepage-studio-settings .homepage-studio-file-entry-reorder-slot {
+  pointer-events: none;
+}
+
+.homepage-studio-settings
+  .homepage-studio-file-entry-reorder-slot > .setting-item {
+  margin: 0;
+  opacity: 0.58;
+}
+
+.homepage-studio-settings
+  .homepage-studio-file-group-settings-card[data-file-entry-drop-state="active"] {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+
+.homepage-studio-settings
+  .homepage-studio-file-group-settings-card[data-file-entry-drop-state="invalid"] {
+  outline: 2px solid var(--text-error);
+  outline-offset: 2px;
+  cursor: not-allowed;
+}
+
+.homepage-studio-settings .homepage-studio-file-group-entry-remove {
+  min-width: var(--input-height);
+  padding-inline: var(--size-4-2);
+  font-size: var(--font-ui-large);
+}
+
 .homepage-studio-file-group-drag-handle {
   cursor: grab;
 }
