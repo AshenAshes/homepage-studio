@@ -4,6 +4,7 @@ import {
   normalizePath,
   PluginSettingTab,
   Setting,
+  setTooltip,
   TFile,
   type App,
   type Plugin
@@ -39,6 +40,8 @@ import type { LocalePreference } from "../domain/data/types";
 import type { TaskRecurrence } from "../domain/tasks/taskSource";
 import type { HeatmapCountType } from "../application/services/HeatmapTrackingService";
 import type { Messages } from "../localization/messages";
+import { attachFileEntryReorderController } from
+  "./FileEntryReorderController";
 import {
   formatPlanMinute,
   normalizePlanLabel,
@@ -125,6 +128,8 @@ export class HomepageSettingsTab extends PluginSettingTab {
   private focusActiveTabAfterRender = false;
   private pendingPlanTemplateFocusId: string | null = null;
   private pendingFileGroupFocusId: string | null = null;
+  private pendingFileEntryFocusId: string | null = null;
+  private pendingFileEntryAnnouncement: string | null = null;
   private pendingLayoutModuleFocusId: ModuleId | null = null;
   private pendingLayoutControlFocus:
     "theme" | "appearance" | "banner" | "reset" | null = null;
@@ -134,10 +139,6 @@ export class HomepageSettingsTab extends PluginSettingTab {
   } | null = null;
   private draggedLayoutModuleId: ModuleId | null = null;
   private draggedFileGroupId: string | null = null;
-  private draggedFileEntry: {
-    readonly groupId: string;
-    readonly entryId: string;
-  } | null = null;
   private fileGroupUndoTimer: number | null = null;
   private settingsScope: Component | null = null;
   private suggestionFileCache: readonly TFile[] | null = null;
@@ -1541,6 +1542,18 @@ export class HomepageSettingsTab extends PluginSettingTab {
         "aria-live": "polite"
       }
     });
+    const reorderLive = region.createDiv({
+      cls: "homepage-studio-file-entry-reorder-live",
+      attr: {
+        role: "status",
+        "aria-live": "polite"
+      }
+    });
+    if (this.pendingFileEntryAnnouncement !== null) {
+      reorderLive.setText(this.pendingFileEntryAnnouncement);
+      this.pendingFileEntryAnnouncement = null;
+    }
+    const groupErrors = new Map<string, HTMLElement>();
     let groupName = "";
     new Setting(region)
       .setName(messages.fileGroupsCreate)
@@ -1607,7 +1620,8 @@ export class HomepageSettingsTab extends PluginSettingTab {
       const card = region.createEl("section", {
         cls: "homepage-studio-file-group-settings-card",
         attr: {
-          "data-file-group-id": group.id
+          "data-file-group-id": group.id,
+          "data-file-group-name": group.name
         }
       });
       const heading = new Setting(card)
@@ -1687,6 +1701,7 @@ export class HomepageSettingsTab extends PluginSettingTab {
           "aria-live": "polite"
         }
       });
+      groupErrors.set(group.id, localError);
       let nextName = group.name;
       new Setting(card)
         .setName(messages.fileGroupsName)
@@ -1766,14 +1781,39 @@ export class HomepageSettingsTab extends PluginSettingTab {
             });
         });
 
+      const entryList = card.createDiv({
+        cls: "homepage-studio-file-entry-reorder-list"
+      });
       if (group.entries.length === 0) {
-        card.createEl("p", {
+        entryList.createEl("p", {
           cls: "homepage-studio-file-group-settings-empty",
           text: messages.fileGroupsNoFiles
         });
       } else {
-        for (const [entryIndex, entry] of group.entries.entries()) {
-          const entrySetting = new Setting(card)
+        for (const entry of group.entries) {
+          const entryWrapper = entryList.createDiv({
+            cls: "homepage-studio-file-entry-reorder-item",
+            attr: {
+              "data-file-entry-id": entry.id,
+              "data-file-entry-path": entry.path,
+              "data-file-entry-state": entry.state
+            }
+          });
+          const reorderDescriptionId = [
+            "homepage-studio-file-entry-reorder-description",
+            entry.id
+          ].join("-");
+          entryWrapper.createSpan({
+            cls: "homepage-studio-file-entry-reorder-description",
+            text: messages.fileGroupsReorderFile.replace(
+              "{path}",
+              entry.path
+            ),
+            attr: {
+              id: reorderDescriptionId
+            }
+          });
+          const entrySetting = new Setting(entryWrapper)
             .setName(entry.path);
           if (entry.state !== "ready") {
             entrySetting.setDesc(
@@ -1782,45 +1822,18 @@ export class HomepageSettingsTab extends PluginSettingTab {
                 : messages.fileGroupsInvalidTarget
             );
           }
-          entrySetting
-            .addButton((button) => {
+          entrySetting.addButton((button) => {
+              const removeLabel = messages.fileGroupsRemoveFile.replace(
+                "{path}",
+                entry.path
+              );
+              button.buttonEl.setAttribute("aria-label", removeLabel);
+              button.buttonEl.addClass(
+                "homepage-studio-file-group-entry-remove"
+              );
+              setTooltip(button.buttonEl, removeLabel);
               button
-                .setButtonText(messages.fileGroupsMoveFileUp)
-                .setDisabled(!settings.editable || entryIndex === 0)
-                .onClick(() => {
-                  this.handleFileGroupMutation(
-                    this.application.moveFileGroupEntry(
-                      group.id,
-                      entry.id,
-                      -1
-                    ),
-                    localError,
-                    messages
-                  );
-                });
-            })
-            .addButton((button) => {
-              button
-                .setButtonText(messages.fileGroupsMoveFileDown)
-                .setDisabled(
-                  !settings.editable
-                  || entryIndex === group.entries.length - 1
-                )
-                .onClick(() => {
-                  this.handleFileGroupMutation(
-                    this.application.moveFileGroupEntry(
-                      group.id,
-                      entry.id,
-                      1
-                    ),
-                    localError,
-                    messages
-                  );
-                });
-            })
-            .addButton((button) => {
-              button
-                .setButtonText(messages.fileGroupsRemoveFile)
+                .setButtonText("×")
                 .setDisabled(!settings.editable)
                 .onClick(() => {
                   this.handleFileGroupMutation(
@@ -1840,63 +1853,27 @@ export class HomepageSettingsTab extends PluginSettingTab {
             "data-file-entry-state",
             entry.state
           );
-          const entryDragHandle = entrySetting.settingEl
-            .querySelector<HTMLElement>(".setting-item-info");
-          if (entryDragHandle !== null) {
-            entryDragHandle.draggable = settings.editable;
-            entryDragHandle.addClass(
-              "homepage-studio-file-group-drag-handle"
-            );
-            scope.registerDomEvent(entryDragHandle, "dragstart", (event) => {
-              this.draggedFileEntry = {
-                groupId: group.id,
-                entryId: entry.id
-              };
-              event.dataTransfer?.setData("text/plain", entry.id);
-              if (event.dataTransfer !== null) {
-                event.dataTransfer.effectAllowed = "move";
-              }
-            });
-            scope.registerDomEvent(entryDragHandle, "dragend", () => {
-              this.draggedFileEntry = null;
-            });
-          }
-          scope.registerDomEvent(
-            entrySetting.settingEl,
-            "dragover",
-            (event) => {
-              if (
-                this.draggedFileEntry?.groupId === group.id
-                && this.draggedFileEntry.entryId !== entry.id
-              ) {
-                event.preventDefault();
-              }
-            }
+          const reorderSurface = entrySetting.infoEl;
+          reorderSurface.addClass(
+            "homepage-studio-file-entry-reorder-surface"
           );
-          scope.registerDomEvent(entrySetting.settingEl, "drop", (event) => {
-            const source = this.draggedFileEntry;
-            if (
-              source === null
-              || source.groupId !== group.id
-              || source.entryId === entry.id
-            ) {
-              return;
-            }
-            event.preventDefault();
-            event.stopPropagation();
-            this.draggedFileEntry = null;
-            this.moveFileGroupEntryTo(
-              settings,
-              group.id,
-              source.entryId,
-              entry.id,
-              localError,
-              messages
-            );
-          });
+          reorderSurface.setAttribute("role", "button");
+          reorderSurface.setAttribute("tabindex", "0");
+          reorderSurface.setAttribute(
+            "aria-keyshortcuts",
+            "Alt+ArrowUp Alt+ArrowDown Alt+ArrowLeft Alt+ArrowRight Alt+Home Alt+End"
+          );
+          reorderSurface.setAttribute(
+            "aria-describedby",
+            reorderDescriptionId
+          );
+          if (this.pendingFileEntryFocusId === entry.id) {
+            this.pendingFileEntryFocusId = null;
+            reorderSurface.focus({ preventScroll: true });
+          }
           if (entry.state !== "ready") {
             this.renderFileGroupEntryReplacement(
-              card,
+              entryWrapper,
               group.id,
               entry.id,
               settings.editable,
@@ -1913,6 +1890,36 @@ export class HomepageSettingsTab extends PluginSettingTab {
         card.querySelector<HTMLInputElement>("input")?.focus();
       }
     }
+    attachFileEntryReorderController({
+      container: region,
+      scope,
+      enabled: settings.editable,
+      move: (request) => this.application.moveFileGroupEntryTo(
+        request.sourceGroupId,
+        request.entryId,
+        request.target
+      ),
+      open: (path, newPane) => {
+        void this.application.openFile(path, newPane);
+      },
+      formatMovedAnnouncement: (path, groupName, position) =>
+        messages.fileGroupsMoveEntryAnnouncement
+          .replace("{path}", path)
+          .replace("{group}", groupName)
+          .replace("{position}", position.toString()),
+      onApplied: (entryId, announcement) => {
+        this.pendingFileEntryFocusId = entryId;
+        this.pendingFileEntryAnnouncement = announcement;
+        this.refreshSettings();
+      },
+      onRejected: (result, targetGroupId) => {
+        this.handleFileGroupMutation(
+          result,
+          groupErrors.get(targetGroupId) ?? error,
+          messages
+        );
+      }
+    });
   }
 
   private handleFileGroupMutation(
@@ -1924,7 +1931,7 @@ export class HomepageSettingsTab extends PluginSettingTab {
       this.refreshSettings();
       return;
     }
-    if (result.type === "cancelled") {
+    if (result.type === "cancelled" || result.type === "noop") {
       return;
     }
     const messageByResult: Record<typeof result.type, string> = {
@@ -1965,46 +1972,6 @@ export class HomepageSettingsTab extends PluginSettingTab {
       step += 1
     ) {
       result = this.application.moveFileGroup(sourceId, offset);
-      if (result.type !== "applied") {
-        break;
-      }
-    }
-    this.handleFileGroupMutation(result, error, messages);
-  }
-
-  private moveFileGroupEntryTo(
-    settings: FileGroupSettings,
-    groupId: string,
-    sourceId: string,
-    targetId: string,
-    error: HTMLElement,
-    messages: Messages
-  ): void {
-    const group = settings.groups.find((candidate) => candidate.id === groupId);
-    const sourceIndex = group?.entries.findIndex(
-      (entry) => entry.id === sourceId
-    ) ?? -1;
-    const targetIndex = group?.entries.findIndex(
-      (entry) => entry.id === targetId
-    ) ?? -1;
-    if (sourceIndex < 0 || targetIndex < 0 || sourceIndex === targetIndex) {
-      return;
-    }
-    const offset = sourceIndex < targetIndex ? 1 : -1;
-    let result: FileGroupMutationResult = {
-      type: "applied",
-      id: sourceId
-    };
-    for (
-      let step = 0;
-      step < Math.abs(targetIndex - sourceIndex);
-      step += 1
-    ) {
-      result = this.application.moveFileGroupEntry(
-        groupId,
-        sourceId,
-        offset
-      );
       if (result.type !== "applied") {
         break;
       }

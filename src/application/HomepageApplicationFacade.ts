@@ -84,13 +84,15 @@ import {
 import {
   hasFileGroupPath,
   moveFileGroup as moveFileGroupInOrder,
-  moveFileGroupEntry as moveFileGroupEntryInOrder,
+  moveFileGroupEntryTo as moveFileGroupEntryToPosition,
   normalizeFileGroupName,
   remapFileEntryPaths,
   replaceFileGroupEntryPath,
   validateFileGroupName,
+  type FileGroupEntryMoveTarget,
   type FileGroupMoveOffset,
-  type FileGroupMutationIssue
+  type FileGroupMutationIssue,
+  type MoveFileGroupEntryToResult
 } from "../domain/files/fileGroups";
 import {
   BANNER_THEME_IDS,
@@ -385,8 +387,16 @@ export type FileGroupMutationResult =
   | { readonly type: "not-found" }
   | { readonly type: "blocked" }
   | { readonly type: "invalid-file" }
+  | { readonly type: "noop" }
   | { readonly type: "undo-expired" }
   | { readonly type: FileGroupMutationIssue };
+
+export type FileGroupEntryMoveMutationResult =
+  | { readonly type: "applied"; readonly id: string }
+  | { readonly type: "noop" }
+  | { readonly type: "duplicate-path" }
+  | { readonly type: "not-found" }
+  | { readonly type: "blocked" };
 
 export type BannerMutationResult =
   | { readonly type: "applied" }
@@ -2433,39 +2443,44 @@ export class HomepageApplicationFacade {
       : { type: "blocked" };
   }
 
-  public moveFileGroupEntry(
-    groupId: string,
+  public moveFileGroupEntryTo(
+    sourceGroupId: string,
     entryId: string,
-    offset: FileGroupMoveOffset
-  ): FileGroupMutationResult {
-    const state = this.store.getState();
-    const group = state.mode === "ready"
-      ? state.data.fileGroups.find((candidate) => candidate.id === groupId)
-      : undefined;
-    if (state.mode !== "ready" || group === undefined) {
-      return {
-        type: state.mode === "ready" ? "not-found" : "blocked"
-      };
-    }
-    if (!group.entries.some((entry) => entry.id === entryId)) {
-      return { type: "not-found" };
-    }
-    const result = this.store.transact(
+    target: FileGroupEntryMoveTarget
+  ): FileGroupEntryMoveMutationResult {
+    const attempted: {
+      value: MoveFileGroupEntryToResult | null;
+    } = { value: null };
+    const result = this.store.transactIfChanged(
       "move file group entry",
       "immediate",
-      (data) => ({
-        ...data,
-        fileGroups: moveFileGroupEntryInOrder(
+      (data) => {
+        const moved = moveFileGroupEntryToPosition(
           data.fileGroups,
-          groupId,
+          sourceGroupId,
           entryId,
-          offset
-        )
-      })
+          target
+        );
+        attempted.value = moved;
+        return moved.type === "applied"
+          ? {
+            ...data,
+            fileGroups: moved.groups
+          }
+          : null;
+      }
     );
-    return result.type === "applied"
-      ? { type: "applied", id: entryId }
-      : { type: "blocked" };
+    if (result.type === "applied") {
+      return { type: "applied", id: entryId };
+    }
+    if (
+      result.type === "noop"
+      && attempted.value !== null
+      && attempted.value.type !== "applied"
+    ) {
+      return attempted.value;
+    }
+    return { type: "blocked" };
   }
 
   public handleFileEntryRename(

@@ -37,6 +37,10 @@ export type TransactionResult =
   | { readonly type: "blocked-safe-mode" }
   | { readonly type: "blocked-loading" };
 
+export type ConditionalTransactionResult =
+  | TransactionResult
+  | { readonly type: "noop" };
+
 export class AppStore {
   private state: AppStoreState = { mode: "loading" };
   private readonly stateListeners = new Set<() => void>();
@@ -129,6 +133,23 @@ export class AppStore {
     this.notifyState();
     this.scheduleCurrent(name, urgency);
     return { type: "applied", revision };
+  }
+
+  public transactIfChanged(
+    name: string,
+    urgency: PersistenceUrgency,
+    mutate: (data: PluginData) => PluginData | null
+  ): ConditionalTransactionResult {
+    if (this.state.mode === "loading") {
+      return { type: "blocked-loading" };
+    }
+    if (this.state.mode === "safe") {
+      return { type: "blocked-safe-mode" };
+    }
+    const candidate = mutate(structuredClone(this.state.data));
+    return candidate === null
+      ? { type: "noop" }
+      : this.transact(name, urgency, () => candidate);
   }
 
   private scheduleCurrent(name: string, urgency: PersistenceUrgency): void {
