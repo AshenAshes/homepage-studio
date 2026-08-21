@@ -2519,6 +2519,98 @@ button.homepage-studio-settings-tab:focus-visible {
   white-space: nowrap;
 }
 
+.homepage-studio .homepage-studio-file-entry-reorder-live,
+.homepage-studio .homepage-studio-file-entry-reorder-description {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.homepage-studio .homepage-studio-file-entry-reorder-surface,
+.homepage-studio-settings .homepage-studio-file-entry-reorder-surface {
+  cursor: grab;
+  user-select: none;
+}
+
+.homepage-studio .homepage-studio-file-entry-reorder-surface:active,
+.homepage-studio-settings .homepage-studio-file-entry-reorder-surface:active {
+  cursor: grabbing;
+}
+
+.homepage-studio .homepage-studio-file-entry-reorder-source
+  > .homepage-studio-file-group-entry {
+  opacity: 0.35;
+}
+
+.homepage-studio .homepage-studio-file-entry-reorder-ghost {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: var(--layer-popover);
+  width: var(--homepage-file-entry-ghost-width);
+  height: var(--homepage-file-entry-ghost-height);
+  pointer-events: none;
+  transform: translate3d(
+    var(--homepage-file-entry-ghost-x),
+    var(--homepage-file-entry-ghost-y),
+    0
+  );
+}
+
+.homepage-studio .homepage-studio-file-entry-reorder-ghost
+  > .homepage-studio-file-group-entry {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  border-color: var(--homepage-focus);
+  background: var(--homepage-surface-raised);
+  box-shadow: var(--shadow-l);
+}
+
+.homepage-studio .homepage-studio-file-entry-reorder-slot {
+  min-width: 0;
+  list-style: none;
+  pointer-events: none;
+}
+
+.homepage-studio .homepage-studio-file-entry-reorder-slot
+  > .homepage-studio-file-group-entry {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0.58;
+}
+
+.homepage-studio .homepage-studio-file-group[data-file-entry-drop-state="active"] {
+  outline: 2px solid var(--homepage-focus);
+  outline-offset: 2px;
+}
+
+.homepage-studio .homepage-studio-file-group[data-file-entry-drop-state="active"]
+  > .homepage-studio-file-group-empty {
+  display: none;
+}
+
+.homepage-studio .homepage-studio-file-group[data-file-entry-drop-state="invalid"] {
+  outline: 2px solid var(--text-error);
+  outline-offset: 2px;
+  cursor: not-allowed;
+}
+
+.homepage-studio-file-groups[data-file-entry-reorder-state="invalid"]
+  .homepage-studio-file-entry-reorder-surface,
+.homepage-studio-file-group-settings[data-file-entry-reorder-state="invalid"]
+  .homepage-studio-file-entry-reorder-surface {
+  cursor: not-allowed;
+}
+
 .homepage-studio-settings .homepage-studio-file-entry-reorder-list {
   display: grid;
   gap: var(--size-4-2);
@@ -2526,15 +2618,6 @@ button.homepage-studio-settings-tab:focus-visible {
 
 .homepage-studio-settings .homepage-studio-file-entry-reorder-item {
   min-width: 0;
-}
-
-.homepage-studio-settings .homepage-studio-file-entry-reorder-surface {
-  cursor: grab;
-  user-select: none;
-}
-
-.homepage-studio-settings .homepage-studio-file-entry-reorder-surface:active {
-  cursor: grabbing;
 }
 
 .homepage-studio-settings

@@ -10,7 +10,9 @@ import type {
 import { LocalizationService } from "./services/LocalizationService";
 import type { ResetResult } from "./services/DataLifecycleService";
 import {
+  createHomepageFileGroupsViewModel,
   createHomepageShellViewModel,
+  type HomepageFileGroupsViewModel,
   type HomepageShellViewModel
 } from "./view-models/HomepageShellViewModel";
 import type {
@@ -2415,6 +2417,20 @@ export class HomepageApplicationFacade {
         groups: [],
         undo: null
       };
+  }
+
+  public getAllFileGroupsViewModel(): HomepageFileGroupsViewModel | null {
+    const state = this.store.getState();
+    if (state.mode !== "ready" || state.data.fileGroups.length === 0) {
+      return null;
+    }
+    return createHomepageFileGroupsViewModel(
+      state.data,
+      this.localization.getMessages(),
+      {
+        getStatus: (path) => this.fileEntryRuntime.getStatus(path)
+      }
+    );
   }
 
   public moveFileGroup(

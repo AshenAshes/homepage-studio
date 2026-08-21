@@ -17,12 +17,21 @@ export type FileEntryReorderMoveResult =
 
 export interface FileEntryReorderControllerOptions {
   readonly container: HTMLElement;
+  readonly scrollContainer?: HTMLElement;
   readonly scope: Component;
   readonly enabled: boolean;
   readonly move: (
-    request: FileEntryReorderMoveRequest
+    request: FileEntryReorderMoveRequest,
+    announcement: string
   ) => FileEntryReorderMoveResult;
   readonly open: (path: string, newPane: boolean) => void;
+  readonly onPickup?: () => void;
+  readonly onFinish?: () => void;
+  readonly onUnavailableOpen?: (
+    path: string,
+    state: "missing" | "invalid",
+    groupId: string
+  ) => void;
   readonly formatMovedAnnouncement: (
     path: string,
     groupName: string,
@@ -42,7 +51,7 @@ interface ReorderItem {
   readonly element: HTMLElement;
   readonly entryId: string;
   readonly path: string;
-  readonly state: string;
+  readonly state: "ready" | "missing" | "invalid";
 }
 
 interface ReorderGroup {
@@ -61,6 +70,7 @@ interface PointerDrop {
 interface PointerDrag {
   readonly sourceGroup: ReorderGroup;
   readonly sourceItem: ReorderItem;
+  readonly surface: HTMLElement;
   readonly pointerId: number;
   readonly startX: number;
   readonly startY: number;
@@ -80,9 +90,7 @@ interface PointerDrag {
 const HOLD_DELAY_MS = 220;
 const MOVE_THRESHOLD_PX = 5;
 
-const readGroups = (container: HTMLElement): readonly ReorderGroup[] => [
-  ...container.querySelectorAll<HTMLElement>("[data-file-group-id]")
-].map((element) => ({
+const readGroup = (element: HTMLElement): ReorderGroup => ({
   element,
   groupId: element.dataset.fileGroupId ?? "",
   name: element.dataset.fileGroupName ?? "",
@@ -90,13 +98,20 @@ const readGroups = (container: HTMLElement): readonly ReorderGroup[] => [
     ...element.querySelectorAll<HTMLElement>(
       ".homepage-studio-file-entry-reorder-item"
     )
-  ].map((item) => ({
-    element: item,
-    entryId: item.dataset.fileEntryId ?? "",
-    path: item.dataset.fileEntryPath ?? "",
-    state: item.dataset.fileEntryState ?? "ready"
-  }))
-}));
+  ].map((item) => {
+    const state = item.dataset.fileEntryState;
+    return {
+      element: item,
+      entryId: item.dataset.fileEntryId ?? "",
+      path: item.dataset.fileEntryPath ?? "",
+      state: state === "missing" || state === "invalid" ? state : "ready"
+    };
+  })
+});
+
+const readGroups = (container: HTMLElement): readonly ReorderGroup[] => [
+  ...container.querySelectorAll<HTMLElement>("[data-file-group-id]")
+].map(readGroup);
 
 const anchorTarget = (
   groupId: string,
@@ -193,27 +208,99 @@ export const attachFileEntryReorderController = (
   }
   const groups = readGroups(options.container);
   let drag: PointerDrag | null = null;
-  let suppressNextClick = false;
   const targetWindow = options.container.ownerDocument.defaultView;
+  let suppressedClickSurface: HTMLElement | null = null;
+  let suppressedClickTimer: number | null = null;
+  let cancelledPointer: {
+    readonly pointerId: number;
+    readonly surface: HTMLElement;
+  } | null = null;
+  const scrollContainer = options.scrollContainer ?? options.container;
+  let autoScrollTimer: number | null = null;
+  let autoScrollDirection = 0;
+  let scheduledDropFrame: number | null = null;
+  let pendingDrop: { readonly x: number; readonly y: number } | null = null;
+
+  const clearSuppressedClick = (): void => {
+    if (suppressedClickTimer !== null) {
+      targetWindow?.clearTimeout(suppressedClickTimer);
+      suppressedClickTimer = null;
+    }
+    suppressedClickSurface = null;
+  };
+
+  const suppressCompatibilityClick = (surface: HTMLElement): void => {
+    clearSuppressedClick();
+    suppressedClickSurface = surface;
+    suppressedClickTimer = targetWindow?.setTimeout(() => {
+      suppressedClickSurface = null;
+      suppressedClickTimer = null;
+    }, 0) ?? null;
+  };
+
+  const getScrollBounds = (): { readonly top: number; readonly bottom: number } => {
+    const rect = scrollContainer.getBoundingClientRect();
+    return rect.height > 0
+      ? { top: rect.top, bottom: rect.bottom }
+      : { top: 0, bottom: targetWindow?.innerHeight ?? 0 };
+  };
+
+  const getScrollDirection = (clientY: number): number => {
+    const edge = 72;
+    const bounds = getScrollBounds();
+    return clientY < bounds.top + edge
+      ? -1
+      : clientY > bounds.bottom - edge
+        ? 1
+        : 0;
+  };
+
+  const clearAutoScroll = (): void => {
+    if (autoScrollTimer !== null) {
+      targetWindow?.clearTimeout(autoScrollTimer);
+      autoScrollTimer = null;
+    }
+    autoScrollDirection = 0;
+  };
 
   const clearGroupStates = (): void => {
-    for (const group of groups) {
-      group.element.removeAttribute("data-file-entry-drop-state");
+    options.container.removeAttribute("data-file-entry-reorder-state");
+    for (const group of options.container.querySelectorAll<HTMLElement>(
+      "[data-file-group-id][data-file-entry-drop-state]"
+    )) {
+      group.removeAttribute("data-file-entry-drop-state");
     }
+  };
+
+  const clearScheduledDrop = (): void => {
+    if (scheduledDropFrame !== null) {
+      targetWindow?.clearTimeout(scheduledDropFrame);
+      scheduledDropFrame = null;
+    }
+    pendingDrop = null;
   };
 
   const cleanupDrag = (): void => {
     if (drag === null) {
       return;
     }
+    const wasActive = drag.active;
     targetWindow?.clearTimeout(drag.timer);
+    clearAutoScroll();
+    clearScheduledDrop();
     drag.ghost?.remove();
     drag.slot?.remove();
     drag.sourceItem.element.removeClass(
       "homepage-studio-file-entry-reorder-source"
     );
+    if (drag.surface.hasPointerCapture?.(drag.pointerId) === true) {
+      drag.surface.releasePointerCapture?.(drag.pointerId);
+    }
     clearGroupStates();
     drag = null;
+    if (wasActive) {
+      options.onFinish?.();
+    }
   };
 
   const positionGhost = (): void => {
@@ -242,18 +329,23 @@ export const attachFileEntryReorderController = (
       ?? null;
     const targetElement = hit?.closest<HTMLElement>("[data-file-group-id]")
       ?? null;
-    const targetGroup = groups.find(
-      (group) => group.element === targetElement
-    );
-    if (targetGroup === undefined) {
+    if (
+      targetElement === null
+      || !options.container.contains(targetElement)
+    ) {
       return;
     }
+    const targetGroup = readGroup(targetElement);
     if (targetGroup.items.some((item) =>
       item.entryId !== drag?.sourceItem.entryId
       && item.path === drag?.sourceItem.path
     )) {
       targetGroup.element.setAttribute(
         "data-file-entry-drop-state",
+        "invalid"
+      );
+      options.container.setAttribute(
+        "data-file-entry-reorder-state",
         "invalid"
       );
       drag.rejectedGroupId = targetGroup.groupId;
@@ -290,7 +382,10 @@ export const attachFileEntryReorderController = (
       readonly distance: number;
     }>((current, item) => {
       const rect = item.element.getBoundingClientRect();
-      const distance = Math.abs(y - (rect.top + rect.height / 2));
+      const distance = Math.hypot(
+        x - (rect.left + rect.width / 2),
+        y - (rect.top + rect.height / 2)
+      );
       return distance < current.distance
         ? { item, rect, distance }
         : current;
@@ -303,7 +398,12 @@ export const attachFileEntryReorderController = (
         position: candidates.length + 1
       };
     } else {
-      const before = y < nearest.rect.top + nearest.rect.height / 2;
+      const isGrid = targetWindow?.getComputedStyle(list).display === "grid";
+      const withinNearestRow = y >= nearest.rect.top
+        && y <= nearest.rect.bottom;
+      const before = isGrid && withinNearestRow
+        ? x < nearest.rect.left + nearest.rect.width / 2
+        : y < nearest.rect.top + nearest.rect.height / 2;
       list.insertBefore(
         drag.slot,
         before ? nearest.item.element : nearest.item.element.nextSibling
@@ -325,12 +425,67 @@ export const attachFileEntryReorderController = (
     );
   };
 
+  const scheduleDrop = (x: number, y: number): void => {
+    if (scheduledDropFrame === null || targetWindow === null) {
+      setDrop(x, y);
+      if (targetWindow !== null) {
+        scheduledDropFrame = targetWindow.setTimeout(() => {
+          scheduledDropFrame = null;
+          const next = pendingDrop;
+          pendingDrop = null;
+          if (next !== null) {
+            scheduleDrop(next.x, next.y);
+          }
+        }, 16);
+      }
+      return;
+    }
+    pendingDrop = { x, y };
+  };
+
+  const flushDrop = (x: number, y: number): void => {
+    clearScheduledDrop();
+    setDrop(x, y);
+  };
+
+  const continueAutoScroll = (): void => {
+    if (
+      drag === null
+      || !drag.active
+      || autoScrollDirection === 0
+      || targetWindow === null
+    ) {
+      clearAutoScroll();
+      return;
+    }
+    const previousScrollTop = scrollContainer.scrollTop;
+    scrollContainer.scrollTop += autoScrollDirection * 12;
+    if (scrollContainer.scrollTop === previousScrollTop) {
+      clearAutoScroll();
+      return;
+    }
+    scheduleDrop(drag.lastX, drag.lastY);
+    autoScrollTimer = targetWindow.setTimeout(continueAutoScroll, 16);
+  };
+
+  const updateAutoScroll = (clientY: number): void => {
+    const direction = getScrollDirection(clientY);
+    if (direction === autoScrollDirection) {
+      return;
+    }
+    clearAutoScroll();
+    autoScrollDirection = direction;
+    if (direction !== 0) {
+      continueAutoScroll();
+    }
+  };
+
   const activateDrag = (): void => {
     if (drag === null || drag.active) {
       return;
     }
     const sourceRow = drag.sourceItem.element.querySelector<HTMLElement>(
-      ".homepage-studio-file-group-entry-setting"
+      ".homepage-studio-file-group-entry-setting, .homepage-studio-file-group-entry"
     ) ?? drag.sourceItem.element;
     const rect = sourceRow.getBoundingClientRect();
     drag.active = true;
@@ -353,15 +508,24 @@ export const attachFileEntryReorderController = (
       "--homepage-file-entry-ghost-height",
       `${rect.height}px`
     );
-    drag.slot = options.container.createDiv({
-      cls: "homepage-studio-file-entry-reorder-slot",
-      attr: {
-        "aria-hidden": "true",
-        inert: ""
-      }
-    });
+    drag.slot = drag.sourceItem.element.tagName === "LI"
+      ? options.container.createEl("li", {
+        cls: "homepage-studio-file-entry-reorder-slot",
+        attr: {
+          "aria-hidden": "true",
+          inert: ""
+        }
+      })
+      : options.container.createDiv({
+        cls: "homepage-studio-file-entry-reorder-slot",
+        attr: {
+          "aria-hidden": "true",
+          inert: ""
+        }
+      });
     drag.slot.appendChild(sourceRow.cloneNode(true));
     drag.slot.remove();
+    options.onPickup?.();
     positionGhost();
     setDrop(drag.lastX, drag.lastY);
   };
@@ -384,19 +548,20 @@ export const attachFileEntryReorderController = (
       }
       return;
     }
+    const announcement = options.formatMovedAnnouncement(
+      current.sourceItem.path,
+      drop.targetGroup.name,
+      drop.position
+    );
     const result = options.move({
       sourceGroupId: current.sourceGroup.groupId,
       entryId: current.sourceItem.entryId,
       target: drop.target
-    });
+    }, announcement);
     if (result.type === "applied") {
       options.onApplied(
         current.sourceItem.entryId,
-        options.formatMovedAnnouncement(
-          current.sourceItem.path,
-          drop.targetGroup.name,
-          drop.position
-        )
+        announcement
       );
       return;
     }
@@ -409,12 +574,35 @@ export const attachFileEntryReorderController = (
     (event) => {
       if (event.key === "Escape" && drag?.active === true) {
         event.preventDefault();
+        cancelledPointer = {
+          pointerId: drag.pointerId,
+          surface: drag.surface
+        };
         cleanupDrag();
+      }
+    }
+  );
+  options.scope.registerDomEvent(
+    options.container.ownerDocument,
+    "pointerup",
+    (event) => {
+      if (
+        cancelledPointer === null
+        || event.pointerId !== cancelledPointer.pointerId
+      ) {
+        return;
+      }
+      const { surface } = cancelledPointer;
+      cancelledPointer = null;
+      if (event.target !== null && surface.contains(event.target as Node)) {
+        suppressCompatibilityClick(surface);
       }
     }
   );
   options.scope.register(() => {
     cleanupDrag();
+    clearSuppressedClick();
+    cancelledPointer = null;
   });
 
   for (const group of groups) {
@@ -426,11 +614,13 @@ export const attachFileEntryReorderController = (
         continue;
       }
       options.scope.registerDomEvent(surface, "pointerdown", (event) => {
+        clearSuppressedClick();
         if (
           drag !== null
           || event.button !== 0
           || event.ctrlKey
           || event.metaKey
+          || event.pointerType === "touch"
           || targetWindow === null
         ) {
           return;
@@ -439,6 +629,7 @@ export const attachFileEntryReorderController = (
         const pending = {
           sourceGroup: group,
           sourceItem: item,
+          surface,
           pointerId: event.pointerId,
           startX: event.clientX,
           startY: event.clientY,
@@ -478,7 +669,8 @@ export const attachFileEntryReorderController = (
         }
         event.preventDefault();
         positionGhost();
-        setDrop(event.clientX, event.clientY);
+        scheduleDrop(event.clientX, event.clientY);
+        updateAutoScroll(event.clientY);
       });
       options.scope.registerDomEvent(surface, "pointerup", (event) => {
         if (drag === null || event.pointerId !== drag.pointerId) {
@@ -487,22 +679,34 @@ export const attachFileEntryReorderController = (
         const shouldSuppressClick = drag.active || drag.movedBeyondThreshold;
         if (shouldSuppressClick) {
           event.preventDefault();
-          suppressNextClick = true;
+          suppressCompatibilityClick(surface);
+        }
+        if (drag.active) {
+          flushDrop(event.clientX, event.clientY);
         }
         finishDrag();
       });
-      options.scope.registerDomEvent(surface, "pointercancel", () => {
+      options.scope.registerDomEvent(surface, "pointercancel", (event) => {
+        if (cancelledPointer?.pointerId === event.pointerId) {
+          cancelledPointer = null;
+        }
         cleanupDrag();
       });
       options.scope.registerDomEvent(surface, "click", (event) => {
-        if (suppressNextClick) {
-          suppressNextClick = false;
+        if (suppressedClickSurface === surface) {
+          clearSuppressedClick();
           event.preventDefault();
           event.stopImmediatePropagation();
           return;
         }
         if (item.state === "ready") {
           options.open(item.path, event.ctrlKey || event.metaKey);
+        } else {
+          options.onUnavailableOpen?.(
+            item.path,
+            item.state,
+            group.groupId
+          );
         }
       });
       options.scope.registerDomEvent(surface, "auxclick", (event) => {
@@ -515,10 +719,18 @@ export const attachFileEntryReorderController = (
         if (
           !event.altKey
           && (event.key === "Enter" || event.key === " ")
-          && item.state === "ready"
+          && surface.tagName !== "BUTTON"
         ) {
           event.preventDefault();
-          options.open(item.path, false);
+          if (item.state === "ready") {
+            options.open(item.path, false);
+          } else {
+            options.onUnavailableOpen?.(
+              item.path,
+              item.state,
+              group.groupId
+            );
+          }
           return;
         }
         if (!event.altKey) {
@@ -530,19 +742,20 @@ export const attachFileEntryReorderController = (
         }
         event.preventDefault();
         event.stopPropagation();
+        const announcement = options.formatMovedAnnouncement(
+          item.path,
+          resolved.targetGroup.name,
+          resolved.position
+        );
         const result = options.move({
           sourceGroupId: group.groupId,
           entryId: item.entryId,
           target: resolved.target
-        });
+        }, announcement);
         if (result.type === "applied") {
           options.onApplied(
             item.entryId,
-            options.formatMovedAnnouncement(
-              item.path,
-              resolved.targetGroup.name,
-              resolved.position
-            )
+            announcement
           );
           return;
         }
