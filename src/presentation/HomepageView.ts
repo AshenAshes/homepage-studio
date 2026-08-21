@@ -17,6 +17,8 @@ import { attachAccessibleLabel } from "./accessibility";
 
 export class HomepageView extends ItemView {
   private renderScope: Component | null = null;
+  private pendingFileEntryFocusId: string | null = null;
+  private pendingFileEntryAnnouncement: string | null = null;
 
   public constructor(
     leaf: WorkspaceLeaf,
@@ -163,6 +165,22 @@ export class HomepageView extends ItemView {
           showMoreFileGroupEntries: () => {
             this.application.showMoreFileGroupEntries();
           },
+          getAllFileGroups: () =>
+            this.application.getAllFileGroupsViewModel(),
+          moveFileGroupEntry: (request, announcement) => {
+            this.pendingFileEntryFocusId = request.entryId;
+            this.pendingFileEntryAnnouncement = announcement;
+            const result = this.application.moveFileGroupEntryTo(
+              request.sourceGroupId,
+              request.entryId,
+              request.target
+            );
+            if (result.type !== "applied") {
+              this.pendingFileEntryFocusId = null;
+              this.pendingFileEntryAnnouncement = null;
+            }
+            return result;
+          },
           reloadTaskSource: () => {
             void this.application.reloadTaskSource();
           },
@@ -195,6 +213,31 @@ export class HomepageView extends ItemView {
             journalSelection.end,
             journalSelection.direction
           );
+        }
+      }
+      if (this.pendingFileEntryAnnouncement !== null) {
+        this.contentEl.querySelector<HTMLElement>(
+          ".homepage-studio-file-entry-reorder-live"
+        )?.setText(this.pendingFileEntryAnnouncement);
+        this.pendingFileEntryAnnouncement = null;
+      }
+      if (this.pendingFileEntryFocusId !== null) {
+        const pendingId = this.pendingFileEntryFocusId;
+        this.pendingFileEntryFocusId = null;
+        const movedItem = [
+          ...this.contentEl.querySelectorAll<HTMLElement>(
+            ".homepage-studio-file-entry-reorder-item"
+          )
+        ].find((item) => item.dataset.fileEntryId === pendingId);
+        const movedSurface = movedItem?.querySelector<HTMLElement>(
+          ".homepage-studio-file-entry-reorder-surface"
+        );
+        if (movedSurface !== null && movedSurface !== undefined) {
+          movedSurface.focus({ preventScroll: true });
+        } else {
+          this.contentEl.querySelector<HTMLElement>(
+            ".homepage-studio-file-groups .homepage-studio-collection-more"
+          )?.focus({ preventScroll: true });
         }
       }
       restoreScrollPosition();

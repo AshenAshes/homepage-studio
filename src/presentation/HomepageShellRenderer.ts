@@ -12,6 +12,11 @@ import {
   attachAccessibleLabel,
   attachTooltipAccessibleLabel
 } from "./accessibility";
+import {
+  attachFileEntryReorderController,
+  type FileEntryReorderMoveRequest,
+  type FileEntryReorderMoveResult
+} from "./FileEntryReorderController";
 
 interface HomepageShellActions {
   openSettings(section?: HomepageSettingsSection): void;
@@ -38,6 +43,11 @@ interface HomepageShellActions {
   showMoreTasks(): void;
   showMoreArchivedTasks(): void;
   showMoreFileGroupEntries(): void;
+  getAllFileGroups(): FileGroupModuleViewModel | null;
+  moveFileGroupEntry(
+    request: FileEntryReorderMoveRequest,
+    announcement: string
+  ): FileEntryReorderMoveResult;
   reloadTaskSource(): void;
   openTaskSource(path: string): void;
   deleteTask(target: TaskTarget, text: string): void;
@@ -48,6 +58,12 @@ interface HomepageShellActions {
     scope: Component
   ): void;
 }
+
+type FileGroupModuleViewModel = NonNullable<
+HomepageModuleViewModel["fileGroups"]
+>;
+type FileGroupEntryViewModel =
+  FileGroupModuleViewModel["groups"][number]["entries"][number];
 
 const renderIcon = (
   container: HTMLElement,
@@ -1905,19 +1921,119 @@ const renderModule = (
   }
 
   if (module.state === "ready" && module.fileGroups !== undefined) {
+    const fileGroupModel = module.fileGroups;
     const fileGroups = section.createDiv({
       cls: "homepage-studio-file-groups"
     });
     attachAccessibleLabel(
       fileGroups,
       fileGroups,
-      module.fileGroups.listLabel
+      fileGroupModel.listLabel
     );
-    for (const [groupIndex, group] of module.fileGroups.groups.entries()) {
+    const reorderLive = fileGroups.createDiv({
+      cls: "homepage-studio-file-entry-reorder-live",
+      attr: {
+        role: "status",
+        "aria-live": "polite"
+      }
+    });
+    const groupLists = new Map<string, HTMLElement>();
+    const renderFileEntry = (
+      list: HTMLElement,
+      entry: FileGroupEntryViewModel,
+      entryIndex: number,
+      temporary: boolean
+    ): void => {
+      const item = list.createEl("li", {
+        cls: "homepage-studio-file-group-item homepage-studio-file-entry-reorder-item",
+        attr: {
+          "data-file-entry-id": entry.id,
+          "data-file-entry-path": entry.path,
+          "data-file-entry-state": entry.state,
+          ...(temporary ? { "data-file-entry-temporary": "true" } : {})
+        }
+      });
+      const reorderDescriptionId = [
+        "homepage-studio-homepage-file-entry-reorder-description",
+        entry.id
+      ].join("-");
+      item.createSpan({
+        cls: "homepage-studio-file-entry-reorder-description",
+        text: fileGroupModel.reorderEntryDescription.replace(
+          "{path}",
+          entry.path
+        ),
+        attr: { id: reorderDescriptionId }
+      });
+      const open = item.createEl("button", {
+        cls: "homepage-studio-file-group-entry homepage-studio-file-entry-reorder-surface",
+        attr: {
+          type: "button",
+          "data-state": entry.state,
+          "aria-keyshortcuts": [
+            "Alt+ArrowUp",
+            "Alt+ArrowDown",
+            "Alt+ArrowLeft",
+            "Alt+ArrowRight",
+            "Alt+Home",
+            "Alt+End"
+          ].join(" "),
+          "aria-describedby": reorderDescriptionId,
+          ...(theme === "archive-observatory" && entry.parentLabel !== null
+            ? { "data-has-parent": "true" }
+            : {})
+        }
+      });
+      const primary = theme === "archive-observatory"
+        ? open.createSpan({
+          cls: "homepage-studio-file-group-entry-primary"
+        })
+        : open;
+      if (theme === "archive-observatory") {
+        primary.createSpan({
+          cls: "homepage-studio-file-group-entry-index",
+          text: `${String(entryIndex + 1).padStart(2, "0")}.`,
+          attr: {
+            "aria-hidden": "true"
+          }
+        });
+      }
+      primary.createSpan({
+        cls: "homepage-studio-file-group-entry-name",
+        text: entry.fileName
+      });
+      if (entry.parentLabel !== null) {
+        open.createSpan({
+          cls: "homepage-studio-file-group-entry-parent",
+          text: entry.parentLabel,
+          attr: {
+            "aria-hidden": "true"
+          }
+        });
+      }
+      if (entry.statusLabel !== null) {
+        open.createSpan({
+          cls: "homepage-studio-file-group-entry-status",
+          text: entry.statusLabel
+        });
+      }
+      attachAccessibleLabel(
+        open,
+        item,
+        entry.accessibleLabel
+      );
+    };
+    const renderFileGroup = (
+      group: FileGroupModuleViewModel["groups"][number],
+      groupIndex: number,
+      temporary: boolean
+    ): HTMLElement => {
       const groupSection = fileGroups.createEl("section", {
         cls: "homepage-studio-file-group",
         attr: {
-          "data-file-group-id": group.id
+          "data-file-group-id": group.id,
+          "data-file-group-name": group.name,
+          ...(temporary ? { "data-file-group-temporary": "true" } : {})
         }
       });
       const groupTitle = groupSection.createEl("h3", {
@@ -1950,94 +2066,100 @@ const renderModule = (
       if (group.entries.length === 0) {
         groupSection.createEl("p", {
           cls: "homepage-studio-file-group-empty",
-          text: module.fileGroups.emptyGroupLabel
+          text: fileGroupModel.emptyGroupLabel
         });
-        continue;
       }
       const list = groupSection.createEl("ul", {
-        cls: "homepage-studio-file-group-list"
+        cls: "homepage-studio-file-group-list homepage-studio-file-entry-reorder-list"
       });
+      groupLists.set(group.id, list);
       for (const [entryIndex, entry] of group.entries.entries()) {
-        const item = list.createEl("li", {
-          cls: "homepage-studio-file-group-item"
-        });
-        const open = item.createEl("button", {
-          cls: "homepage-studio-file-group-entry",
-          attr: {
-            type: "button",
-            "data-state": entry.state,
-            ...(entry.state === "ready" ? {} : { disabled: "" }),
-            ...(theme === "archive-observatory" && entry.parentLabel !== null
-              ? { "data-has-parent": "true" }
-              : {})
-          }
-        });
-        const primary = theme === "archive-observatory"
-          ? open.createSpan({
-            cls: "homepage-studio-file-group-entry-primary"
-          })
-          : open;
-        if (theme === "archive-observatory") {
-          primary.createSpan({
-            cls: "homepage-studio-file-group-entry-index",
-            text: `${String(entryIndex + 1).padStart(2, "0")}.`,
-            attr: {
-              "aria-hidden": "true"
-            }
-          });
-        }
-        primary.createSpan({
-          cls: "homepage-studio-file-group-entry-name",
-          text: entry.fileName
-        });
-        if (entry.parentLabel !== null) {
-          open.createSpan({
-            cls: "homepage-studio-file-group-entry-parent",
-            text: entry.parentLabel,
-            attr: {
-              "aria-hidden": "true"
-            }
-          });
-        }
-        if (entry.statusLabel !== null) {
-          open.createSpan({
-            cls: "homepage-studio-file-group-entry-status",
-            text: entry.statusLabel
-          });
-        }
-        attachAccessibleLabel(
-          open,
-          item,
-          entry.accessibleLabel
-        );
-        scope.registerDomEvent(open, "click", (event) => {
-          if (entry.state !== "ready") {
-            return;
-          }
-          actions.openFile(
-            entry.path,
-            event.ctrlKey || event.metaKey
-          );
-        });
-        scope.registerDomEvent(open, "auxclick", (event) => {
-          if (event.button !== 1 || entry.state !== "ready") {
-            return;
-          }
-          event.preventDefault();
-          actions.openFile(entry.path, true);
-        });
+        renderFileEntry(list, entry, entryIndex, temporary);
       }
+      return list;
+    };
+    for (const [groupIndex, group] of fileGroupModel.groups.entries()) {
+      renderFileGroup(group, groupIndex, false);
     }
-    if (module.fileGroups.hasMoreEntries) {
-      const showMore = fileGroups.createEl("button", {
+    let showMore: HTMLButtonElement | null = null;
+    if (fileGroupModel.hasMoreEntries) {
+      showMore = fileGroups.createEl("button", {
         cls: "homepage-studio-collection-more",
-        text: module.fileGroups.showMoreLabel,
+        text: fileGroupModel.showMoreLabel,
         attr: { type: "button" }
       });
       scope.registerDomEvent(showMore, "click", () => {
         actions.showMoreFileGroupEntries();
       });
     }
+    const revealHiddenEntries = (): void => {
+      const expandedModel = actions.getAllFileGroups();
+      if (expandedModel === null) {
+        return;
+      }
+      showMore?.remove();
+      for (const [groupIndex, group] of expandedModel.groups.entries()) {
+        const list = groupLists.get(group.id)
+          ?? renderFileGroup(group, groupIndex, true);
+        const renderedEntryIds = new Set([
+          ...list.querySelectorAll<HTMLElement>("[data-file-entry-id]")
+        ].map((entry) => entry.dataset.fileEntryId));
+        for (const [entryIndex, entry] of group.entries.entries()) {
+          if (!renderedEntryIds.has(entry.id)) {
+            renderFileEntry(list, entry, entryIndex, true);
+          }
+        }
+      }
+    };
+    const restoreVisibleEntries = (): void => {
+      for (const temporary of fileGroups.querySelectorAll(
+        '[data-file-entry-temporary="true"]'
+      )) {
+        temporary.remove();
+      }
+      for (const temporaryGroup of fileGroups.querySelectorAll(
+        '[data-file-group-temporary="true"]'
+      )) {
+        temporaryGroup.remove();
+      }
+      if (showMore !== null && !showMore.isConnected) {
+        fileGroups.appendChild(showMore);
+      }
+    };
+    attachFileEntryReorderController({
+      container: fileGroups,
+      scrollContainer: fileGroups.closest<HTMLElement>(".homepage-studio")
+        ?? fileGroups,
+      scope,
+      enabled: true,
+      move: (request, announcement) =>
+        actions.moveFileGroupEntry(request, announcement),
+      open: (path, newPane) => {
+        actions.openFile(path, newPane);
+      },
+      onPickup: revealHiddenEntries,
+      onFinish: restoreVisibleEntries,
+      onUnavailableOpen: (path) => {
+        reorderLive.setText(
+          fileGroupModel.unavailableEntryLabel.replace("{path}", path)
+        );
+      },
+      formatMovedAnnouncement: (path, groupName, position) =>
+        fileGroupModel.moveEntryAnnouncement
+          .replace("{path}", path)
+          .replace("{group}", groupName)
+          .replace("{position}", position.toString()),
+      onApplied: () => undefined,
+      onRejected: (result) => {
+        reorderLive.setText(result.type === "duplicate-path"
+          ? fileGroupModel.duplicateEntryLabel
+          : result.type === "not-found"
+            ? fileGroupModel.missingEntryLabel
+            : result.type === "blocked"
+              ? fileGroupModel.unavailableLabel
+              : "");
+      }
+    });
     return;
   }
 

@@ -239,6 +239,12 @@ export interface HomepageModuleViewModel {
     readonly listLabel: string;
     readonly emptyGroupLabel: string;
     readonly showMoreLabel: string;
+    readonly reorderEntryDescription: string;
+    readonly unavailableEntryLabel: string;
+    readonly moveEntryAnnouncement: string;
+    readonly duplicateEntryLabel: string;
+    readonly missingEntryLabel: string;
+    readonly unavailableLabel: string;
     readonly hasMoreEntries: boolean;
     readonly groups: readonly {
       readonly id: string;
@@ -255,6 +261,10 @@ export interface HomepageModuleViewModel {
     }[];
   };
 }
+
+export type HomepageFileGroupsViewModel = NonNullable<
+HomepageModuleViewModel["fileGroups"]
+>;
 
 export interface HomepageShellViewModel {
   readonly theme: PluginData["theme"];
@@ -531,6 +541,60 @@ const createHeatmapWeeks = (
     };
   });
 };
+
+export const createHomepageFileGroupsViewModel = (
+  data: Pick<PluginData, "fileGroups">,
+  messages: Messages,
+  fileEntryInput?: FileEntryShellInput
+): HomepageFileGroupsViewModel => ({
+  manageLabel: messages.fileGroupsManage,
+  listLabel: messages.fileGroupsListLabel,
+  emptyGroupLabel: messages.fileGroupsGroupEmpty,
+  showMoreLabel: messages.fileGroupsShowMore,
+  reorderEntryDescription: messages.fileGroupsReorderFile,
+  unavailableEntryLabel: messages.fileGroupsUnavailableEntry,
+  moveEntryAnnouncement: messages.fileGroupsMoveEntryAnnouncement,
+  duplicateEntryLabel: messages.fileGroupsDuplicateFile,
+  missingEntryLabel: messages.fileGroupsNotFound,
+  unavailableLabel: messages.fileGroupsUnavailable,
+  hasMoreEntries: data.fileGroups.reduce(
+    (total, group) => total + group.entries.length,
+    0
+  ) > (fileEntryInput?.visibleLimit ?? Number.POSITIVE_INFINITY),
+  groups: (() => {
+    let remaining = fileEntryInput?.visibleLimit
+      ?? Number.POSITIVE_INFINITY;
+    return data.fileGroups.flatMap((group) => {
+      if (group.entries.length > 0 && remaining <= 0) {
+        return [];
+      }
+      const visibleEntries = group.entries.slice(0, remaining);
+      remaining -= visibleEntries.length;
+      return [{
+        id: group.id,
+        name: group.name,
+        entries: buildFileEntryLabels(visibleEntries).map((entry) => {
+          const state = fileEntryInput?.getStatus(entry.path) ?? "ready";
+          const statusLabel = state === "missing"
+            ? messages.fileGroupsMissingFile
+            : state === "invalid"
+              ? messages.fileGroupsInvalidTarget
+              : null;
+          return {
+            ...entry,
+            state,
+            statusLabel,
+            accessibleLabel: (
+              state === "ready"
+                ? messages.fileGroupsOpenFile
+                : messages.fileGroupsUnavailableEntry
+            ).replace("{path}", entry.path)
+          };
+        })
+      }];
+    });
+  })()
+});
 
 export const createHomepageShellViewModel = (
   data: PluginData,
@@ -1254,50 +1318,11 @@ export const createHomepageShellViewModel = (
         ...(!fileGroupsVisible || data.fileGroups.length === 0
           ? {}
           : {
-            fileGroups: {
-              manageLabel: messages.fileGroupsManage,
-              listLabel: messages.fileGroupsListLabel,
-              emptyGroupLabel: messages.fileGroupsGroupEmpty,
-              showMoreLabel: messages.fileGroupsShowMore,
-              hasMoreEntries: data.fileGroups.reduce(
-                (total, group) => total + group.entries.length,
-                0
-              ) > (fileEntryInput?.visibleLimit ?? Number.POSITIVE_INFINITY),
-              groups: (() => {
-                let remaining = fileEntryInput?.visibleLimit
-                  ?? Number.POSITIVE_INFINITY;
-                return data.fileGroups.flatMap((group) => {
-                  if (group.entries.length > 0 && remaining <= 0) {
-                    return [];
-                  }
-                  const visibleEntries = group.entries.slice(0, remaining);
-                  remaining -= visibleEntries.length;
-                  return [{
-                id: group.id,
-                name: group.name,
-                entries: buildFileEntryLabels(visibleEntries).map((entry) => {
-                  const state = fileEntryInput?.getStatus(entry.path)
-                    ?? "ready";
-                  const statusLabel = state === "missing"
-                    ? messages.fileGroupsMissingFile
-                    : state === "invalid"
-                      ? messages.fileGroupsInvalidTarget
-                      : null;
-                  return {
-                    ...entry,
-                    state,
-                    statusLabel,
-                    accessibleLabel: (
-                      state === "ready"
-                        ? messages.fileGroupsOpenFile
-                        : messages.fileGroupsUnavailableEntry
-                    ).replace("{path}", entry.path)
-                  };
-                })
-                  }];
-                });
-              })()
-            }
+            fileGroups: createHomepageFileGroupsViewModel(
+              data,
+              messages,
+              fileEntryInput
+            )
           })
       }
     ]

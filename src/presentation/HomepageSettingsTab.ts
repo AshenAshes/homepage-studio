@@ -1902,6 +1902,13 @@ export class HomepageSettingsTab extends PluginSettingTab {
       open: (path, newPane) => {
         void this.application.openFile(path, newPane);
       },
+      onUnavailableOpen: (_path, state, groupId) => {
+        (groupErrors.get(groupId) ?? error).setText(
+          state === "missing"
+            ? messages.fileGroupsMissingFile
+            : messages.fileGroupsInvalidTarget
+        );
+      },
       formatMovedAnnouncement: (path, groupName, position) =>
         messages.fileGroupsMoveEntryAnnouncement
           .replace("{path}", path)
