@@ -2533,20 +2533,29 @@ button.homepage-studio-settings-tab:focus-visible {
   white-space: nowrap;
 }
 
-.homepage-studio .homepage-studio-file-entry-reorder-surface,
+.homepage-studio .homepage-studio-file-entry-reorder-surface {
+  cursor: pointer;
+  user-select: none;
+}
+
 .homepage-studio-settings .homepage-studio-file-entry-reorder-surface {
   cursor: grab;
   user-select: none;
 }
 
-.homepage-studio .homepage-studio-file-entry-reorder-surface:active,
 .homepage-studio-settings .homepage-studio-file-entry-reorder-surface:active {
   cursor: grabbing;
 }
 
 .homepage-studio .homepage-studio-file-entry-reorder-source
   > .homepage-studio-file-group-entry {
+  cursor: grabbing;
   opacity: 0.35;
+}
+
+.homepage-studio .homepage-studio-file-entry-reorder-source-intra-group,
+.homepage-studio-settings .homepage-studio-file-entry-reorder-source-intra-group {
+  display: none;
 }
 
 .homepage-studio .homepage-studio-file-entry-reorder-ghost {

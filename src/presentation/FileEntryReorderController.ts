@@ -293,6 +293,9 @@ export const attachFileEntryReorderController = (
     drag.sourceItem.element.removeClass(
       "homepage-studio-file-entry-reorder-source"
     );
+    drag.sourceItem.element.removeClass(
+      "homepage-studio-file-entry-reorder-source-intra-group"
+    );
     if (drag.surface.hasPointerCapture?.(drag.pointerId) === true) {
       drag.surface.releasePointerCapture?.(drag.pointerId);
     }
@@ -322,6 +325,9 @@ export const attachFileEntryReorderController = (
       return;
     }
     drag.slot.remove();
+    drag.sourceItem.element.removeClass(
+      "homepage-studio-file-entry-reorder-source-intra-group"
+    );
     clearGroupStates();
     drag.drop = null;
     drag.rejectedGroupId = null;
@@ -356,6 +362,11 @@ export const attachFileEntryReorderController = (
     );
     if (list === null) {
       return;
+    }
+    if (targetGroup.groupId === drag.sourceGroup.groupId) {
+      drag.sourceItem.element.addClass(
+        "homepage-studio-file-entry-reorder-source-intra-group"
+      );
     }
     const candidates = targetGroup.items.filter(
       (item) => item.entryId !== drag?.sourceItem.entryId
