@@ -2,6 +2,25 @@
 
 All notable changes to Homepage Studio are documented in this file.
 
+## 1.2.0 — 2026-08-25
+
+### Added
+
+- Added press-and-hold file entry reordering within and across file groups on both the homepage and settings page, with atomic persistence that preserves entry identities.
+- Added press-and-hold task reordering within incomplete, completed, and archived task lists.
+- Added a task setting that can hide the archived-task entry point on the homepage.
+
+### Fixed
+
+- Preserved task drafts and journal focus across clock refreshes, window visibility changes, and view rebuilds.
+- Stabilized file and task drag previews, drop targeting, pointer feedback, cleanup, and ordering during live clock updates.
+- Allowed unchanged task edits to close normally and shortened the edit action label to Save.
+- Accepted the archive-toggle setting in persisted plugin data without entering read-only safe mode.
+
+### Release
+
+- Added pull-request CI and combined curated 1.2.0 highlights with GitHub-generated release notes.
+
 ## 1.1.1 — 2026-08-20
 
 ### Fixed

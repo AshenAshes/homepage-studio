@@ -9,16 +9,16 @@ Homepage Studio is a desktop-only homepage for Obsidian. It brings writing activ
 ## Requirements
 
 - Obsidian desktop 1.8.7 or later.
-- Windows, macOS, or Linux. Mobile is not supported in 1.0.0.
+- Windows, macOS, or Linux. Mobile is not supported.
 - A vault in which community plugins are allowed.
 
 ## Features
 
 - Writing heatmap with daily totals and per-file change details.
 - Single-file journal using `## YYYY-MM-DD` date sections.
-- One-time tasks plus daily and weekly tasks that reset from the local calendar, all stored in a bounded Markdown section.
+- One-time tasks plus daily and weekly tasks that reset from the local calendar, with optional archive controls and press-and-hold reordering within incomplete, completed, and archived task lists.
 - Daily and weekly plan templates, including overnight time blocks.
-- Manually curated file groups with rename and missing-file recovery.
+- Manually curated file groups with press-and-hold reordering within and across groups on both the homepage and settings page, plus rename and missing-file recovery.
 - Vault-image and optional remote-image banners with offline theme fallbacks.
 - Per-theme module layout, light/dark appearance, and Chinese/English UI.
 - Keyboard navigation, visible focus, reduced-motion support, and safe data recovery.
@@ -56,14 +56,14 @@ Do not copy repository source files, test files, or development documentation in
 
 ## Settings and data sources
 
-The settings page controls the interface language, theme and appearance, banner source, module visibility and order, heatmap preferences, journal source, task source, plan templates, file groups, and plugin-data reset.
+The settings page controls the interface language, theme and appearance, banner source, module visibility and order, heatmap preferences, journal source, task source and archive controls, plan templates, file groups, and plugin-data reset.
 
 Homepage Studio reads or writes only explicitly configured sources:
 
 - Plugin settings and module state are stored in the plugin's own `data.json`. Previous valid state is backed up before the first write of a session and before destructive reset or migration operations.
 - The journal source is one Markdown file divided by second-level date headings such as `## 2026-08-10`.
-- The task source is one Markdown file with a Homepage-managed active/archive boundary. One-time tasks can be archived; recurring tasks stay active and keep their cycle state in the file.
-- File groups contain explicit vault file paths; the plugin does not build a full-vault content index.
+- The task source is one Markdown file with a Homepage-managed active/archive boundary. One-time tasks can be archived; recurring tasks stay active and keep their cycle state in the file. Drag reordering persists the order directly in this managed region.
+- File groups contain explicit vault file paths and preserve their manually arranged group and entry order; the plugin does not build a full-vault content index.
 - The heatmap records positive net growth from Markdown files edited while open in the Obsidian editor. It does not count synchronization, imports, external edits, or non-Markdown files.
 - Vault banners stay local. A remote banner URL is the only optional external request and is used only when the user configures that URL. Homepage Studio has no analytics, telemetry, crash reporting, or background update service.
 

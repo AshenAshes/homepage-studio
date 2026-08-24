@@ -113,13 +113,41 @@ jobs:
             main.js
             styles.css
 
-      - name: Publish GitHub release
+      - name: Prepare release highlights
+        if: steps.release.outputs.publish == 'true'
+        id: notes
+        shell: bash
+        run: |
+          version="${{ steps.release.outputs.tag }}"
+          highlights="$(
+            awk -v heading="## ${version}" '
+              $0 == heading || index($0, heading " ") == 1 { capture = 1; next }
+              capture && /^## / { exit }
+              capture { print }
+            ' CHANGELOG.md
+          )"
+
+          if [[ -z "${highlights//[[:space:]]/}" ]]; then
+            echo "No changelog section found for release '${version}'." >&2
+            exit 1
+          fi
+
+          {
+            echo 'highlights<<EOF'
+            printf '%s\n' "${highlights}"
+            echo 'EOF'
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Publish GitHub release with generated notes
         if: steps.release.outputs.publish == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: >-
-          gh release create "${{ steps.release.outputs.tag }}"
-          main.js manifest.json styles.css
-          --verify-tag
-          --generate-notes
-          --title "${{ steps.release.outputs.tag }}"
+          RELEASE_HIGHLIGHTS: ${{ steps.notes.outputs.highlights }}
+        run: |
+          gh release create "${{ steps.release.outputs.tag }}" \
+            main.js manifest.json styles.css \
+            --verify-tag \
+            --generate-notes \
+            --notes "${RELEASE_HIGHLIGHTS}" \
+            --fail-on-no-commits \
+            --title "${{ steps.release.outputs.tag }}"
