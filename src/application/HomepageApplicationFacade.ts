@@ -590,6 +590,7 @@ export class HomepageApplicationFacade {
   private taskArchiveVisible = false;
   private taskVisibleLimit = TASK_PAGE_SIZE;
   private archivedTaskVisibleLimit = TASK_PAGE_SIZE;
+  private taskSourceRevision = 0;
   private fileEntryVisibleLimit = FILE_ENTRY_PAGE_SIZE;
   private readonly taskRuntimeListeners = new Set<() => void>();
   private requestRecurringTaskRefresh = (): void => undefined;
@@ -702,7 +703,8 @@ export class HomepageApplicationFacade {
           archiveVisible: this.taskArchiveVisible,
           addDraft: this.taskAddDraft,
           visibleLimit: this.taskVisibleLimit,
-          archivedVisibleLimit: this.archivedTaskVisibleLimit
+          archivedVisibleLimit: this.archivedTaskVisibleLimit,
+          sourceRevision: this.taskSourceRevision
         },
         {
           getStatus: (path) => this.fileEntryRuntime.getStatus(path),
@@ -1421,6 +1423,17 @@ export class HomepageApplicationFacade {
 
   public unarchiveTask(target: TaskTarget): Promise<TaskSourceMutationResult> {
     return this.mutateTask({ type: "unarchive", target }, null);
+  }
+
+  public reorderTask(
+    target: TaskTarget,
+    before: TaskTarget | null
+  ): Promise<TaskSourceMutationResult> {
+    return this.mutateTask({
+      type: "reorder",
+      target,
+      before
+    }, null);
   }
 
   public setTaskArchiveVisible(visible: boolean): void {
@@ -3325,6 +3338,26 @@ export class HomepageApplicationFacade {
   }
 
   private setTaskRuntimeState(state: TaskRuntimeState): void {
+    const previous = this.taskRuntimeState;
+    const sourceChanged = previous.type !== state.type
+      || (
+        previous.type === "ready"
+        && state.type === "ready"
+        && (
+          previous.path !== state.path
+          || previous.taskSource.source !== state.taskSource.source
+        )
+      )
+      || (
+        previous.type !== "unconfigured"
+        && state.type !== "unconfigured"
+        && previous.type !== "ready"
+        && state.type !== "ready"
+        && previous.path !== state.path
+      );
+    if (sourceChanged) {
+      this.taskSourceRevision += 1;
+    }
     this.taskRuntimeState = state;
     this.notifyTaskRuntime();
   }

@@ -165,6 +165,7 @@
   "tasksNoArchived": "No archived tasks.",
   "tasksShowMore": "Show more tasks",
   "tasksShowMoreArchive": "Show more archived tasks",
+  "tasksMoveAnnouncement": "Moved {task} to position {position}.",
   "tasksAddPlaceholder": "Add a task",
   "tasksAdd": "Add",
   "tasksNoActive": "No active tasks.",

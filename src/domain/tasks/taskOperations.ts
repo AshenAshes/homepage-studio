@@ -55,6 +55,11 @@ export type TaskMutation =
     readonly targets: readonly TaskTarget[];
   }
   | { readonly type: "unarchive"; readonly target: TaskTarget }
+  | {
+    readonly type: "reorder";
+    readonly target: TaskTarget;
+    readonly before: TaskTarget | null;
+  }
   | { readonly type: "delete"; readonly target: TaskTarget };
 
 export type TaskMutationResult =
@@ -78,7 +83,8 @@ export type TaskMutationResult =
       | "not-completed"
       | "not-archived"
       | "not-recurring"
-      | "recurring";
+      | "recurring"
+      | "different-order-scope";
   }
   | {
     readonly type: "conflict";
@@ -213,6 +219,73 @@ const replaceLine = (
       taskSource.source.slice(task.lineStart + task.rawLine.length)
     ].join("")
   };
+};
+
+const reorderTask = (
+  taskSource: TaskSourceDocument,
+  target: TaskTarget,
+  before: TaskTarget | null
+): TaskMutationResult => {
+  const located = locateTarget(taskSource, target);
+  if ("type" in located) {
+    return located;
+  }
+  const beforeTask = before === null
+    ? null
+    : locateTarget(taskSource, before);
+  if (beforeTask !== null && "type" in beforeTask) {
+    return beforeTask;
+  }
+  if (beforeTask?.lineStart === located.lineStart) {
+    return { type: "noop" };
+  }
+  if (
+    beforeTask !== null
+    && (
+      beforeTask.section !== located.section
+      || beforeTask.completed !== located.completed
+    )
+  ) {
+    return { type: "invalid-task", reason: "different-order-scope" };
+  }
+
+  const slots = taskSource.tasks.filter((task) =>
+    task.section === located.section
+    && task.completed === located.completed
+  );
+  const withoutTarget = slots.filter(
+    (task) => task.lineStart !== located.lineStart
+  );
+  const insertionIndex = beforeTask === null
+    ? withoutTarget.length
+    : withoutTarget.findIndex(
+      (task) => task.lineStart === beforeTask.lineStart
+    );
+  if (insertionIndex < 0) {
+    return { type: "conflict", reason: "deleted" };
+  }
+  const reordered = [...withoutTarget];
+  reordered.splice(insertionIndex, 0, located);
+  if (reordered.every(
+    (task, index) => task.lineStart === slots[index]?.lineStart
+  )) {
+    return { type: "noop" };
+  }
+
+  const parts: string[] = [];
+  let cursor = 0;
+  for (let index = 0; index < slots.length; index += 1) {
+    const slot = slots[index];
+    const task = reordered[index];
+    if (slot === undefined || task === undefined) {
+      return { type: "conflict", reason: "deleted" };
+    }
+    parts.push(taskSource.source.slice(cursor, slot.lineStart));
+    parts.push(task.rawLine);
+    cursor = slot.lineStart + slot.rawLine.length;
+  }
+  parts.push(taskSource.source.slice(cursor));
+  return { type: "applied", source: parts.join("") };
 };
 
 const serializeTaskBody = (
@@ -412,6 +485,9 @@ export const mutateHomepageTaskSource = (
     )
       ? moveTasks(taskSource, archivable, "archive")
       : { type: "invalid-task", reason: "not-completed" };
+  }
+  if (mutation.type === "reorder") {
+    return reorderTask(taskSource, mutation.target, mutation.before);
   }
   const located = locateTarget(taskSource, mutation.target);
   if ("type" in located) {
