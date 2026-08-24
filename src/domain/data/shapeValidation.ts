@@ -297,13 +297,19 @@ export const validatePluginDataShape = (
     enumeration(journal.viewMode, "/journal/viewMode", new Set(["edit", "preview"]));
   }
 
-  const tasks = object(root.tasks, "/tasks", ["filePath", "showCompleted"], [
+  const tasks = object(root.tasks, "/tasks", [
     "filePath",
-    "showCompleted"
+    "showCompleted",
+    "showArchiveToggle"
+  ], [
+    "filePath",
+    "showCompleted",
+    "showArchiveToggle"
   ]);
   if (tasks !== undefined) {
     nullableVaultPath(tasks.filePath, "/tasks/filePath");
     boolean(tasks.showCompleted, "/tasks/showCompleted");
+    boolean(tasks.showArchiveToggle, "/tasks/showArchiveToggle");
   }
 
   const plans = object(

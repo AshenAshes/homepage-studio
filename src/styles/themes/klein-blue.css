@@ -104,4 +104,11 @@
   border-radius: 0;
   background: var(--homepage-surface-raised);
 }
+
+.homepage-studio[data-theme="klein-blue"]
+  .homepage-studio-file-entry-reorder-ghost
+  > button.homepage-studio-file-group-entry {
+  color: var(--homepage-text);
+  background: var(--homepage-surface-raised);
+}
 /* stylelint-enable no-descending-specificity, no-duplicate-selectors */

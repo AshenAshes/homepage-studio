@@ -131,6 +131,8 @@ export interface Messages {
   readonly tasksCreateFile: string;
   readonly tasksShowCompleted: string;
   readonly tasksShowCompletedDescription: string;
+  readonly tasksShowArchiveToggle: string;
+  readonly tasksShowArchiveToggleDescription: string;
   readonly tasksRecurringHeading: string;
   readonly tasksRecurringDescription: string;
   readonly tasksRecurringCreate: string;

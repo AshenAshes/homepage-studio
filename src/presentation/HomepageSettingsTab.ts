@@ -287,6 +287,17 @@ export class HomepageSettingsTab extends PluginSettingTab {
               this.application.setShowCompletedTasks(value);
             });
         });
+      new Setting(this.containerEl)
+        .setName(messages.tasksShowArchiveToggle)
+        .setDesc(messages.tasksShowArchiveToggleDescription)
+        .addToggle((toggle) => {
+          toggle
+            .setValue(taskSettings.showArchiveToggle)
+            .setDisabled(!taskSettings.editable)
+            .onChange((value) => {
+              this.application.setShowTaskArchiveToggle(value);
+            });
+        });
       this.renderRecurringTaskSettings(taskSettings, messages);
       this.taskStateUnsubscribe = this.application.subscribeTaskSettings(() => {
         if (this.activeSection === "tasks") {
@@ -491,6 +502,7 @@ export class HomepageSettingsTab extends PluginSettingTab {
           messages.tasksModuleTitle,
           messages.tasksFile,
           messages.tasksShowCompleted,
+          messages.tasksShowArchiveToggle,
           messages.tasksRecurringHeading,
           messages.tasksRecurringCreate,
           messages.tasksRecurringTaskName

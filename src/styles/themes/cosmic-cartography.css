@@ -1256,7 +1256,10 @@
 }
 
 .homepage-studio[data-theme="cosmic-cartography"] button.homepage-studio-file-group-entry:hover,
-.homepage-studio[data-theme="cosmic-cartography"] button.homepage-studio-file-group-entry:focus-visible {
+.homepage-studio[data-theme="cosmic-cartography"] button.homepage-studio-file-group-entry:focus-visible,
+.homepage-studio[data-theme="cosmic-cartography"]
+  .homepage-studio-file-entry-reorder-ghost
+  > button.homepage-studio-file-group-entry {
   color: var(--homepage-cosmic-text);
   background: transparent;
   box-shadow: none;
@@ -1276,7 +1279,10 @@
 }
 
 .homepage-studio[data-theme="cosmic-cartography"] button.homepage-studio-file-group-entry:hover::before,
-.homepage-studio[data-theme="cosmic-cartography"] button.homepage-studio-file-group-entry:focus-visible::before {
+.homepage-studio[data-theme="cosmic-cartography"] button.homepage-studio-file-group-entry:focus-visible::before,
+.homepage-studio[data-theme="cosmic-cartography"]
+  .homepage-studio-file-entry-reorder-ghost
+  > button.homepage-studio-file-group-entry::before {
   background: var(--homepage-cosmic-accent);
 }
 
@@ -1288,7 +1294,11 @@
 }
 
 .homepage-studio[data-theme="cosmic-cartography"] button.homepage-studio-file-group-entry:hover .homepage-studio-file-group-entry-name,
-.homepage-studio[data-theme="cosmic-cartography"] button.homepage-studio-file-group-entry:focus-visible .homepage-studio-file-group-entry-name {
+.homepage-studio[data-theme="cosmic-cartography"] button.homepage-studio-file-group-entry:focus-visible .homepage-studio-file-group-entry-name,
+.homepage-studio[data-theme="cosmic-cartography"]
+  .homepage-studio-file-entry-reorder-ghost
+  > button.homepage-studio-file-group-entry
+  .homepage-studio-file-group-entry-name {
   color: var(--homepage-cosmic-text);
   transform: none;
   text-decoration: none;
@@ -1304,7 +1314,11 @@
 }
 
 .homepage-studio[data-theme="cosmic-cartography"] button.homepage-studio-file-group-entry:hover .homepage-studio-file-group-entry-parent,
-.homepage-studio[data-theme="cosmic-cartography"] button.homepage-studio-file-group-entry:focus-visible .homepage-studio-file-group-entry-parent {
+.homepage-studio[data-theme="cosmic-cartography"] button.homepage-studio-file-group-entry:focus-visible .homepage-studio-file-group-entry-parent,
+.homepage-studio[data-theme="cosmic-cartography"]
+  .homepage-studio-file-entry-reorder-ghost
+  > button.homepage-studio-file-group-entry
+  .homepage-studio-file-group-entry-parent {
   color: var(--homepage-cosmic-text);
 }
 

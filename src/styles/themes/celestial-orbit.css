@@ -725,7 +725,10 @@
 }
 
 .homepage-studio[data-theme="celestial-orbit"]
-  button.homepage-studio-file-group-entry:not(:disabled):hover {
+  button.homepage-studio-file-group-entry:not(:disabled):hover,
+.homepage-studio[data-theme="celestial-orbit"]
+  .homepage-studio-file-entry-reorder-ghost
+  > button.homepage-studio-file-group-entry {
   border-color: var(--homepage-celestial-accent);
   color: var(--homepage-celestial-accent);
   background: var(--homepage-celestial-raised);
@@ -742,6 +745,10 @@
   .homepage-studio-file-group-entry-name,
 .homepage-studio[data-theme="celestial-orbit"]
   button.homepage-studio-file-group-entry[data-state]:not(:disabled):hover
+  .homepage-studio-file-group-entry-name,
+.homepage-studio[data-theme="celestial-orbit"]
+  .homepage-studio-file-entry-reorder-ghost
+  > button.homepage-studio-file-group-entry[data-state]
   .homepage-studio-file-group-entry-name {
   transform: none;
 }
@@ -751,6 +758,10 @@
   .homepage-studio-file-group-entry-name::before,
 .homepage-studio[data-theme="celestial-orbit"]
   button.homepage-studio-file-group-entry[data-state]:not(:disabled):hover
+  .homepage-studio-file-group-entry-name::before,
+.homepage-studio[data-theme="celestial-orbit"]
+  .homepage-studio-file-entry-reorder-ghost
+  > button.homepage-studio-file-group-entry[data-state]
   .homepage-studio-file-group-entry-name::before {
   color: var(--homepage-celestial-accent);
 }

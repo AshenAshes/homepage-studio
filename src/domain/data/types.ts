@@ -101,6 +101,7 @@ export interface PluginData {
   readonly tasks: {
     readonly filePath: string | null;
     readonly showCompleted: boolean;
+    readonly showArchiveToggle: boolean;
   };
   readonly plans: {
     readonly activeMode: "daily" | "weekly";
