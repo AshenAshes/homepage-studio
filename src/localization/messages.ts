@@ -168,6 +168,7 @@ export interface Messages {
   readonly tasksNoArchived: string;
   readonly tasksShowMore: string;
   readonly tasksShowMoreArchive: string;
+  readonly tasksMoveAnnouncement: string;
   readonly tasksAddPlaceholder: string;
   readonly tasksAdd: string;
   readonly tasksNoActive: string;

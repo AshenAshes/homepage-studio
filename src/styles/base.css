@@ -1589,6 +1589,121 @@
   color: var(--homepage-faint);
 }
 
+.homepage-studio .homepage-studio-task-reorder-live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.homepage-studio .homepage-studio-task-reorder-surface {
+  cursor: default;
+}
+
+body.homepage-studio-task-reorder-active,
+body.homepage-studio-task-reorder-active .homepage-studio,
+body.homepage-studio-task-reorder-active .homepage-studio-tasks,
+body.homepage-studio-task-reorder-active
+  .homepage-studio-tasks
+  :where(a, button, input, textarea, select) {
+  cursor: grabbing;
+}
+
+.homepage-studio .homepage-studio-tasks[data-task-reorder-state="active"]
+  .homepage-studio-task-reorder-surface {
+  cursor: grabbing;
+  user-select: none;
+}
+
+body > .homepage-studio-task-reorder-portal.homepage-studio {
+  position: static;
+  width: 0;
+  min-width: 0;
+  height: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+  filter: none;
+  backdrop-filter: none;
+  contain: none;
+  container-name: none;
+  container-type: normal;
+  pointer-events: auto;
+}
+
+body > .homepage-studio-task-reorder-portal.homepage-studio::before,
+body > .homepage-studio-task-reorder-portal.homepage-studio::after {
+  content: none;
+}
+
+.homepage-studio-task-reorder-cursor-shield {
+  position: fixed;
+  z-index: var(--layer-popover);
+  inset: 0;
+  cursor: grabbing;
+  background: transparent;
+  pointer-events: auto;
+}
+
+.homepage-studio-task-reorder-cursor-shield.homepage-studio-task-reorder-hit-testing {
+  pointer-events: none;
+}
+
+.homepage-studio-task-reorder-pointer-transparent {
+  pointer-events: none;
+}
+
+.homepage-studio .homepage-studio-tasks
+  .homepage-studio-task.homepage-studio-task-reorder-source {
+  display: none;
+}
+
+.homepage-studio .homepage-studio-task-reorder-ghost {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: var(--layer-popover);
+  width: var(--homepage-task-ghost-width);
+  height: var(--homepage-task-ghost-height);
+  pointer-events: none;
+  transform: translate3d(
+    var(--homepage-task-ghost-x),
+    var(--homepage-task-ghost-y),
+    0
+  );
+}
+
+.homepage-studio .homepage-studio-task-reorder-ghost
+  > .homepage-studio-task {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  box-sizing: border-box;
+  cursor: grabbing;
+}
+
+.homepage-studio .homepage-studio-task-reorder-slot {
+  width: 100%;
+  height: var(--homepage-task-slot-height);
+  min-width: 0;
+  min-height: var(--homepage-task-slot-height);
+  margin: 0;
+  box-sizing: border-box;
+  opacity: 0.58;
+  pointer-events: none;
+}
+
 .homepage-studio-task-conflict {
   display: grid;
   gap: var(--size-4-2);

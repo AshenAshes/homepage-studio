@@ -17,6 +17,13 @@ import {
   type FileEntryReorderMoveRequest,
   type FileEntryReorderMoveResult
 } from "./FileEntryReorderController";
+import {
+  attachTaskReorderController,
+  type TaskReorderItem,
+  type TaskReorderMoveRequest,
+  type TaskReorderMoveResult,
+  type TaskReorderScope
+} from "./TaskReorderController";
 
 interface HomepageShellActions {
   openSettings(section?: HomepageSettingsSection): void;
@@ -45,6 +52,13 @@ interface HomepageShellActions {
   setTaskArchiveVisible(visible: boolean): void;
   showMoreTasks(): void;
   showMoreArchivedTasks(): void;
+  beginTaskDrag(sourceRevision: number, cancel: () => void): void;
+  commitTaskDrag(): void;
+  endTaskDrag(): void;
+  reorderTask(
+    request: TaskReorderMoveRequest
+  ): Promise<TaskReorderMoveResult>;
+  announceTaskMove(announcement: string): void;
   showMoreFileGroupEntries(): void;
   beginFileGroupEntryDrag(): void;
   endFileGroupEntryDrag(): void;
@@ -1580,9 +1594,49 @@ const renderModule = (
   }
 
   if (module.state === "ready" && module.tasks !== undefined) {
+    const taskModel = module.tasks;
     const tasks = section.createDiv({
       cls: "homepage-studio-tasks"
     });
+    const reorderLive = tasks.createDiv({
+      cls: "homepage-studio-task-reorder-live",
+      attr: {
+        role: "status",
+        "aria-live": "polite"
+      }
+    });
+    const reorderItems = new Map<HTMLElement, TaskReorderItem>();
+    let activeList: HTMLElement | null = null;
+    let archiveSection: HTMLElement | null = null;
+    let archiveList: HTMLElement | null = null;
+    let showMore: HTMLButtonElement | null = null;
+    let showMoreArchive: HTMLButtonElement | null = null;
+    const activeScope = (completed: boolean): TaskReorderScope =>
+      completed ? "active-completed" : "active-incomplete";
+    const registerReorderItem = (
+      row: HTMLElement,
+      body: HTMLElement,
+      item: {
+        readonly target: TaskTarget;
+        readonly text: string;
+      },
+      itemScope: TaskReorderScope,
+      key: string,
+      temporary: boolean
+    ): void => {
+      row.addClass("homepage-studio-task-reorder-item");
+      row.setAttribute("data-task-reorder-key", key);
+      if (temporary) {
+        row.setAttribute("data-task-reorder-temporary", "true");
+        row.setAttribute("inert", "");
+      }
+      body.addClass("homepage-studio-task-reorder-surface");
+      reorderItems.set(row, {
+        target: item.target,
+        text: item.text,
+        scope: itemScope
+      });
+    };
     if (module.tasks.conflict !== null) {
       const conflict = tasks.createDiv({
         cls: "homepage-studio-task-conflict"
@@ -1633,10 +1687,11 @@ const renderModule = (
       });
     } else {
       const list = tasks.createEl("ul", {
-        cls: "homepage-studio-task-list"
+        cls: "homepage-studio-task-list homepage-studio-task-reorder-list"
       });
+      activeList = list;
       attachAccessibleLabel(list, tasks, module.tasks.listLabel);
-      for (const item of module.tasks.items) {
+      for (const [itemIndex, item] of module.tasks.items.entries()) {
         const row = list.createEl("li", {
           cls: "homepage-studio-task",
           attr: {
@@ -1658,6 +1713,14 @@ const renderModule = (
         const body = row.createDiv({
           cls: "homepage-studio-task-body"
         });
+        registerReorderItem(
+          row,
+          body,
+          item,
+          activeScope(item.completed),
+          `active-${itemIndex}`,
+          false
+        );
         const rowActions = row.createDiv({
           cls: "homepage-studio-task-actions"
         });
@@ -1734,13 +1797,6 @@ const renderModule = (
           });
           attachAccessibleLabel(editInput, body, item.editLabel);
           editInput.value = item.editingText;
-          if (item.recurrenceLabel !== null) {
-            body.createSpan({
-              cls: "homepage-studio-task-recurrence",
-              text: item.recurrenceLabel,
-              attr: { "aria-hidden": "true" }
-            });
-          }
           const save = rowActions.createEl("button", {
             cls: "homepage-studio-task-text-button",
             text: item.saveLabel,
@@ -1794,7 +1850,7 @@ const renderModule = (
     }
 
     if (module.tasks.hasMoreItems) {
-      const showMore = tasks.createEl("button", {
+      showMore = tasks.createEl("button", {
         cls: "homepage-studio-collection-more",
         text: module.tasks.showMoreLabel,
         attr: { type: "button" }
@@ -1895,6 +1951,7 @@ const renderModule = (
       const archive = tasks.createEl("section", {
         cls: "homepage-studio-task-archive"
       });
+      archiveSection = archive;
       attachAccessibleLabel(archive, archive, module.tasks.archiveListLabel);
       if (module.tasks.archivedItems.length === 0) {
         archive.createEl("p", {
@@ -1902,13 +1959,14 @@ const renderModule = (
           text: module.tasks.archiveEmptyLabel
         });
       } else {
-        const archiveList = archive.createEl("ul", {
+        archiveList = archive.createEl("ul", {
           cls: [
             "homepage-studio-task-list",
-            "homepage-studio-task-archive-list"
+            "homepage-studio-task-archive-list",
+            "homepage-studio-task-reorder-list"
           ]
         });
-        for (const item of module.tasks.archivedItems) {
+        for (const [itemIndex, item] of module.tasks.archivedItems.entries()) {
           const row = archiveList.createEl("li", {
             cls: [
               "homepage-studio-task",
@@ -1923,6 +1981,14 @@ const renderModule = (
           const body = row.createDiv({
             cls: "homepage-studio-task-body"
           });
+          registerReorderItem(
+            row,
+            body,
+            item,
+            "archive",
+            `archive-${itemIndex}`,
+            false
+          );
           actions.renderMarkdown(
             item.text,
             module.tasks.path,
@@ -1952,7 +2018,7 @@ const renderModule = (
         }
       }
       if (module.tasks.hasMoreArchivedItems) {
-        const showMoreArchive = archive.createEl("button", {
+        showMoreArchive = archive.createEl("button", {
           cls: "homepage-studio-collection-more",
           text: module.tasks.showMoreArchiveLabel,
           attr: { type: "button" }
@@ -1962,6 +2028,159 @@ const renderModule = (
         });
       }
     }
+    const renderTemporaryActiveTask = (
+      item: (typeof taskModel.allItems)[number],
+      itemIndex: number
+    ): void => {
+      if (activeList === null) {
+        return;
+      }
+      const row = activeList.createEl("li", {
+        cls: "homepage-studio-task",
+        attr: {
+          "data-completed": item.completed.toString(),
+          "data-editing": "false"
+        }
+      });
+      const checkbox = row.createEl("button", {
+        cls: "homepage-studio-task-checkbox",
+        attr: {
+          type: "button",
+          role: "checkbox",
+          "aria-checked": item.completed.toString(),
+          "data-checked": item.completed.toString(),
+          disabled: ""
+        }
+      });
+      attachTooltipAccessibleLabel(checkbox, item.checkboxLabel);
+      const body = row.createDiv({
+        cls: "homepage-studio-task-body"
+      });
+      registerReorderItem(
+        row,
+        body,
+        item,
+        activeScope(item.completed),
+        `active-${itemIndex}`,
+        true
+      );
+      const content = body.createDiv({
+        cls: "homepage-studio-task-content"
+      });
+      actions.renderMarkdown(item.text, taskModel.path, content, scope);
+      if (item.recurrenceLabel !== null) {
+        body.createSpan({
+          cls: "homepage-studio-task-recurrence",
+          text: item.recurrenceLabel,
+          attr: { "aria-hidden": "true" }
+        });
+      }
+    };
+    const renderTemporaryArchivedTask = (
+      item: (typeof taskModel.allArchivedItems)[number],
+      itemIndex: number
+    ): void => {
+      if (archiveList === null) {
+        return;
+      }
+      const row = archiveList.createEl("li", {
+        cls: [
+          "homepage-studio-task",
+          "homepage-studio-task-archived"
+        ]
+      });
+      renderIcon(row, "archive", "homepage-studio-task-archive-icon");
+      const body = row.createDiv({
+        cls: "homepage-studio-task-body"
+      });
+      registerReorderItem(
+        row,
+        body,
+        item,
+        "archive",
+        `archive-${itemIndex}`,
+        true
+      );
+      actions.renderMarkdown(item.text, taskModel.path, body, scope);
+    };
+    const revealHiddenTasks = (itemScope: TaskReorderScope): void => {
+      if (itemScope === "archive") {
+        showMoreArchive?.remove();
+        const renderedKeys = new Set([
+          ...archiveList?.querySelectorAll<HTMLElement>(
+            "[data-task-reorder-key]"
+          ) ?? []
+        ].map((row) => row.dataset.taskReorderKey));
+        for (const [itemIndex, item] of taskModel.allArchivedItems.entries()) {
+          const key = `archive-${itemIndex}`;
+          if (!renderedKeys.has(key)) {
+            renderTemporaryArchivedTask(item, itemIndex);
+          }
+        }
+        return;
+      }
+      showMore?.remove();
+      const renderedKeys = new Set([
+        ...activeList?.querySelectorAll<HTMLElement>(
+          "[data-task-reorder-key]"
+        ) ?? []
+      ].map((row) => row.dataset.taskReorderKey));
+      for (const [itemIndex, item] of taskModel.allItems.entries()) {
+        if (
+          activeScope(item.completed) === itemScope
+          && !renderedKeys.has(`active-${itemIndex}`)
+        ) {
+          renderTemporaryActiveTask(item, itemIndex);
+        }
+      }
+    };
+    const restoreVisibleTasks = (): void => {
+      for (const temporary of tasks.querySelectorAll<HTMLElement>(
+        '[data-task-reorder-temporary="true"]'
+      )) {
+        reorderItems.delete(temporary);
+        temporary.remove();
+      }
+      if (showMore !== null && !showMore.isConnected) {
+        tasks.insertBefore(showMore, addForm);
+      }
+      if (
+        showMoreArchive !== null
+        && !showMoreArchive.isConnected
+        && archiveSection !== null
+      ) {
+        archiveSection.appendChild(showMoreArchive);
+      }
+    };
+    attachTaskReorderController({
+      container: tasks,
+      scrollContainer: tasks.closest<HTMLElement>(".homepage-studio")
+        ?? tasks,
+      scope,
+      enabled: taskModel.reorderEnabled,
+      resolveItem: (element) => reorderItems.get(element) ?? null,
+      move: (request) => actions.reorderTask(request),
+      onPickup: (itemScope, cancel) => {
+        actions.beginTaskDrag(taskModel.sourceRevision, cancel);
+        revealHiddenTasks(itemScope);
+      },
+      onCommit: () => {
+        actions.commitTaskDrag();
+      },
+      onFinish: () => {
+        restoreVisibleTasks();
+        actions.endTaskDrag();
+      },
+      formatMovedAnnouncement: (task, position) =>
+        taskModel.moveAnnouncement
+          .replace("{task}", task)
+          .replace("{position}", position.toString()),
+      onApplied: (announcement) => {
+        reorderLive.setText(announcement);
+        actions.announceTaskMove(announcement);
+      },
+      onRejected: () => undefined
+    });
     return;
   }
 

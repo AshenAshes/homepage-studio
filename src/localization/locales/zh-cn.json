@@ -165,6 +165,7 @@
   "tasksNoArchived": "暂无归档任务。",
   "tasksShowMore": "显示更多任务",
   "tasksShowMoreArchive": "显示更多归档任务",
+  "tasksMoveAnnouncement": "已将“{task}”移动到第 {position} 位。",
   "tasksAddPlaceholder": "新增任务",
   "tasksAdd": "添加",
   "tasksNoActive": "暂无活动任务。",

@@ -20,7 +20,11 @@ export class HomepageView extends ItemView {
   private renderScope: Component | null = null;
   private pendingFileEntryFocusId: string | null = null;
   private pendingFileEntryAnnouncement: string | null = null;
+  private pendingTaskAnnouncement: string | null = null;
   private fileGroupEntryDragActive = false;
+  private taskDragActive = false;
+  private taskDragSourceRevision: number | null = null;
+  private cancelTaskDrag: (() => void) | null = null;
   private textInputInteractionActive = false;
   private renderPending = false;
   private closing = false;
@@ -57,6 +61,25 @@ export class HomepageView extends ItemView {
     if (this.closing) {
       return;
     }
+    if (this.taskDragActive) {
+      const snapshot = this.application.getSnapshot();
+      if (snapshot.status === "ready" && snapshot.shell !== null) {
+        refreshHomepageTemporalContent(this.contentEl, snapshot.shell);
+        const revision = snapshot.shell.modules.find(
+          (module) => module.id === "tasks"
+        )?.tasks?.sourceRevision ?? null;
+        if (
+          this.cancelTaskDrag !== null
+          && revision !== this.taskDragSourceRevision
+        ) {
+          this.renderPending = true;
+          this.cancelTaskDrag();
+          return;
+        }
+      }
+      this.renderPending = true;
+      return;
+    }
     if (
       this.fileGroupEntryDragActive
       || this.textInputInteractionActive
@@ -78,6 +101,29 @@ export class HomepageView extends ItemView {
 
   private endFileGroupEntryDrag(): void {
     this.fileGroupEntryDragActive = false;
+    if (this.renderPending) {
+      this.requestRender();
+    }
+  }
+
+  private beginTaskDrag(
+    sourceRevision: number,
+    cancel: () => void
+  ): void {
+    this.taskDragActive = true;
+    this.taskDragSourceRevision = sourceRevision;
+    this.cancelTaskDrag = cancel;
+  }
+
+  private commitTaskDrag(): void {
+    this.cancelTaskDrag = null;
+    this.taskDragSourceRevision = null;
+  }
+
+  private endTaskDrag(): void {
+    this.taskDragActive = false;
+    this.taskDragSourceRevision = null;
+    this.cancelTaskDrag = null;
     if (this.renderPending) {
       this.requestRender();
     }
@@ -245,6 +291,29 @@ export class HomepageView extends ItemView {
           showMoreArchivedTasks: () => {
             this.application.showMoreArchivedTasks();
           },
+          beginTaskDrag: (sourceRevision, cancel) => {
+            this.beginTaskDrag(sourceRevision, cancel);
+          },
+          commitTaskDrag: () => {
+            this.commitTaskDrag();
+          },
+          endTaskDrag: () => {
+            this.endTaskDrag();
+          },
+          reorderTask: async (request) => {
+            const result = await this.application.reorderTask(
+              request.target,
+              request.before
+            );
+            return result.type === "applied" || result.type === "noop"
+              ? result
+              : result.type === "conflict"
+                ? { type: "conflict" }
+                : { type: "blocked" };
+          },
+          announceTaskMove: (announcement) => {
+            this.pendingTaskAnnouncement = announcement;
+          },
           showMoreFileGroupEntries: () => {
             this.application.showMoreFileGroupEntries();
           },
@@ -309,6 +378,12 @@ export class HomepageView extends ItemView {
           ".homepage-studio-file-entry-reorder-live"
         )?.setText(this.pendingFileEntryAnnouncement);
         this.pendingFileEntryAnnouncement = null;
+      }
+      if (this.pendingTaskAnnouncement !== null) {
+        this.contentEl.querySelector<HTMLElement>(
+          ".homepage-studio-task-reorder-live"
+        )?.setText(this.pendingTaskAnnouncement);
+        this.pendingTaskAnnouncement = null;
       }
       if (this.pendingFileEntryFocusId !== null) {
         const pendingId = this.pendingFileEntryFocusId;
@@ -422,6 +497,10 @@ export class HomepageView extends ItemView {
     clearHomepageBannerImageState(this.contentEl);
     this.renderScope = null;
     this.fileGroupEntryDragActive = false;
+    this.pendingTaskAnnouncement = null;
+    this.taskDragActive = false;
+    this.taskDragSourceRevision = null;
+    this.cancelTaskDrag = null;
     this.textInputInteractionActive = false;
     this.renderPending = false;
     this.contentEl.empty();

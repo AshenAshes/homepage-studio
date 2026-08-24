@@ -16,6 +16,7 @@ import type {
 import type { JournalDraftState } from
   "../services/DateSectionJournalDraftService";
 import type {
+  HomepageTaskRecord,
   TaskSourceDiagnostic,
   TaskSourceDocument,
   TaskTarget
@@ -93,6 +94,7 @@ export interface TaskInteractionInput {
   readonly addDraft?: string;
   readonly visibleLimit?: number;
   readonly archivedVisibleLimit?: number;
+  readonly sourceRevision?: number;
 }
 
 export interface HeatmapCellViewModel {
@@ -122,6 +124,27 @@ export interface HeatmapCellViewModel {
 export interface HeatmapWeekViewModel {
   readonly monthLabel: string;
   readonly cells: readonly (HeatmapCellViewModel | null)[];
+}
+
+export interface HomepageTaskItemViewModel {
+  readonly target: TaskTarget;
+  readonly text: string;
+  readonly completed: boolean;
+  readonly recurrence: "daily" | "weekly" | null;
+  readonly recurrenceLabel: string | null;
+  readonly editingText: string | null;
+  readonly checkboxLabel: string;
+  readonly editLabel: string;
+  readonly archiveLabel: string | null;
+  readonly deleteLabel: string;
+  readonly saveLabel: string;
+  readonly cancelLabel: string;
+}
+
+export interface HomepageArchivedTaskItemViewModel {
+  readonly target: TaskTarget;
+  readonly text: string;
+  readonly unarchiveLabel: string;
 }
 
 export interface HomepageModuleViewModel {
@@ -171,6 +194,8 @@ export interface HomepageModuleViewModel {
   };
   readonly tasks?: {
     readonly path: string;
+    readonly sourceRevision: number;
+    readonly reorderEnabled: boolean;
     readonly listLabel: string;
     readonly progressLabel: string;
     readonly archiveAllLabel: string | null;
@@ -186,6 +211,7 @@ export interface HomepageModuleViewModel {
     readonly showMoreArchiveLabel: string;
     readonly hasMoreItems: boolean;
     readonly hasMoreArchivedItems: boolean;
+    readonly moveAnnouncement: string;
     readonly conflict: {
       readonly title: string;
       readonly description: string;
@@ -194,25 +220,10 @@ export interface HomepageModuleViewModel {
       readonly reloadLabel: string;
       readonly openSourceLabel: string;
     } | null;
-    readonly items: readonly {
-      readonly target: TaskTarget;
-      readonly text: string;
-      readonly completed: boolean;
-      readonly recurrence: "daily" | "weekly" | null;
-      readonly recurrenceLabel: string | null;
-      readonly editingText: string | null;
-      readonly checkboxLabel: string;
-      readonly editLabel: string;
-      readonly archiveLabel: string | null;
-      readonly deleteLabel: string;
-      readonly saveLabel: string;
-      readonly cancelLabel: string;
-    }[];
-    readonly archivedItems: readonly {
-      readonly target: TaskTarget;
-      readonly text: string;
-      readonly unarchiveLabel: string;
-    }[];
+    readonly items: readonly HomepageTaskItemViewModel[];
+    readonly allItems: readonly HomepageTaskItemViewModel[];
+    readonly archivedItems: readonly HomepageArchivedTaskItemViewModel[];
+    readonly allArchivedItems: readonly HomepageArchivedTaskItemViewModel[];
   };
   readonly plan?: {
     readonly templateLabel: string;
@@ -808,6 +819,48 @@ export const createHomepageShellViewModel = (
         || left.line - right.line
       )
     : [];
+  const mapTaskItem = (
+    task: HomepageTaskRecord
+  ): HomepageTaskItemViewModel => {
+    const recurrenceLabel = task.recurrence === "daily"
+      ? messages.tasksRecurringDaily
+      : task.recurrence === "weekly"
+        ? messages.tasksRecurringWeekly
+        : null;
+    const accessibleText = recurrenceLabel === null
+      ? task.text
+      : `${task.text}, ${recurrenceLabel}`;
+    return {
+      target: task.target,
+      text: task.text,
+      completed: task.completed,
+      recurrence: task.recurrence,
+      recurrenceLabel,
+      editingText:
+        interactionState.type === "editing"
+        && editingRecord?.lineStart === task.lineStart
+          ? interactionState.text
+          : null,
+      checkboxLabel: (
+        task.completed
+          ? messages.tasksReopen
+          : messages.tasksComplete
+      ).replace("{task}", accessibleText),
+      editLabel: messages.tasksEdit.replace("{task}", accessibleText),
+      archiveLabel: task.completed && task.recurrence === null
+        ? messages.tasksArchive.replace("{task}", task.text)
+        : null,
+      deleteLabel: messages.tasksDelete.replace("{task}", accessibleText),
+      saveLabel: messages.tasksSaveEdit,
+      cancelLabel: messages.cancel
+    };
+  };
+  const allTaskItems = taskItems.map(mapTaskItem);
+  const allArchivedTaskItems = archivedTaskRecords.map((task) => ({
+    target: task.target,
+    text: task.text,
+    unarchiveLabel: messages.tasksUnarchive.replace("{task}", task.text)
+  }));
   const taskEmptyState = taskInput?.type === "missing-source"
     ? {
       title: messages.tasksMissingTitle,
@@ -1197,6 +1250,8 @@ export const createHomepageShellViewModel = (
           ? {
             tasks: {
               path: taskInput.path,
+              sourceRevision: taskInteraction?.sourceRevision ?? 0,
+              reorderEnabled: interactionState.type === "idle",
               listLabel: messages.tasksListLabel,
               progressLabel: messages.tasksProgress
                 .replace(
@@ -1241,6 +1296,7 @@ export const createHomepageShellViewModel = (
                 : null,
               showMoreLabel: messages.tasksShowMore,
               showMoreArchiveLabel: messages.tasksShowMoreArchive,
+              moveAnnouncement: messages.tasksMoveAnnouncement,
               hasMoreItems: taskItems.length > (
                 taskInteraction?.visibleLimit ?? taskItems.length
               ),
@@ -1248,61 +1304,17 @@ export const createHomepageShellViewModel = (
                 taskInteraction?.archivedVisibleLimit
                   ?? archivedTaskRecords.length
               ),
-              items: taskItems.slice(
+              items: allTaskItems.slice(
                 0,
-                taskInteraction?.visibleLimit ?? taskItems.length
-              ).map((task) => {
-                const recurrenceLabel = task.recurrence === "daily"
-                  ? messages.tasksRecurringDaily
-                  : task.recurrence === "weekly"
-                    ? messages.tasksRecurringWeekly
-                    : null;
-                const accessibleText = recurrenceLabel === null
-                  ? task.text
-                  : `${task.text}, ${recurrenceLabel}`;
-                return {
-                  target: task.target,
-                  text: task.text,
-                  completed: task.completed,
-                  recurrence: task.recurrence,
-                  recurrenceLabel,
-                  editingText:
-                    interactionState.type === "editing"
-                    && editingRecord?.lineStart === task.lineStart
-                      ? interactionState.text
-                      : null,
-                  checkboxLabel: (
-                    task.completed
-                      ? messages.tasksReopen
-                      : messages.tasksComplete
-                  ).replace("{task}", accessibleText),
-                  editLabel: messages.tasksEdit.replace(
-                    "{task}",
-                    accessibleText
-                  ),
-                  archiveLabel: task.completed && task.recurrence === null
-                    ? messages.tasksArchive.replace("{task}", task.text)
-                    : null,
-                  deleteLabel: messages.tasksDelete.replace(
-                    "{task}",
-                    accessibleText
-                  ),
-                  saveLabel: messages.tasksSaveEdit,
-                  cancelLabel: messages.cancel
-                };
-              }),
-              archivedItems: archivedTaskRecords.slice(
+                taskInteraction?.visibleLimit ?? allTaskItems.length
+              ),
+              allItems: allTaskItems,
+              archivedItems: allArchivedTaskItems.slice(
                 0,
                 taskInteraction?.archivedVisibleLimit
-                  ?? archivedTaskRecords.length
-              ).map((task) => ({
-                target: task.target,
-                text: task.text,
-                unarchiveLabel: messages.tasksUnarchive.replace(
-                  "{task}",
-                  task.text
-                )
-              }))
+                  ?? allArchivedTaskItems.length
+              ),
+              allArchivedItems: allArchivedTaskItems
             }
           }
           : {})
