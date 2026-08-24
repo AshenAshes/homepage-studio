@@ -75,6 +75,13 @@ const normalizeLegacyOptionalFields = (input: unknown): unknown => {
     }
   }
 
+  if (
+    isRecord(normalized.tasks)
+    && !hasOwn(normalized.tasks, "showArchiveToggle")
+  ) {
+    normalized.tasks.showArchiveToggle = true;
+  }
+
   return normalized;
 };
 

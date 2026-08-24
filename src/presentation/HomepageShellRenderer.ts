@@ -28,10 +28,13 @@ interface HomepageShellActions {
   reloadJournalDraft(): void;
   deleteJournalEntry(): void;
   addTask(text: string): Promise<boolean>;
+  updateTaskAddDraft(text: string): void;
   beginTaskEdit(target: TaskTarget, text: string): void;
   updateTaskEditDraft(text: string): void;
   saveTaskEdit(): Promise<boolean>;
   cancelTaskEdit(): void;
+  beginTextInputInteraction(): void;
+  endTextInputInteraction(focusTarget?: "task-add"): void;
   setTaskCompleted(
     target: TaskTarget,
     completed: boolean
@@ -43,6 +46,8 @@ interface HomepageShellActions {
   showMoreTasks(): void;
   showMoreArchivedTasks(): void;
   showMoreFileGroupEntries(): void;
+  beginFileGroupEntryDrag(): void;
+  endFileGroupEntryDrag(): void;
   getAllFileGroups(): FileGroupModuleViewModel | null;
   moveFileGroupEntry(
     request: FileEntryReorderMoveRequest,
@@ -762,6 +767,138 @@ const renderCosmicPlan = (
   }
 };
 
+const renderStandardPlan = (
+  section: HTMLElement,
+  planModel: HomepagePlan
+): void => {
+  const plan = section.createDiv({
+    cls: "homepage-studio-current-plan",
+    attr: {
+      "data-plan-state": planModel.state
+    }
+  });
+  plan.createSpan({
+    cls: "homepage-studio-plan-template",
+    text: planModel.templateLabel
+  });
+  const active = plan.createDiv({
+    cls: "homepage-studio-plan-active"
+  });
+  const activeHeading = active.createDiv({
+    cls: "homepage-studio-plan-active-heading"
+  });
+  activeHeading.createEl("h3", {
+    cls: "homepage-studio-plan-primary",
+    text: planModel.primaryLabel
+  });
+  activeHeading.createSpan({
+    cls: "homepage-studio-plan-range",
+    text: planModel.timeRangeLabel
+  });
+  if (planModel.progress !== null) {
+    active.createEl("progress", {
+      cls: "homepage-studio-plan-progress",
+      attr: {
+        max: "1",
+        value: planModel.progress.toString()
+      }
+    });
+  }
+  const activeMeta = active.createDiv({
+    cls: "homepage-studio-plan-active-meta"
+  });
+  const status = activeMeta.createSpan({
+    cls: "homepage-studio-plan-status",
+    text: planModel.statusLabel
+  });
+  if (planModel.state === "idle") {
+    status.setAttribute("aria-hidden", "true");
+  }
+  if (planModel.remainingLabel !== null) {
+    activeMeta.createSpan({
+      cls: "homepage-studio-plan-remaining",
+      text: planModel.remainingLabel
+    });
+  }
+
+  const next = plan.createDiv({
+    cls: "homepage-studio-plan-next"
+  });
+  next.createSpan({
+    cls: "homepage-studio-plan-next-title",
+    text: planModel.nextTitle
+  });
+  next.createSpan({
+    cls: "homepage-studio-plan-next-label",
+    text: planModel.nextLabel
+  });
+  const nextTime = next.createSpan({
+    cls: "homepage-studio-plan-next-time"
+  });
+  if (planModel.nextDayLabel !== null) {
+    nextTime.createSpan({
+      cls: "homepage-studio-plan-next-day",
+      text: planModel.nextDayLabel
+    });
+  }
+  nextTime.createSpan({
+    text: planModel.nextTimeLabel
+  });
+
+  const schedule = plan.createEl("details", {
+    cls: "homepage-studio-plan-schedule"
+  });
+  schedule.createEl("summary", {
+    text: planModel.scheduleLabel
+  });
+  if (planModel.schedule.length === 0) {
+    schedule.createEl("p", {
+      cls: "homepage-studio-plan-schedule-empty",
+      text: planModel.emptyScheduleLabel
+    });
+    return;
+  }
+  const list = schedule.createEl("ol", {
+    cls: "homepage-studio-plan-schedule-list"
+  });
+  for (const item of planModel.schedule) {
+    const row = list.createEl("li", {
+      cls: "homepage-studio-plan-schedule-item",
+      attr: {
+        "data-state": item.state
+      }
+    });
+    row.createSpan({
+      cls: "homepage-studio-plan-schedule-time",
+      text: item.timeRangeLabel
+    });
+    row.createSpan({
+      cls: "homepage-studio-plan-schedule-label",
+      text: item.label
+    });
+    row.createSpan({
+      cls: "homepage-studio-plan-schedule-state",
+      text: item.stateLabel
+    });
+  }
+};
+
+const renderPlanContent = (
+  section: HTMLElement,
+  plan: HomepagePlan,
+  theme: HomepageShellViewModel["theme"]
+): void => {
+  if (theme === "cosmic-cartography") {
+    renderCosmicPlan(section, plan);
+    return;
+  }
+  if (theme === "archive-observatory") {
+    renderArchivePlan(section, plan);
+    return;
+  }
+  renderStandardPlan(section, plan);
+};
+
 const renderArchivePlanUnavailable = (
   section: HTMLElement,
   module: HomepageModuleViewModel,
@@ -1252,124 +1389,7 @@ const renderModule = (
   }
 
   if (module.state === "ready" && module.plan !== undefined) {
-    if (theme === "cosmic-cartography") {
-      renderCosmicPlan(section, module.plan);
-      return;
-    }
-    if (theme === "archive-observatory") {
-      renderArchivePlan(section, module.plan);
-      return;
-    }
-    const plan = section.createDiv({
-      cls: "homepage-studio-current-plan",
-      attr: {
-        "data-plan-state": module.plan.state
-      }
-    });
-    plan.createSpan({
-      cls: "homepage-studio-plan-template",
-      text: module.plan.templateLabel
-    });
-    const active = plan.createDiv({
-      cls: "homepage-studio-plan-active"
-    });
-    const activeHeading = active.createDiv({
-      cls: "homepage-studio-plan-active-heading"
-    });
-    activeHeading.createEl("h3", {
-      cls: "homepage-studio-plan-primary",
-      text: module.plan.primaryLabel
-    });
-    activeHeading.createSpan({
-      cls: "homepage-studio-plan-range",
-      text: module.plan.timeRangeLabel
-    });
-    if (module.plan.progress !== null) {
-      active.createEl("progress", {
-        cls: "homepage-studio-plan-progress",
-        attr: {
-          max: "1",
-          value: module.plan.progress.toString()
-        }
-      });
-    }
-    const activeMeta = active.createDiv({
-      cls: "homepage-studio-plan-active-meta"
-    });
-    const status = activeMeta.createSpan({
-      cls: "homepage-studio-plan-status",
-      text: module.plan.statusLabel
-    });
-    if (module.plan.state === "idle") {
-      status.setAttribute("aria-hidden", "true");
-    }
-    if (module.plan.remainingLabel !== null) {
-      activeMeta.createSpan({
-        cls: "homepage-studio-plan-remaining",
-        text: module.plan.remainingLabel
-      });
-    }
-
-    const next = plan.createDiv({
-      cls: "homepage-studio-plan-next"
-    });
-    next.createSpan({
-      cls: "homepage-studio-plan-next-title",
-      text: module.plan.nextTitle
-    });
-    next.createSpan({
-      cls: "homepage-studio-plan-next-label",
-      text: module.plan.nextLabel
-    });
-    const nextTime = next.createSpan({
-      cls: "homepage-studio-plan-next-time"
-    });
-    if (module.plan.nextDayLabel !== null) {
-      nextTime.createSpan({
-        cls: "homepage-studio-plan-next-day",
-        text: module.plan.nextDayLabel
-      });
-    }
-    nextTime.createSpan({
-      text: module.plan.nextTimeLabel
-    });
-
-    const schedule = plan.createEl("details", {
-      cls: "homepage-studio-plan-schedule"
-    });
-    schedule.createEl("summary", {
-      text: module.plan.scheduleLabel
-    });
-    if (module.plan.schedule.length === 0) {
-      schedule.createEl("p", {
-        cls: "homepage-studio-plan-schedule-empty",
-        text: module.plan.emptyScheduleLabel
-      });
-    } else {
-      const list = schedule.createEl("ol", {
-        cls: "homepage-studio-plan-schedule-list"
-      });
-      for (const item of module.plan.schedule) {
-        const row = list.createEl("li", {
-          cls: "homepage-studio-plan-schedule-item",
-          attr: {
-            "data-state": item.state
-          }
-        });
-        row.createSpan({
-          cls: "homepage-studio-plan-schedule-time",
-          text: item.timeRangeLabel
-        });
-        row.createSpan({
-          cls: "homepage-studio-plan-schedule-label",
-          text: item.label
-        });
-        row.createSpan({
-          cls: "homepage-studio-plan-schedule-state",
-          text: item.stateLabel
-        });
-      }
-    }
+    renderPlanContent(section, module.plan, theme);
     return;
   }
 
@@ -1519,9 +1539,14 @@ const renderModule = (
       });
       scope.registerDomEvent(editor, "compositionend", () => {
         isComposing = false;
+        actions.beginTextInputInteraction();
         actions.updateJournalDraft(editor.value);
       });
+      scope.registerDomEvent(editor, "focus", () => {
+        actions.beginTextInputInteraction();
+      });
       scope.registerDomEvent(editor, "input", () => {
+        actions.beginTextInputInteraction();
         if (!isComposing) {
           actions.updateJournalDraft(editor.value);
         }
@@ -1727,12 +1752,18 @@ const renderModule = (
             attr: { type: "button" }
           });
           scope.registerDomEvent(editInput, "input", () => {
+            actions.beginTextInputInteraction();
             actions.updateTaskEditDraft(editInput.value);
+          });
+          scope.registerDomEvent(editInput, "focus", () => {
+            actions.beginTextInputInteraction();
           });
           scope.registerDomEvent(save, "click", () => {
             save.disabled = true;
             void actions.saveTaskEdit().then((applied) => {
-              if (!applied) {
+              if (applied) {
+                actions.endTextInputInteraction();
+              } else {
                 save.disabled = false;
                 editInput.focus({ preventScroll: true });
               }
@@ -1740,6 +1771,7 @@ const renderModule = (
           });
           scope.registerDomEvent(cancel, "click", () => {
             actions.cancelTaskEdit();
+            actions.endTextInputInteraction();
           });
           editInput.focus({ preventScroll: true });
         }
@@ -1775,7 +1807,7 @@ const renderModule = (
     const addForm = tasks.createEl("form", {
       cls: "homepage-studio-task-add",
       attr: {
-        "data-open": "false"
+        "data-open": (module.tasks.addDraft !== "").toString()
       }
     });
     const addInput = addForm.createEl("input", {
@@ -1785,23 +1817,36 @@ const renderModule = (
         placeholder: module.tasks.addPlaceholder
       }
     });
+    addInput.value = module.tasks.addDraft;
     attachAccessibleLabel(addInput, addForm, module.tasks.addPlaceholder);
+    scope.registerDomEvent(addInput, "focus", () => {
+      actions.beginTextInputInteraction();
+    });
+    scope.registerDomEvent(addInput, "input", () => {
+      actions.beginTextInputInteraction();
+      actions.updateTaskAddDraft(addInput.value);
+    });
     const addButton = addForm.createEl("button", {
       cls: "homepage-studio-task-add-button",
       text: module.tasks.addLabel,
       attr: {
         type: "button",
-        "aria-expanded": "false"
+        "aria-expanded": (module.tasks.addDraft !== "").toString()
       }
     });
     const setAddFormOpen = (open: boolean): void => {
-      if (!open && addInput.ownerDocument.activeElement === addInput) {
-        addButton.focus({ preventScroll: true });
-      }
+      const restoreButtonFocus = !open
+        && addInput.ownerDocument.activeElement === addInput;
       addForm.setAttribute("data-open", open.toString());
       addButton.setAttribute("aria-expanded", open.toString());
       if (open) {
         addInput.focus({ preventScroll: true });
+      } else {
+        addInput.value = "";
+        actions.updateTaskAddDraft("");
+        actions.endTextInputInteraction(
+          restoreButtonFocus ? "task-add" : undefined
+        );
       }
     };
     const submitNewTask = (): void => {
@@ -2137,8 +2182,14 @@ const renderModule = (
       open: (path, newPane) => {
         actions.openFile(path, newPane);
       },
-      onPickup: revealHiddenEntries,
-      onFinish: restoreVisibleEntries,
+      onPickup: () => {
+        actions.beginFileGroupEntryDrag();
+        revealHiddenEntries();
+      },
+      onFinish: () => {
+        restoreVisibleEntries();
+        actions.endFileGroupEntryDrag();
+      },
       onUnavailableOpen: (path) => {
         reorderLive.setText(
           fileGroupModel.unavailableEntryLabel.replace("{path}", path)
@@ -2194,6 +2245,76 @@ const renderModule = (
   scope.registerDomEvent(action, "click", () => {
     actions.openSettings(module.emptyState.settingsSection);
   });
+};
+
+export const refreshHomepageTemporalContent = (
+  container: HTMLElement,
+  viewModel: HomepageShellViewModel
+): void => {
+  const temporal = viewModel.banner.temporal;
+  if (temporal !== null) {
+    container.querySelector<HTMLElement>(
+      ".homepage-studio-coordinate"
+    )?.setText(viewModel.theme === "minimal-paper"
+      ? `${temporal.coordinateLabel} · ${temporal.timeLabel}`
+      : temporal.coordinateLabel);
+    const bannerDate = container.querySelector<HTMLElement>(
+      ".homepage-studio-banner-date"
+    );
+    bannerDate?.setText(viewModel.theme === "archive-observatory"
+      ? temporal.coordinateLabel
+      : temporal.dateLabel);
+    bannerDate?.setAttribute("datetime", temporal.dateKey);
+    container.querySelector<HTMLElement>(
+      ".homepage-studio-banner-weekday"
+    )?.setText(temporal.weekdayLabel);
+    container.querySelector<HTMLElement>(
+      ".homepage-studio-banner-time"
+    )?.setText(temporal.timeLabel);
+  }
+  const archiveMeta = container.querySelector<HTMLElement>(
+    ".homepage-studio-archive-banner-meta-line"
+  );
+  archiveMeta?.setText(viewModel.archiveBannerMetaLabel ?? "");
+  container.querySelector<HTMLElement>(
+    ".homepage-studio-archive-footer-text"
+  )?.setText(viewModel.archiveFooterLabel ?? "");
+
+  const planModule = viewModel.modules.find(
+    (module) => module.id === "current-plan"
+  );
+  const planSection = container.querySelector<HTMLElement>(
+    '.homepage-studio-module[data-module="current-plan"]'
+  );
+  if (
+    planModule?.state !== "ready"
+    || planModule.plan === undefined
+    || planSection === null
+  ) {
+    return;
+  }
+  const scheduleWasOpen = planSection.querySelector<HTMLDetailsElement>(
+    ".homepage-studio-plan-schedule"
+  )?.open ?? false;
+  const header = planSection.querySelector<HTMLElement>(
+    ":scope > .homepage-studio-module-header"
+  );
+  for (const child of [...planSection.children]) {
+    if (child !== header) {
+      child.remove();
+    }
+  }
+  planSection.setAttribute("data-state", planModule.state);
+  header?.querySelector<HTMLElement>(
+    ".homepage-studio-archive-plan-template"
+  )?.setText(planModule.plan.templateLabel);
+  renderPlanContent(planSection, planModule.plan, viewModel.theme);
+  const schedule = planSection.querySelector<HTMLDetailsElement>(
+    ".homepage-studio-plan-schedule"
+  );
+  if (schedule !== null) {
+    schedule.open = scheduleWasOpen;
+  }
 };
 
 export const renderHomepageShell = (

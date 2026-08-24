@@ -1774,6 +1774,8 @@
   background: var(--homepage-surface-raised);
 }
 
+.homepage-studio .homepage-studio-file-entry-reorder-ghost
+  > button.homepage-studio-file-group-entry::before,
 .homepage-studio button.homepage-studio-file-group-entry:focus-visible::before,
 .homepage-studio button.homepage-studio-file-group-entry:not(:disabled):hover::before {
   opacity: 1;
@@ -1786,6 +1788,9 @@
   white-space: nowrap;
 }
 
+.homepage-studio .homepage-studio-file-entry-reorder-ghost
+  > button.homepage-studio-file-group-entry
+  .homepage-studio-file-group-entry-name,
 .homepage-studio button.homepage-studio-file-group-entry:focus-visible
   .homepage-studio-file-group-entry-name,
 .homepage-studio button.homepage-studio-file-group-entry:not(:disabled):hover
@@ -2547,6 +2552,39 @@ button.homepage-studio-settings-tab:focus-visible {
   cursor: grabbing;
 }
 
+body
+  > .homepage-studio-file-entry-reorder-portal.homepage-studio-file-entry-reorder-theme-context {
+  position: static;
+  width: 0;
+  min-width: 0;
+  height: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+  filter: none;
+  backdrop-filter: none;
+  contain: none;
+  container-name: none;
+  container-type: normal;
+  pointer-events: none;
+}
+
+.homepage-studio-file-entry-reorder-pointer-transparent {
+  pointer-events: none;
+}
+
+body
+  > .homepage-studio-file-entry-reorder-portal.homepage-studio-file-entry-reorder-theme-context::before,
+body
+  > .homepage-studio-file-entry-reorder-portal.homepage-studio-file-entry-reorder-theme-context::after {
+  content: none;
+}
+
 .homepage-studio .homepage-studio-file-entry-reorder-source
   > .homepage-studio-file-group-entry {
   cursor: grabbing;
@@ -2574,13 +2612,12 @@ button.homepage-studio-settings-tab:focus-visible {
 }
 
 .homepage-studio .homepage-studio-file-entry-reorder-ghost
-  > .homepage-studio-file-group-entry {
+  > button.homepage-studio-file-group-entry.homepage-studio-file-entry-reorder-surface {
   width: 100%;
   height: 100%;
   margin: 0;
-  border-color: var(--homepage-focus);
+  color: var(--homepage-text);
   background: var(--homepage-surface-raised);
-  box-shadow: var(--shadow-l);
 }
 
 .homepage-studio .homepage-studio-file-entry-reorder-slot {
@@ -2597,18 +2634,13 @@ button.homepage-studio-settings-tab:focus-visible {
   opacity: 0.58;
 }
 
-.homepage-studio .homepage-studio-file-group[data-file-entry-drop-state="active"] {
-  outline: 2px solid var(--homepage-focus);
-  outline-offset: 2px;
-}
-
 .homepage-studio .homepage-studio-file-group[data-file-entry-drop-state="active"]
   > .homepage-studio-file-group-empty {
   display: none;
 }
 
 .homepage-studio .homepage-studio-file-group[data-file-entry-drop-state="invalid"] {
-  outline: 2px solid var(--text-error);
+  outline: 2px dashed var(--text-error);
   outline-offset: 2px;
   cursor: not-allowed;
 }
@@ -2659,10 +2691,6 @@ button.homepage-studio-settings-tab:focus-visible {
 .homepage-studio-settings
   .homepage-studio-file-entry-reorder-ghost > .setting-item {
   margin: 0;
-  border: var(--border-width) solid var(--interactive-accent);
-  border-radius: var(--radius-m);
-  background: var(--background-secondary);
-  box-shadow: var(--shadow-l);
 }
 
 .homepage-studio-settings .homepage-studio-file-entry-reorder-slot {
@@ -2676,14 +2704,8 @@ button.homepage-studio-settings-tab:focus-visible {
 }
 
 .homepage-studio-settings
-  .homepage-studio-file-group-settings-card[data-file-entry-drop-state="active"] {
-  outline: 2px solid var(--interactive-accent);
-  outline-offset: 2px;
-}
-
-.homepage-studio-settings
   .homepage-studio-file-group-settings-card[data-file-entry-drop-state="invalid"] {
-  outline: 2px solid var(--text-error);
+  outline: 2px dashed var(--text-error);
   outline-offset: 2px;
   cursor: not-allowed;
 }
@@ -2741,6 +2763,20 @@ button.homepage-studio-settings-tab:focus-visible {
   .homepage-studio-settings-button:focus-visible,
 .homepage-studio-empty-action:focus-visible {
     outline-color: Highlight;
+  }
+
+  .homepage-studio .homepage-studio-file-group[data-file-entry-drop-state="invalid"],
+  .homepage-studio-settings
+    .homepage-studio-file-group-settings-card[data-file-entry-drop-state="invalid"] {
+    outline: 2px dashed CanvasText;
+  }
+
+  .homepage-studio .homepage-studio-file-entry-reorder-slot
+    > .homepage-studio-file-group-entry,
+  .homepage-studio-settings
+    .homepage-studio-file-entry-reorder-slot > .setting-item {
+    outline: 1px dotted CanvasText;
+    outline-offset: -1px;
   }
 }
 

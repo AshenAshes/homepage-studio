@@ -2773,8 +2773,38 @@
   .homepage-studio-file-group-entry-primary::after,
 .homepage-studio[data-theme="archive-observatory"]
   button.homepage-studio-file-group-entry:focus-visible
+  .homepage-studio-file-group-entry-primary::after,
+.homepage-studio[data-theme="archive-observatory"]
+  .homepage-studio-file-entry-reorder-ghost
+  > button.homepage-studio-file-group-entry
   .homepage-studio-file-group-entry-primary::after {
   width: 100%;
+}
+
+.homepage-studio[data-theme="archive-observatory"]
+  .homepage-studio-file-entry-reorder-ghost
+  > button.homepage-studio-file-group-entry {
+  color: var(--homepage-archive-accent);
+  background: transparent;
+}
+
+.homepage-studio[data-theme="archive-observatory"]
+  .homepage-studio-file-entry-reorder-ghost
+  > button.homepage-studio-file-group-entry
+  .homepage-studio-file-group-entry-name {
+  color: var(--homepage-archive-accent);
+  transform: none;
+}
+
+.homepage-studio[data-theme="archive-observatory"]
+  .homepage-studio-file-entry-reorder-ghost
+  > button.homepage-studio-file-group-entry
+  :is(
+    .homepage-studio-file-group-entry-parent,
+    .homepage-studio-file-group-entry-status,
+    .homepage-studio-file-group-entry-index
+  ) {
+  color: inherit;
 }
 
 .homepage-studio[data-theme="archive-observatory"] .homepage-studio-journal-date {

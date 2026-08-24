@@ -90,6 +90,7 @@ export interface TaskInteractionInput {
     readonly draftText: string | null;
   };
   readonly archiveVisible: boolean;
+  readonly addDraft?: string;
   readonly visibleLimit?: number;
   readonly archivedVisibleLimit?: number;
 }
@@ -179,6 +180,7 @@ export interface HomepageModuleViewModel {
     readonly archiveEmptyLabel: string;
     readonly addPlaceholder: string;
     readonly addLabel: string;
+    readonly addDraft: string;
     readonly emptyLabel: string;
     readonly showMoreLabel: string;
     readonly showMoreArchiveLabel: string;
@@ -1209,18 +1211,21 @@ export const createHomepageShellViewModel = (
                 || completedTaskRecords.length === 0
                 ? null
                 : messages.tasksArchiveAll,
-              archiveToggleLabel: archivedTaskRecords.length === 0
+              archiveToggleLabel: !data.tasks.showArchiveToggle
+                || archivedTaskRecords.length === 0
                 ? null
                 : taskInteraction?.archiveVisible
                   ? messages.tasksHideArchive
                   : messages.tasksShowArchive,
               archiveVisible:
-                archivedTaskRecords.length > 0
+                data.tasks.showArchiveToggle
+                && archivedTaskRecords.length > 0
                 && (taskInteraction?.archiveVisible ?? false),
               archiveListLabel: messages.tasksArchiveListLabel,
               archiveEmptyLabel: messages.tasksNoArchived,
               addPlaceholder: messages.tasksAddPlaceholder,
               addLabel: messages.tasksAdd,
+              addDraft: taskInteraction?.addDraft ?? "",
               emptyLabel: messages.tasksNoActive,
               conflict: taskConflict
                 ? {

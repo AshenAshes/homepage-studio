@@ -313,6 +313,7 @@ export interface TaskSettings {
   readonly editable: boolean;
   readonly filePath: string | null;
   readonly showCompleted: boolean;
+  readonly showArchiveToggle: boolean;
   readonly recurringEditable: boolean;
   readonly recurringState: TaskRuntimeState["type"];
   readonly recurringConflict: boolean;
@@ -585,6 +586,7 @@ export class HomepageApplicationFacade {
   private selectedJournalDateKey = "";
   private taskRuntimeState: TaskRuntimeState = { type: "unconfigured" };
   private taskInteractionState: TaskInteractionState = { type: "idle" };
+  private taskAddDraft = "";
   private taskArchiveVisible = false;
   private taskVisibleLimit = TASK_PAGE_SIZE;
   private archivedTaskVisibleLimit = TASK_PAGE_SIZE;
@@ -698,6 +700,7 @@ export class HomepageApplicationFacade {
         {
           state: this.taskInteractionState,
           archiveVisible: this.taskArchiveVisible,
+          addDraft: this.taskAddDraft,
           visibleLimit: this.taskVisibleLimit,
           archivedVisibleLimit: this.archivedTaskVisibleLimit
         },
@@ -1078,6 +1081,7 @@ export class HomepageApplicationFacade {
         : `${periodKeys.daily}|${periodKeys.weekly}`;
       refreshFailureEpisode = "";
       this.taskInteractionState = { type: "idle" };
+      this.taskAddDraft = "";
       this.taskArchiveVisible = false;
       this.taskVisibleLimit = TASK_PAGE_SIZE;
       this.archivedTaskVisibleLimit = TASK_PAGE_SIZE;
@@ -1149,6 +1153,7 @@ export class HomepageApplicationFacade {
         editable: true,
         filePath: state.data.tasks.filePath,
         showCompleted: state.data.tasks.showCompleted,
+        showArchiveToggle: state.data.tasks.showArchiveToggle,
         recurringEditable: this.taskRuntimeState.type === "ready",
         recurringState: this.taskRuntimeState.type,
         recurringConflict: this.taskInteractionState.type === "conflict",
@@ -1159,6 +1164,7 @@ export class HomepageApplicationFacade {
         editable: false,
         filePath: null,
         showCompleted: true,
+        showArchiveToggle: true,
         recurringEditable: false,
         recurringState: "unconfigured",
         recurringConflict: false,
@@ -1231,8 +1237,29 @@ export class HomepageApplicationFacade {
       : created;
   }
 
-  public addTask(text: string): Promise<TaskSourceMutationResult> {
-    return this.mutateTask({ type: "add", text });
+  public updateTaskAddDraft(text: string): void {
+    this.taskAddDraft = text;
+  }
+
+  public async addTask(text: string): Promise<TaskSourceMutationResult> {
+    const result = await this.mutateTask({ type: "add", text });
+    if (result.type === "applied") {
+      this.taskAddDraft = "";
+    }
+    return result;
+  }
+
+  public setShowTaskArchiveToggle(showArchiveToggle: boolean): void {
+    if (!showArchiveToggle) {
+      this.taskArchiveVisible = false;
+    }
+    this.store.transact("change task archive entry visibility", "normal", (data) => ({
+      ...data,
+      tasks: {
+        ...data.tasks,
+        showArchiveToggle
+      }
+    }));
   }
 
   public addRecurringTask(
@@ -1347,15 +1374,24 @@ export class HomepageApplicationFacade {
     this.notifyTaskRuntime();
   }
 
-  public saveTaskEdit(): Promise<TaskSourceMutationResult> {
+  public async saveTaskEdit(): Promise<TaskSourceMutationResult> {
     const state = this.taskInteractionState;
-    return state.type === "editing"
-      ? this.mutateTask({
+    if (state.type !== "editing") {
+      return { type: "noop" };
+    }
+    const result = await this.mutateTask({
         type: "edit",
         target: state.target,
         text: state.text
-      }, state.text)
-      : Promise.resolve({ type: "noop" });
+      }, state.text);
+    if (
+      result.type === "noop"
+      && this.taskInteractionState.type === "editing"
+    ) {
+      this.taskInteractionState = { type: "idle" };
+      this.notifyTaskRuntime();
+    }
+    return result;
   }
 
   public archiveTask(target: TaskTarget): Promise<TaskSourceMutationResult> {

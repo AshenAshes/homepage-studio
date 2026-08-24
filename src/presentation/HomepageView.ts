@@ -11,6 +11,7 @@ import {
 } from "../constants";
 import {
   clearHomepageBannerImageState,
+  refreshHomepageTemporalContent,
   renderHomepageShell
 } from "./HomepageShellRenderer";
 import { attachAccessibleLabel } from "./accessibility";
@@ -19,6 +20,10 @@ export class HomepageView extends ItemView {
   private renderScope: Component | null = null;
   private pendingFileEntryFocusId: string | null = null;
   private pendingFileEntryAnnouncement: string | null = null;
+  private fileGroupEntryDragActive = false;
+  private textInputInteractionActive = false;
+  private renderPending = false;
+  private closing = false;
 
   public constructor(
     leaf: WorkspaceLeaf,
@@ -40,11 +45,60 @@ export class HomepageView extends ItemView {
   }
 
   public override onOpen(): Promise<void> {
+    this.closing = false;
     this.register(this.application.subscribeHomepageState(() => {
-      this.render();
+      this.requestRender();
     }));
-    this.render();
+    this.requestRender();
     return Promise.resolve();
+  }
+
+  private requestRender(): void {
+    if (this.closing) {
+      return;
+    }
+    if (
+      this.fileGroupEntryDragActive
+      || this.textInputInteractionActive
+    ) {
+      const snapshot = this.application.getSnapshot();
+      if (snapshot.status === "ready" && snapshot.shell !== null) {
+        refreshHomepageTemporalContent(this.contentEl, snapshot.shell);
+      }
+      this.renderPending = true;
+      return;
+    }
+    this.renderPending = false;
+    this.render();
+  }
+
+  private beginFileGroupEntryDrag(): void {
+    this.fileGroupEntryDragActive = true;
+  }
+
+  private endFileGroupEntryDrag(): void {
+    this.fileGroupEntryDragActive = false;
+    if (this.renderPending) {
+      this.requestRender();
+    }
+  }
+
+  private beginTextInputInteraction(): void {
+    this.textInputInteractionActive = true;
+  }
+
+  private endTextInputInteraction(
+    focusTarget?: "task-add"
+  ): void {
+    this.textInputInteractionActive = false;
+    if (this.renderPending) {
+      this.requestRender();
+    }
+    if (focusTarget === "task-add") {
+      this.contentEl.querySelector<HTMLElement>(
+        ".homepage-studio-task-add-button"
+      )?.focus({ preventScroll: true });
+    }
   }
 
   private render(): void {
@@ -69,6 +123,22 @@ export class HomepageView extends ItemView {
     this.renderScope?.unload();
     const renderScope = new Component();
     this.renderScope = renderScope;
+    renderScope.registerDomEvent(this.contentEl, "click", (event) => {
+      const target = event.target;
+      if (
+        target instanceof Element
+        && (
+          target.closest(".homepage-studio-journal-editor") !== null
+          || target.closest(".homepage-studio-task-add") !== null
+          || target.closest(
+            '.homepage-studio-task[data-editing="true"]'
+          ) !== null
+        )
+      ) {
+        return;
+      }
+      this.endTextInputInteraction();
+    });
 
     this.contentEl.empty();
     this.contentEl.addClass("homepage-studio");
@@ -100,6 +170,7 @@ export class HomepageView extends ItemView {
             void this.application.openFile(path, newPane);
           },
           moveJournalDate: (offsetDays) => {
+            this.endTextInputInteraction();
             void this.application.moveJournalDate(offsetDays);
           },
           updateJournalDraft: (content) => {
@@ -109,17 +180,23 @@ export class HomepageView extends ItemView {
             void this.application.flushJournalDraft();
           },
           setJournalViewMode: (viewMode) => {
+            this.endTextInputInteraction();
             this.application.setJournalViewMode(viewMode);
           },
           reloadJournalDraft: () => {
+            this.endTextInputInteraction();
             this.application.reloadJournalDraft();
           },
           deleteJournalEntry: () => {
+            this.endTextInputInteraction();
             void this.application.deleteCurrentJournalEntry();
           },
           addTask: async (text) => {
             const result = await this.application.addTask(text);
             return result.type === "applied";
+          },
+          updateTaskAddDraft: (text) => {
+            this.application.updateTaskAddDraft(text);
           },
           beginTaskEdit: (target, text) => {
             this.application.beginTaskEdit(target, text);
@@ -129,10 +206,16 @@ export class HomepageView extends ItemView {
           },
           saveTaskEdit: async () => {
             const result = await this.application.saveTaskEdit();
-            return result.type === "applied";
+            return result.type === "applied" || result.type === "noop";
           },
           cancelTaskEdit: () => {
             this.application.cancelTaskEdit();
+          },
+          beginTextInputInteraction: () => {
+            this.beginTextInputInteraction();
+          },
+          endTextInputInteraction: (focusTarget) => {
+            this.endTextInputInteraction(focusTarget);
           },
           setTaskCompleted: async (target, completed) => {
             const result = await this.application.setTaskCompleted(
@@ -164,6 +247,12 @@ export class HomepageView extends ItemView {
           },
           showMoreFileGroupEntries: () => {
             this.application.showMoreFileGroupEntries();
+          },
+          beginFileGroupEntryDrag: () => {
+            this.beginFileGroupEntryDrag();
+          },
+          endFileGroupEntryDrag: () => {
+            this.endFileGroupEntryDrag();
           },
           getAllFileGroups: () =>
             this.application.getAllFileGroupsViewModel(),
@@ -327,10 +416,14 @@ export class HomepageView extends ItemView {
   }
 
   public override async onClose(): Promise<void> {
+    this.closing = true;
     await this.application.flushJournalDraft();
     this.renderScope?.unload();
     clearHomepageBannerImageState(this.contentEl);
     this.renderScope = null;
+    this.fileGroupEntryDragActive = false;
+    this.textInputInteractionActive = false;
+    this.renderPending = false;
     this.contentEl.empty();
     this.contentEl.removeClass("homepage-studio");
     this.contentEl.removeAttribute("data-status");
