@@ -1,4 +1,5 @@
 import {
+  Component,
   getLanguage,
   normalizePath,
   Plugin,
@@ -59,6 +60,8 @@ import { ObsidianFileEntryRuntime } from
   "./infrastructure/obsidian/ObsidianFileEntryRuntime";
 import { ObsidianBannerResource } from
   "./infrastructure/obsidian/ObsidianBannerResource";
+
+const VAULT_RESOURCE_REFRESH_DELAY_MS = 50;
 
 export default class HomepageStudioPlugin extends Plugin {
   private persistence: SerialPersistenceCoordinator | null = null;
@@ -143,25 +146,55 @@ export default class HomepageStudioPlugin extends Plugin {
     );
     this.registerEvent(this.app.vault.on("rename", (file, oldPath) => {
       const directory = !(file instanceof TFile);
-      application.handleFileEntryRename(
-        oldPath,
-        file.path,
-        directory
-      );
-      application.handleBannerResourceRename(
+      application.handleVaultResourceRename(
         oldPath,
         file.path,
         directory
       );
     }));
-    this.registerEvent(this.app.vault.on("create", () => {
-      application.refreshFileEntryStates();
-      application.refreshBannerResources();
+    const pendingVaultResourceChanges = new Map<string, boolean>();
+    let vaultResourceRefreshHandle: number | null = null;
+    const scheduleVaultResourceRefresh = (
+      path: string,
+      directory: boolean
+    ): void => {
+      pendingVaultResourceChanges.set(
+        path,
+        pendingVaultResourceChanges.get(path) === true || directory
+      );
+      if (vaultResourceRefreshHandle !== null) {
+        return;
+      }
+      vaultResourceRefreshHandle = timerWindow.setTimeout(() => {
+        vaultResourceRefreshHandle = null;
+        const changes = [...pendingVaultResourceChanges].map(
+          ([changedPath, changedDirectory]) => ({
+            path: changedPath,
+            directory: changedDirectory
+          })
+        );
+        pendingVaultResourceChanges.clear();
+        application.refreshVaultResourceStates(changes);
+      }, VAULT_RESOURCE_REFRESH_DELAY_MS);
+    };
+    this.registerEvent(this.app.vault.on("create", (file) => {
+      scheduleVaultResourceRefresh(
+        file.path,
+        !(file instanceof TFile)
+      );
     }));
-    this.registerEvent(this.app.vault.on("delete", () => {
-      application.refreshFileEntryStates();
-      application.refreshBannerResources();
+    this.registerEvent(this.app.vault.on("delete", (file) => {
+      scheduleVaultResourceRefresh(
+        file.path,
+        !(file instanceof TFile)
+      );
     }));
+    this.register(() => {
+      if (vaultResourceRefreshHandle !== null) {
+        timerWindow.clearTimeout(vaultResourceRefreshHandle);
+      }
+      pendingVaultResourceChanges.clear();
+    });
 
     this.registerView(
       HOMEPAGE_VIEW_TYPE,
@@ -204,9 +237,8 @@ export default class HomepageStudioPlugin extends Plugin {
     this.register(localization.subscribe(refreshEntryLabels));
 
     const syncLocalePreference = (): void => {
-      const state = store.getState();
       localization.setPreference(
-        state.mode === "ready" ? state.data.locale : "auto"
+        store.selectReadyScalar((data) => data.locale) ?? "auto"
       );
     };
     this.register(store.subscribeState(syncLocalePreference));
@@ -217,7 +249,7 @@ export default class HomepageStudioPlugin extends Plugin {
     }));
     store.updateLocalTime(clock.getCurrent());
 
-    const boundClockWindows = new Set<Window>();
+    const clockWindowScopes = new Map<Window, Component>();
     const clockDocuments = new Set<Document>();
     const syncClockActivity = (): void => {
       const applicationVisible = [...clockDocuments].some(
@@ -227,22 +259,39 @@ export default class HomepageStudioPlugin extends Plugin {
         clock.stop();
         return;
       }
-      clock.refresh();
-      application.refreshRecurringTasks();
+      const dateChanged = clock.refresh();
+      if (!dateChanged) {
+        application.refreshRecurringTasks();
+      }
       clock.start();
     };
     const bindClockWindow = (targetWindow: Window): void => {
-      if (boundClockWindows.has(targetWindow)) {
+      if (clockWindowScopes.has(targetWindow)) {
         return;
       }
-      boundClockWindows.add(targetWindow);
+      const scope = new Component();
+      clockWindowScopes.set(targetWindow, scope);
       clockDocuments.add(targetWindow.document);
-      this.registerDomEvent(targetWindow, "focus", () => {
+      scope.registerDomEvent(targetWindow, "focus", () => {
         syncClockActivity();
       });
-      this.registerDomEvent(targetWindow.document, "visibilitychange", () => {
-        syncClockActivity();
-      });
+      scope.registerDomEvent(
+        targetWindow.document,
+        "visibilitychange",
+        () => {
+          syncClockActivity();
+        }
+      );
+      syncClockActivity();
+    };
+    const unbindClockWindow = (targetWindow: Window): void => {
+      const scope = clockWindowScopes.get(targetWindow);
+      if (scope === undefined) {
+        return;
+      }
+      scope.unload();
+      clockWindowScopes.delete(targetWindow);
+      clockDocuments.delete(targetWindow.document);
       syncClockActivity();
     };
     bindClockWindow(timerWindow);
@@ -255,7 +304,17 @@ export default class HomepageStudioPlugin extends Plugin {
         bindClockWindow(workspaceWindow);
       }
     ));
+    this.registerEvent(this.app.workspace.on(
+      "window-close",
+      (_workspaceWindow, workspaceWindow) => {
+        unbindClockWindow(workspaceWindow);
+      }
+    ));
     this.register(() => {
+      for (const scope of clockWindowScopes.values()) {
+        scope.unload();
+      }
+      clockWindowScopes.clear();
       clockDocuments.clear();
       clock.stop();
     });

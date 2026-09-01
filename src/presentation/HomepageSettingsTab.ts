@@ -98,6 +98,8 @@ const isModuleSize = (value: string): value is ModuleSize =>
 const isTaskRecurrence = (value: string): value is TaskRecurrence =>
   value === "daily" || value === "weekly";
 
+const SETTINGS_TEXT_COMMIT_DELAY_MS = 350;
+
 const normalizeSettingsSearchText = (value: string): string =>
   value
     .normalize("NFKC")
@@ -144,6 +146,11 @@ export class HomepageSettingsTab extends PluginSettingTab {
   private suggestionFileCache: readonly TFile[] | null = null;
   private fileEntryStateUnsubscribe: (() => void) | null = null;
   private taskStateUnsubscribe: (() => void) | null = null;
+  private readonly pendingSettingCommits = new Map<string, {
+    readonly handle: number;
+    readonly commit: () => void;
+    readonly targetWindow: Window;
+  }>();
 
   public constructor(
     app: App,
@@ -163,6 +170,7 @@ export class HomepageSettingsTab extends PluginSettingTab {
   }
 
   public override display(): void {
+    this.flushPendingSettingCommits();
     this.fileEntryStateUnsubscribe?.();
     this.fileEntryStateUnsubscribe = null;
     this.taskStateUnsubscribe?.();
@@ -434,6 +442,7 @@ export class HomepageSettingsTab extends PluginSettingTab {
   }
 
   public override hide(): void {
+    this.flushPendingSettingCommits();
     this.fileEntryStateUnsubscribe?.();
     this.fileEntryStateUnsubscribe = null;
     this.taskStateUnsubscribe?.();
@@ -1361,16 +1370,18 @@ export class HomepageSettingsTab extends PluginSettingTab {
     let focalX = themeSettings.focalPoint.x;
     let focalY = themeSettings.focalPoint.y;
     const updateFocalPoint = (): void => {
-      this.handleBannerMutation(
-        this.application.setThemeBannerFocalPoint(
-          this.selectedBannerTheme,
-          focalX,
-          focalY
-        ),
-        error,
-        messages,
-        false
-      );
+      this.scheduleSettingCommit("banner-focal-point", () => {
+        this.handleBannerMutation(
+          this.application.setThemeBannerFocalPoint(
+            this.selectedBannerTheme,
+            focalX,
+            focalY
+          ),
+          error,
+          messages,
+          false
+        );
+      });
     };
     new Setting(region)
       .setName(messages.bannerFocalPointX)
@@ -2872,7 +2883,9 @@ export class HomepageSettingsTab extends PluginSettingTab {
         .setValue(settings.bannerTitle)
         .setDisabled(!settings.editable)
         .onChange((value) => {
-          this.application.setBannerTitle(value);
+          this.scheduleSettingCommit("banner-title", () => {
+            this.application.setBannerTitle(value);
+          });
         });
       text.inputEl.maxLength = 200;
     });
@@ -2887,7 +2900,9 @@ export class HomepageSettingsTab extends PluginSettingTab {
         .setValue(settings.bannerSubtitle)
         .setDisabled(!settings.editable)
         .onChange((value) => {
-          this.application.setBannerSubtitle(value);
+          this.scheduleSettingCommit("banner-subtitle", () => {
+            this.application.setBannerSubtitle(value);
+          });
         });
       text.inputEl.maxLength = 300;
     });
@@ -3465,17 +3480,19 @@ export class HomepageSettingsTab extends PluginSettingTab {
         .setDisabled(!settings.editable)
         .onChange((value) => {
           const parsed = Number(value);
-          if (settings.dateRange.type === "latestDays") {
-            this.application.setHeatmapDateRange({
-              type: "latestDays",
-              days: parsed
-            });
-          } else {
-            this.application.setHeatmapDateRange({
-              type: "fixedYear",
-              year: parsed
-            });
-          }
+          this.scheduleSettingCommit("heatmap-date-range", () => {
+            if (settings.dateRange.type === "latestDays") {
+              this.application.setHeatmapDateRange({
+                type: "latestDays",
+                days: parsed
+              });
+            } else {
+              this.application.setHeatmapDateRange({
+                type: "fixedYear",
+                year: parsed
+              });
+            }
+          });
         });
     });
   }
@@ -3519,7 +3536,9 @@ export class HomepageSettingsTab extends PluginSettingTab {
             && medium !== undefined
             && high !== undefined
           ) {
-            this.application.setHeatmapThresholds([low, medium, high]);
+            this.scheduleSettingCommit("heatmap-thresholds", () => {
+              this.application.setHeatmapThresholds([low, medium, high]);
+            });
           }
         });
     });
@@ -3534,7 +3553,9 @@ export class HomepageSettingsTab extends PluginSettingTab {
         .setValue(settings.excludeFolders.join("\n"))
         .setDisabled(!settings.editable)
         .onChange((value) => {
-          this.application.setHeatmapExcludeFolders(value.split(/\r?\n/gu));
+          this.scheduleSettingCommit("heatmap-exclude-folders", () => {
+            this.application.setHeatmapExcludeFolders(value.split(/\r?\n/gu));
+          });
         });
     });
   }
@@ -3550,7 +3571,9 @@ export class HomepageSettingsTab extends PluginSettingTab {
         .setValue(settings.historyRetentionDays.toString())
         .setDisabled(!settings.editable)
         .onChange((value) => {
-          this.application.setHeatmapHistoryRetentionDays(Number(value));
+          this.scheduleSettingCommit("heatmap-retention", () => {
+            this.application.setHeatmapHistoryRetentionDays(Number(value));
+          });
         });
     });
   }
@@ -3562,6 +3585,36 @@ export class HomepageSettingsTab extends PluginSettingTab {
       return;
     }
     compatibleTab.update();
+  }
+
+  private scheduleSettingCommit(key: string, commit: () => void): void {
+    const targetWindow = this.containerEl.ownerDocument.defaultView;
+    if (targetWindow === null) {
+      commit();
+      return;
+    }
+    const previous = this.pendingSettingCommits.get(key);
+    if (previous !== undefined) {
+      previous.targetWindow.clearTimeout(previous.handle);
+    }
+    const handle = targetWindow.setTimeout(() => {
+      this.pendingSettingCommits.delete(key);
+      commit();
+    }, SETTINGS_TEXT_COMMIT_DELAY_MS);
+    this.pendingSettingCommits.set(key, {
+      handle,
+      commit,
+      targetWindow
+    });
+  }
+
+  private flushPendingSettingCommits(): void {
+    const pending = [...this.pendingSettingCommits.values()];
+    this.pendingSettingCommits.clear();
+    for (const entry of pending) {
+      entry.targetWindow.clearTimeout(entry.handle);
+      entry.commit();
+    }
   }
 
   private focusHeading(heading: Setting | undefined): void {

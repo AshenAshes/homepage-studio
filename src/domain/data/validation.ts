@@ -480,6 +480,6 @@ export const validatePluginData = (input: unknown): PluginDataValidation => {
   validatePathsAndUrls(data, diagnostics);
 
   return diagnostics.length === 0
-    ? { type: "valid", data: structuredClone(data) }
+    ? { type: "valid", data }
     : { type: "invalid", diagnostics };
 };

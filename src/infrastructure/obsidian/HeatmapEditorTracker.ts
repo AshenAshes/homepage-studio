@@ -18,7 +18,7 @@ export interface HeatmapTimerDriver {
 }
 
 interface PendingEditorContent {
-  readonly content: string;
+  readonly readContent: () => string | null;
   readonly handle: number;
 }
 
@@ -53,7 +53,10 @@ export class HeatmapEditorTracker {
   public flush(): void {
     for (const [path, pending] of this.pendingByPath) {
       this.timers.clear(pending.handle);
-      this.tracking.recordHeatmapEditorContent(path, pending.content);
+      const content = pending.readContent();
+      if (content !== null) {
+        this.tracking.recordHeatmapEditorContent(path, content);
+      }
     }
     this.pendingByPath.clear();
   }
@@ -94,12 +97,20 @@ export class HeatmapEditorTracker {
     if (existing !== undefined) {
       this.timers.clear(existing.handle);
     }
-    const content = editor.getValue();
+    const readContent = (): string | null => {
+      const currentFile = info.file;
+      return isMarkdownFile(currentFile) && currentFile.path === file.path
+        ? editor.getValue()
+        : null;
+    };
     const handle = this.timers.set(() => {
       this.pendingByPath.delete(file.path);
-      this.tracking.recordHeatmapEditorContent(file.path, content);
+      const content = readContent();
+      if (content !== null) {
+        this.tracking.recordHeatmapEditorContent(file.path, content);
+      }
     }, this.debounceMs);
-    this.pendingByPath.set(file.path, { content, handle });
+    this.pendingByPath.set(file.path, { readContent, handle });
   }
 }
 

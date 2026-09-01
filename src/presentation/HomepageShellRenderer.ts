@@ -494,7 +494,10 @@ const renderBannerImage = (
       attr: {
         alt: "",
         "aria-hidden": "true",
-        draggable: "false"
+        draggable: "false",
+        loading: "lazy",
+        decoding: "async",
+        fetchpriority: "low"
       }
     });
   if (reuseImage) {
@@ -1323,8 +1326,58 @@ const renderModule = (
         index
       ])
     );
+    const getCellIndex = (target: EventTarget | null): number | null => {
+      if (!(target instanceof Element)) {
+        return null;
+      }
+      const button = target.closest<HTMLElement>(
+        ".homepage-studio-heatmap-cell"
+      );
+      if (button === null || !grid.contains(button)) {
+        return null;
+      }
+      const dateKey = button.dataset.date;
+      return dateKey === undefined
+        ? null
+        : cellIndexes.get(dateKey) ?? null;
+    };
+    scope.registerDomEvent(grid, "click", (event) => {
+      const index = getCellIndex(event.target);
+      if (index !== null) {
+        selectCell(index, true);
+      }
+    });
+    scope.registerDomEvent(grid, "keydown", (event) => {
+      const index = getCellIndex(event.target);
+      const cell = index === null ? undefined : cells[index];
+      if (cell === undefined) {
+        return;
+      }
+      const coordinateOffsets: Readonly<
+        Record<string, readonly [number, number]>
+      > = {
+        ArrowUp: [0, -1],
+        ArrowDown: [0, 1],
+        ArrowLeft: [-1, 0],
+        ArrowRight: [1, 0]
+      };
+      const offset = coordinateOffsets[event.key];
+      if (offset === undefined) {
+        return;
+      }
+      const nextIndex = coordinateIndexes.get([
+        cell.weekIndex + offset[0],
+        cell.weekdayIndex + offset[1]
+      ].join(":"));
+      if (nextIndex === undefined) {
+        return;
+      }
+      event.preventDefault();
+      selectCell(nextIndex, true);
+    });
+    const weeksFragment = createFragment();
     for (const week of module.heatmap.weeks) {
-      const weekColumn = grid.createDiv({
+      const weekColumn = weeksFragment.createDiv({
         cls: "homepage-studio-heatmap-week",
         attr: {
           role: "presentation"
@@ -1358,34 +1411,9 @@ const renderModule = (
         attachAccessibleLabel(button, button, cell.accessibleLabel);
         button.tabIndex = index === activeIndex ? 0 : -1;
         buttons[index] = button;
-        scope.registerDomEvent(button, "click", () => {
-          selectCell(index, true);
-        });
-        scope.registerDomEvent(button, "keydown", (event) => {
-          const coordinateOffsets: Readonly<
-            Record<string, readonly [number, number]>
-          > = {
-            ArrowUp: [0, -1],
-            ArrowDown: [0, 1],
-            ArrowLeft: [-1, 0],
-            ArrowRight: [1, 0]
-          };
-          const offset = coordinateOffsets[event.key];
-          if (offset === undefined) {
-            return;
-          }
-          const nextIndex = coordinateIndexes.get([
-            cell.weekIndex + offset[0],
-            cell.weekdayIndex + offset[1]
-          ].join(":"));
-          if (nextIndex === undefined) {
-            return;
-          }
-          event.preventDefault();
-          selectCell(nextIndex, true);
-        });
       }
     }
+    grid.appendChild(weeksFragment);
     if (selectedIndex !== null) {
       activeIndex = selectedIndex;
       const selectedButton = buttons[selectedIndex];

@@ -2,6 +2,21 @@
 
 All notable changes to Homepage Studio are documented in this file.
 
+## 1.2.1 — 2026-09-02
+
+### Fixed
+
+- Removed new-tab stutter caused by rebuilding the complete homepage snapshot whenever Obsidian requested the Homepage Studio tab title.
+- Deferred hidden homepage renders, used lightweight same-day clock updates, and eliminated redundant state cloning and cross-date refreshes.
+- Filtered and batched vault resource events so unrelated file changes and bulk imports do not trigger repeated homepage rebuilds.
+- Read editor content only after heatmap debounce, delegated heatmap interactions at grid level, and debounced text-heavy settings updates.
+- Released clock listeners when pop-out windows close and loaded large Banner images lazily with asynchronous decoding hints.
+
+### Performance
+
+- Reduced 100 unrelated vault changes to zero homepage snapshots and a related batch to one snapshot.
+- Reduced heatmap cell event listeners from two per day to two listeners for the complete grid.
+
 ## 1.2.0 — 2026-08-25
 
 ### Added

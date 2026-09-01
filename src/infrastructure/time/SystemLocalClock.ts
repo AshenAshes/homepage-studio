@@ -96,9 +96,11 @@ export class SystemLocalClock implements Clock {
     this.scheduleNextMinute();
   }
 
-  public refresh(): void {
+  public refresh(): boolean {
     const next = readLocalTime(this.driver.now());
+    let dateChanged = false;
     if (!snapshotsMatch(this.current, next)) {
+      dateChanged = this.current.dateKey !== next.dateKey;
       this.current = next;
       for (const listener of this.listeners) {
         listener(this.getCurrent());
@@ -108,6 +110,7 @@ export class SystemLocalClock implements Clock {
     if (this.started) {
       this.scheduleNextMinute();
     }
+    return dateChanged;
   }
 
   public stop(): void {

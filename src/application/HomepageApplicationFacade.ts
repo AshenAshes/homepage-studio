@@ -12,6 +12,7 @@ import type { ResetResult } from "./services/DataLifecycleService";
 import {
   createHomepageFileGroupsViewModel,
   createHomepageShellViewModel,
+  createHomepageTemporalShellViewModel,
   type HomepageFileGroupsViewModel,
   type HomepageShellViewModel
 } from "./view-models/HomepageShellViewModel";
@@ -595,7 +596,7 @@ export class HomepageApplicationFacade {
   private readonly taskRuntimeListeners = new Set<() => void>();
   private requestRecurringTaskRefresh = (): void => undefined;
   private readonly fileEntryRuntimeListeners = new Set<() => void>();
-  private readonly bannerRuntimeListeners = new Set<() => void>();
+  private readonly vaultResourceRuntimeListeners = new Set<() => void>();
   private removedFileEntry: {
     readonly groupId: string;
     readonly entry: FileEntry;
@@ -720,6 +721,24 @@ export class HomepageApplicationFacade {
     };
   }
 
+  public getHomepageTitle(): string {
+    return this.localization.getMessages().homepageTitle;
+  }
+
+  public getTemporalSnapshot(): HomepageShellViewModel | null {
+    const localTime = this.store.getLocalTime();
+    const messages = this.localization.getMessages();
+    const locale = this.localization.getResolvedLocale();
+    return this.store.selectReadySnapshot((data) =>
+      createHomepageTemporalShellViewModel(
+        data,
+        localTime,
+        messages,
+        locale
+      )
+    );
+  }
+
   public openHomepage(): Promise<void> {
     return this.workspace.openHomepage();
   }
@@ -733,20 +752,32 @@ export class HomepageApplicationFacade {
       if (disposed || !layoutReady || opening !== null) {
         return;
       }
+      let hasCentralContent: boolean | null = null;
+      if (!startup) {
+        if (this.workspace.hasHomepage()) {
+          return;
+        }
+        hasCentralContent = this.workspace.hasCentralContentPage();
+        if (hasCentralContent) {
+          return;
+        }
+      }
 
-      const state = this.store.getState();
-      if (state.mode !== "ready") {
+      const openOnStartup = this.store.selectReadyScalar(
+        (data) => data.startup.openOnStartup
+      );
+      const openWhenWorkspaceEmpty = this.store.selectReadyScalar(
+        (data) => data.startup.openWhenWorkspaceEmpty
+      );
+      if (openOnStartup === null || openWhenWorkspaceEmpty === null) {
         return;
       }
 
-      const shouldOpenForStartup = startup && state.data.startup.openOnStartup;
+      const shouldOpenForStartup = startup && openOnStartup;
       const shouldOpenForEmptyWorkspace =
-        state.data.startup.openWhenWorkspaceEmpty
-        && !this.workspace.hasCentralContentPage();
+        openWhenWorkspaceEmpty
+        && !(hasCentralContent ?? this.workspace.hasCentralContentPage());
       if (!shouldOpenForStartup && !shouldOpenForEmptyWorkspace) {
-        return;
-      }
-      if (!startup && this.workspace.hasHomepage()) {
         return;
       }
 
@@ -787,16 +818,24 @@ export class HomepageApplicationFacade {
     const unsubscribeLocale = this.localization.subscribe(listener);
     const unsubscribeJournal = this.subscribeJournalRuntime(listener);
     const unsubscribeTasks = this.subscribeTaskRuntime(listener);
-    const unsubscribeFileEntries = this.subscribeFileEntryRuntime(listener);
-    const unsubscribeBanner = this.subscribeBannerRuntime(listener);
+    const unsubscribeVaultResources = this.subscribeVaultResourceRuntime(
+      listener
+    );
     return () => {
       unsubscribeStore();
       unsubscribeLocale();
       unsubscribeJournal();
       unsubscribeTasks();
-      unsubscribeFileEntries();
-      unsubscribeBanner();
+      unsubscribeVaultResources();
     };
+  }
+
+  public subscribeHomepageLocalTime(
+    listener: (dateChanged: boolean) => void
+  ): () => void {
+    return this.store.subscribeLocalTime(({ dateChanged }) => {
+      listener(dateChanged);
+    });
   }
 
   public getDateSectionJournalRuntimeState():
@@ -891,11 +930,11 @@ export class HomepageApplicationFacade {
       if (disposed) {
         return;
       }
-      const state = this.store.getState();
-      const path = state.mode === "ready"
-        && this.isModuleVisible(state.data, "journal")
-        ? state.data.journal.filePath
-        : null;
+      const path = this.store.selectReadyScalar((data) =>
+        this.isModuleVisible(data, "journal")
+          ? data.journal.filePath
+          : null
+      );
       const signature = path === null ? "unconfigured" : `path:${path}`;
       if (signature === configuredSignature) {
         return;
@@ -1060,10 +1099,9 @@ export class HomepageApplicationFacade {
     };
 
     const bindConfiguration = (): void => {
-      const state = this.store.getState();
-      const path = state.mode === "ready"
-        ? state.data.tasks.filePath
-        : null;
+      const path = this.store.selectReadyScalar(
+        (data) => data.tasks.filePath
+      );
       const nextPath = path ?? "";
       if (nextPath === configuredPath) {
         const periodKeys = this.getCurrentTaskPeriodKeys();
@@ -1112,6 +1150,13 @@ export class HomepageApplicationFacade {
     };
 
     const unsubscribe = this.store.subscribeState(bindConfiguration);
+    const unsubscribeLocalTime = this.store.subscribeLocalTime(
+      ({ dateChanged }) => {
+        if (dateChanged) {
+          bindConfiguration();
+        }
+      }
+    );
     const requestRefresh = (): void => {
       if (!disposed && configuredPath !== "") {
         loadPath(configuredPath, false);
@@ -1123,6 +1168,7 @@ export class HomepageApplicationFacade {
       disposed = true;
       generation += 1;
       unsubscribe();
+      unsubscribeLocalTime();
       stopWatching();
       if (this.requestRecurringTaskRefresh === requestRefresh) {
         this.requestRecurringTaskRefresh = () => undefined;
@@ -1135,7 +1181,7 @@ export class HomepageApplicationFacade {
   }
 
   public getTaskSettings(): TaskSettings {
-    const state = this.store.getState();
+    const settings = this.store.selectReadySnapshot((data) => data.tasks);
     const recurringTasks = this.taskRuntimeState.type === "ready"
       ? this.taskRuntimeState.taskSource.tasks.flatMap((task) =>
         task.section === "active" && task.recurrence !== null
@@ -1150,12 +1196,12 @@ export class HomepageApplicationFacade {
     const diagnostics = this.taskRuntimeState.type === "invalid-source"
       ? this.taskRuntimeState.diagnostics
       : [];
-    return state.mode === "ready"
+    return settings !== null
       ? {
         editable: true,
-        filePath: state.data.tasks.filePath,
-        showCompleted: state.data.tasks.showCompleted,
-        showArchiveToggle: state.data.tasks.showArchiveToggle,
+        filePath: settings.filePath,
+        showCompleted: settings.showCompleted,
+        showArchiveToggle: settings.showArchiveToggle,
         recurringEditable: this.taskRuntimeState.type === "ready",
         recurringState: this.taskRuntimeState.type,
         recurringConflict: this.taskInteractionState.type === "conflict",
@@ -1192,7 +1238,7 @@ export class HomepageApplicationFacade {
   public async activateTaskSource(
     path: string
   ): Promise<TaskSourceActivationResult> {
-    if (this.store.getState().mode !== "ready") {
+    if (!this.store.isReady()) {
       return { type: "configuration-unavailable" };
     }
     let loaded = await this.taskSource.load(path);
@@ -1230,7 +1276,7 @@ export class HomepageApplicationFacade {
   public async createTaskSource(
     path: string
   ): Promise<HomepageTaskCreationResult> {
-    if (this.store.getState().mode !== "ready") {
+    if (!this.store.isReady()) {
       return { type: "configuration-unavailable" };
     }
     const created = await this.taskSource.create(path);
@@ -1472,12 +1518,15 @@ export class HomepageApplicationFacade {
   }
 
   public getDailyPlanSettings(): DailyPlanSettings {
-    const state = this.store.getState();
-    return state.mode === "ready"
+    const settings = this.store.selectReadySnapshot((data) => ({
+      selectedTemplateId: data.plans.selectedDailyTemplateId,
+      templates: data.plans.dailyTemplates
+    }));
+    return settings !== null
       ? {
         editable: true,
-        selectedTemplateId: state.data.plans.selectedDailyTemplateId,
-        templates: state.data.plans.dailyTemplates
+        selectedTemplateId: settings.selectedTemplateId,
+        templates: settings.templates
       }
       : {
         editable: false,
@@ -1487,17 +1536,15 @@ export class HomepageApplicationFacade {
   }
 
   public getPlanSettings(): PlanSettings {
-    const state = this.store.getState();
-    return state.mode === "ready"
+    const settings = this.store.selectReadySnapshot((data) => data.plans);
+    return settings !== null
       ? {
         editable: true,
-        activeMode: state.data.plans.activeMode,
-        selectedDailyTemplateId:
-          state.data.plans.selectedDailyTemplateId,
-        selectedWeeklyTemplateId:
-          state.data.plans.selectedWeeklyTemplateId,
-        dailyTemplates: state.data.plans.dailyTemplates,
-        weeklyTemplates: state.data.plans.weeklyTemplates
+        activeMode: settings.activeMode,
+        selectedDailyTemplateId: settings.selectedDailyTemplateId,
+        selectedWeeklyTemplateId: settings.selectedWeeklyTemplateId,
+        dailyTemplates: settings.dailyTemplates,
+        weeklyTemplates: settings.weeklyTemplates
       }
       : {
         editable: false,
@@ -2067,9 +2114,14 @@ export class HomepageApplicationFacade {
   }
 
   public getInterfaceAndStartupSettings(): InterfaceAndStartupSettings {
-    const state = this.store.getState();
+    const settings = this.store.selectReadySnapshot((data) => ({
+      locale: data.locale,
+      startup: data.startup,
+      bannerTitle: data.banner.title,
+      bannerSubtitle: data.banner.subtitle
+    }));
     const messages = this.localization.getMessages();
-    if (state.mode !== "ready") {
+    if (settings === null) {
       return {
         editable: false,
         locale: "auto",
@@ -2082,12 +2134,12 @@ export class HomepageApplicationFacade {
 
     return {
       editable: true,
-      locale: state.data.locale,
-      openOnStartup: state.data.startup.openOnStartup,
-      openWhenWorkspaceEmpty: state.data.startup.openWhenWorkspaceEmpty,
-      bannerTitle: state.data.banner.title
+      locale: settings.locale,
+      openOnStartup: settings.startup.openOnStartup,
+      openWhenWorkspaceEmpty: settings.startup.openWhenWorkspaceEmpty,
+      bannerTitle: settings.bannerTitle
         ?? messages.homepageBannerTitle,
-      bannerSubtitle: state.data.banner.subtitle
+      bannerSubtitle: settings.bannerSubtitle
         ?? messages.homepageBannerSubtitle
     };
   }
@@ -2143,8 +2195,13 @@ export class HomepageApplicationFacade {
   }
 
   public getLayoutSettings(): LayoutSettings {
-    const state = this.store.getState();
-    if (state.mode !== "ready") {
+    const settings = this.store.selectReadySnapshot((data) => ({
+      theme: data.theme,
+      appearanceMode: data.appearanceMode,
+      layout: getLayout(data.layouts, data.theme),
+      hasOverride: data.layouts[data.theme] !== undefined
+    }));
+    if (settings === null) {
       return {
         editable: false,
         theme: "klein-blue",
@@ -2155,10 +2212,7 @@ export class HomepageApplicationFacade {
     }
     return {
       editable: true,
-      theme: state.data.theme,
-      appearanceMode: state.data.appearanceMode,
-      layout: getLayout(state.data.layouts, state.data.theme),
-      hasOverride: state.data.layouts[state.data.theme] !== undefined
+      ...settings
     };
   }
 
@@ -2279,15 +2333,17 @@ export class HomepageApplicationFacade {
   }
 
   public getBannerSettings(): BannerSettings {
-    const state = this.store.getState();
-    return state.mode === "ready"
+    const settings = this.store.selectReadySnapshot((data) => ({
+      globalSource: data.banner.globalSource,
+      themes: BANNER_THEME_IDS.map((theme) => ({
+        theme,
+        settings: getBannerTheme(data.banner, theme)
+      }))
+    }));
+    return settings !== null
       ? {
         editable: true,
-        globalSource: state.data.banner.globalSource,
-        themes: BANNER_THEME_IDS.map((theme) => ({
-          theme,
-          settings: getBannerTheme(state.data.banner, theme)
-        }))
+        ...settings
       }
       : {
         editable: false,
@@ -2415,44 +2471,110 @@ export class HomepageApplicationFacade {
     newPath: string,
     directory: boolean
   ): void {
-    const state = this.store.getState();
-    if (state.mode !== "ready") {
-      return;
-    }
-    const banner = remapBannerVaultPaths(
-      state.data.banner,
-      oldPath,
-      newPath,
-      directory
-    );
-    if (banner === state.data.banner) {
-      return;
-    }
-    this.store.transact(
+    this.store.transactIfChanged(
       "remap banner vault source",
       "immediate",
-      (data) => ({
-        ...data,
-        banner: remapBannerVaultPaths(
+      (data) => {
+        const banner = remapBannerVaultPaths(
           data.banner,
           oldPath,
           newPath,
           directory
-        )
-      })
+        );
+        return banner === data.banner
+          ? null
+          : { ...data, banner };
+      }
     );
   }
 
   public refreshBannerResources(): void {
-    this.notifyBannerRuntime();
+    this.notifyVaultResourceRuntime();
+  }
+
+  public handleVaultResourceRename(
+    oldPath: string,
+    newPath: string,
+    directory: boolean
+  ): void {
+    let fileEntriesChanged = false;
+    const result = this.store.transactIfChanged(
+      "remap renamed vault resources",
+      "immediate",
+      (data) => {
+        const fileGroups = remapFileEntryPaths(
+          data.fileGroups,
+          oldPath,
+          newPath,
+          directory
+        );
+        const banner = remapBannerVaultPaths(
+          data.banner,
+          oldPath,
+          newPath,
+          directory
+        );
+        fileEntriesChanged = fileGroups !== data.fileGroups;
+        return !fileEntriesChanged && banner === data.banner
+          ? null
+          : { ...data, fileGroups, banner };
+      }
+    );
+    if (result.type === "applied" && fileEntriesChanged) {
+      this.notifyFileEntryRuntime();
+    }
+  }
+
+  public refreshVaultResourceStates(
+    changes: readonly {
+      readonly path: string;
+      readonly directory: boolean;
+    }[]
+  ): void {
+    if (changes.length === 0) {
+      return;
+    }
+    const affected = this.store.selectReadyScalar((data) => {
+      const fileEntryAffected = data.fileGroups.some((group) =>
+        group.entries.some((entry) =>
+          changes.some((change) => this.matchesVaultPath(
+            entry.path,
+            change.path,
+            change.directory
+          ))
+        )
+      );
+      const bannerSources = [
+        data.banner.globalSource,
+        ...Object.values(data.banner.themes).map(
+          (settings) => settings?.source ?? null
+        )
+      ];
+      const bannerAffected = bannerSources.some((source) =>
+        source?.type === "vault"
+        && changes.some((change) => this.matchesVaultPath(
+          source.value,
+          change.path,
+          change.directory
+        ))
+      );
+      return (fileEntryAffected ? 1 : 0) | (bannerAffected ? 2 : 0);
+    });
+    if (affected === null || affected === 0) {
+      return;
+    }
+    if ((affected & 1) !== 0) {
+      this.notifyFileEntryRuntime();
+    }
+    this.notifyVaultResourceRuntime();
   }
 
   public getFileGroupSettings(): FileGroupSettings {
-    const state = this.store.getState();
-    return state.mode === "ready"
+    const groups = this.store.selectReadySnapshot((data) => data.fileGroups);
+    return groups !== null
       ? {
         editable: true,
-        groups: state.data.fileGroups.map((group) => ({
+        groups: groups.map((group) => ({
           ...group,
           entries: group.entries.map((entry) => ({
             ...entry,
@@ -2469,12 +2591,14 @@ export class HomepageApplicationFacade {
   }
 
   public getAllFileGroupsViewModel(): HomepageFileGroupsViewModel | null {
-    const state = this.store.getState();
-    if (state.mode !== "ready" || state.data.fileGroups.length === 0) {
+    const data = this.store.selectReadySnapshot((state) => ({
+      fileGroups: state.fileGroups
+    }));
+    if (data === null || data.fileGroups.length === 0) {
       return null;
     }
     return createHomepageFileGroupsViewModel(
-      state.data,
+      data,
       this.localization.getMessages(),
       {
         getStatus: (path) => this.fileEntryRuntime.getStatus(path)
@@ -2553,7 +2677,7 @@ export class HomepageApplicationFacade {
     newPath: string,
     directory: boolean
   ): void {
-    this.store.transact(
+    const result = this.store.transactIfChanged(
       "update renamed file entries",
       "immediate",
       (data) => {
@@ -2564,18 +2688,21 @@ export class HomepageApplicationFacade {
           directory
         );
         return fileGroups === data.fileGroups
-          ? data
+          ? null
           : {
             ...data,
             fileGroups
           };
       }
     );
-    this.notifyFileEntryRuntime();
+    if (result.type === "applied") {
+      this.notifyFileEntryRuntime();
+    }
   }
 
   public refreshFileEntryStates(): void {
     this.notifyFileEntryRuntime();
+    this.notifyVaultResourceRuntime();
   }
 
   public showMoreFileGroupEntries(): void {
@@ -2907,12 +3034,12 @@ export class HomepageApplicationFacade {
   }
 
   public getJournalSettings(): JournalSettings {
-    const state = this.store.getState();
-    return state.mode === "ready"
+    const settings = this.store.selectReadySnapshot((data) => data.journal);
+    return settings !== null
       ? {
         editable: true,
-        filePath: state.data.journal.filePath,
-        viewMode: state.data.journal.viewMode
+        filePath: settings.filePath,
+        viewMode: settings.viewMode
       }
       : {
         editable: false,
@@ -2934,7 +3061,7 @@ export class HomepageApplicationFacade {
   public async activateDateSectionJournal(
     path: string
   ): Promise<JournalSourceActivationResult> {
-    if (this.store.getState().mode !== "ready") {
+    if (!this.store.isReady()) {
       return { type: "configuration-unavailable" };
     }
     const loaded = await this.dateSectionJournal.load(path);
@@ -2960,7 +3087,7 @@ export class HomepageApplicationFacade {
   public async createDateSectionJournal(
     path: string
   ): Promise<JournalSourceCreationResult> {
-    if (this.store.getState().mode !== "ready") {
+    if (!this.store.isReady()) {
       return { type: "configuration-unavailable" };
     }
     const created = await this.dateSectionJournal.createEmpty(path);
@@ -3296,17 +3423,26 @@ export class HomepageApplicationFacade {
     }
   }
 
-  private subscribeBannerRuntime(listener: () => void): () => void {
-    this.bannerRuntimeListeners.add(listener);
+  private subscribeVaultResourceRuntime(listener: () => void): () => void {
+    this.vaultResourceRuntimeListeners.add(listener);
     return () => {
-      this.bannerRuntimeListeners.delete(listener);
+      this.vaultResourceRuntimeListeners.delete(listener);
     };
   }
 
-  private notifyBannerRuntime(): void {
-    for (const listener of [...this.bannerRuntimeListeners]) {
+  private notifyVaultResourceRuntime(): void {
+    for (const listener of [...this.vaultResourceRuntimeListeners]) {
       listener();
     }
+  }
+
+  private matchesVaultPath(
+    resourcePath: string,
+    changedPath: string,
+    directory: boolean
+  ): boolean {
+    return resourcePath === changedPath
+      || (directory && resourcePath.startsWith(`${changedPath}/`));
   }
 
   private getFileEntryUndoState(): FileGroupSettings["undo"] {
@@ -3480,16 +3616,20 @@ export class HomepageApplicationFacade {
   }
 
   public getHeatmapSettings(): HeatmapSettings {
-    const state = this.store.getState();
-    return state.mode === "ready"
+    const settings = this.store.selectReadySnapshot((data) => ({
+      countType: data.heatmap.countType,
+      preferences: data.heatmap.preferences,
+      historyRetentionDays: data.heatmap.historyRetentionDays
+    }));
+    return settings !== null
       ? {
         editable: true,
-        countType: state.data.heatmap.countType,
-        dateRange: state.data.heatmap.preferences.dateRange,
-        startOfWeek: state.data.heatmap.preferences.startOfWeek,
-        thresholds: state.data.heatmap.preferences.thresholds,
-        excludeFolders: state.data.heatmap.preferences.excludeFolders,
-        historyRetentionDays: state.data.heatmap.historyRetentionDays
+        countType: settings.countType,
+        dateRange: settings.preferences.dateRange,
+        startOfWeek: settings.preferences.startOfWeek,
+        thresholds: settings.preferences.thresholds,
+        excludeFolders: settings.preferences.excludeFolders,
+        historyRetentionDays: settings.historyRetentionDays
       }
       : {
         editable: false,

@@ -1374,3 +1374,29 @@ export const createHomepageShellViewModel = (
     modules
   };
 };
+
+export const createHomepageTemporalShellViewModel = (
+  data: PluginData,
+  localTime: LocalTimeSnapshot | null,
+  messages: Messages,
+  locale: string
+): HomepageShellViewModel => {
+  const layout = getLayout(data.layouts, data.theme);
+  return createHomepageShellViewModel(
+    {
+      ...data,
+      layouts: {
+        ...data.layouts,
+        [data.theme]: {
+          ...layout,
+          hiddenModules: layout.moduleOrder.filter(
+            (moduleId) => moduleId !== "current-plan"
+          )
+        }
+      }
+    },
+    localTime,
+    messages,
+    locale
+  );
+};

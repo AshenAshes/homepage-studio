@@ -27,12 +27,11 @@ export class HeatmapTrackingService {
     path: string,
     content: string
   ): TransactionResult | null {
-    const state = this.store.getState();
-    if (
-      state.mode === "ready"
-      && state.data.heatmap.sessionDate === this.clock.localDateKey()
-      && state.data.heatmap.todaySession[path] !== undefined
-    ) {
+    const baselineExists = this.store.selectReadyScalar((data) =>
+      data.heatmap.sessionDate === this.clock.localDateKey()
+      && data.heatmap.todaySession[path] !== undefined
+    );
+    if (baselineExists) {
       return null;
     }
 
@@ -60,19 +59,16 @@ export class HeatmapTrackingService {
   }
 
   public refreshDate(): TransactionResult | null {
-    const state = this.store.getState();
-    if (state.mode !== "ready") {
-      return null;
-    }
-
     const dateKey = this.clock.localDateKey();
     const savedAt = this.clock.now().getTime();
-    const nextHeatmap = applyHeatmapRetention(
-      rolloverHeatmapDate(state.data.heatmap, dateKey, savedAt),
-      dateKey,
-      savedAt
+    const updateRequired = this.store.selectReadyScalar(
+      (data) => applyHeatmapRetention(
+        rolloverHeatmapDate(data.heatmap, dateKey, savedAt),
+        dateKey,
+        savedAt
+      ) !== data.heatmap
     );
-    if (nextHeatmap === state.data.heatmap) {
+    if (!updateRequired) {
       return null;
     }
 
@@ -86,11 +82,10 @@ export class HeatmapTrackingService {
   }
 
   public setCountType(countType: HeatmapCountType): TransactionResult | null {
-    const state = this.store.getState();
-    if (
-      state.mode !== "ready"
-      || state.data.heatmap.countType === countType
-    ) {
+    const currentCountType = this.store.selectReadyScalar(
+      (data) => data.heatmap.countType
+    );
+    if (currentCountType === null || currentCountType === countType) {
       return null;
     }
 
@@ -207,8 +202,7 @@ export class HeatmapTrackingService {
       preferences: PluginData["heatmap"]["preferences"]
     ) => PluginData["heatmap"]["preferences"]
   ): TransactionResult | null {
-    const state = this.store.getState();
-    if (state.mode !== "ready") {
+    if (!this.store.isReady()) {
       return null;
     }
     const dateKey = this.clock.localDateKey();

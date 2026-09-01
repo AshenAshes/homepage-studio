@@ -18,6 +18,10 @@ export interface PersistenceScheduler {
   schedule(request: PersistenceRequest): void;
 }
 
+export interface LocalTimeChange {
+  readonly dateChanged: boolean;
+}
+
 export type AppStoreState =
   | { readonly mode: "loading" }
   | {
@@ -41,9 +45,14 @@ export type ConditionalTransactionResult =
   | TransactionResult
   | { readonly type: "noop" };
 
+type StoreScalar = string | number | boolean | null;
+
 export class AppStore {
   private state: AppStoreState = { mode: "loading" };
   private readonly stateListeners = new Set<() => void>();
+  private readonly localTimeListeners = new Set<(
+    change: LocalTimeChange
+  ) => void>();
   private localTime: LocalTimeSnapshot | null = null;
   private generation = 0;
 
@@ -51,6 +60,26 @@ export class AppStore {
 
   public getState(): AppStoreState {
     return structuredClone(this.state);
+  }
+
+  public isReady(): boolean {
+    return this.state.mode === "ready";
+  }
+
+  public selectReadyScalar<T extends StoreScalar>(
+    selector: (data: PluginData) => T
+  ): T | null {
+    return this.state.mode === "ready"
+      ? selector(this.state.data)
+      : null;
+  }
+
+  public selectReadySnapshot<T>(
+    selector: (data: PluginData) => T
+  ): T | null {
+    return this.state.mode === "ready"
+      ? structuredClone(selector(this.state.data))
+      : null;
   }
 
   public getLocalTime(): LocalTimeSnapshot | null {
@@ -64,6 +93,15 @@ export class AppStore {
     };
   }
 
+  public subscribeLocalTime(
+    listener: (change: LocalTimeChange) => void
+  ): () => void {
+    this.localTimeListeners.add(listener);
+    return () => {
+      this.localTimeListeners.delete(listener);
+    };
+  }
+
   public updateLocalTime(localTime: LocalTimeSnapshot): void {
     if (
       this.localTime?.dateKey === localTime.dateKey
@@ -74,8 +112,11 @@ export class AppStore {
       return;
     }
 
+    const dateChanged = this.localTime?.dateKey !== localTime.dateKey;
     this.localTime = { ...localTime };
-    this.notifyState();
+    for (const listener of this.localTimeListeners) {
+      listener({ dateChanged });
+    }
   }
 
   public initializeReady(data: PluginData, persistInitial: boolean): void {
@@ -115,6 +156,37 @@ export class AppStore {
     }
 
     const candidate = mutate(structuredClone(this.state.data));
+    return this.commitCandidate(name, urgency, candidate);
+  }
+
+  public transactIfChanged(
+    name: string,
+    urgency: PersistenceUrgency,
+    mutate: (data: PluginData) => PluginData | null
+  ): ConditionalTransactionResult {
+    if (this.state.mode === "loading") {
+      return { type: "blocked-loading" };
+    }
+    if (this.state.mode === "safe") {
+      return { type: "blocked-safe-mode" };
+    }
+    const candidate = mutate(structuredClone(this.state.data));
+    return candidate === null
+      ? { type: "noop" }
+      : this.commitCandidate(name, urgency, candidate);
+  }
+
+  private commitCandidate(
+    name: string,
+    urgency: PersistenceUrgency,
+    candidate: PluginData
+  ): TransactionResult {
+    if (this.state.mode === "loading") {
+      return { type: "blocked-loading" };
+    }
+    if (this.state.mode === "safe") {
+      return { type: "blocked-safe-mode" };
+    }
     const validation = validatePluginData(candidate);
     if (validation.type === "invalid") {
       return {
@@ -133,23 +205,6 @@ export class AppStore {
     this.notifyState();
     this.scheduleCurrent(name, urgency);
     return { type: "applied", revision };
-  }
-
-  public transactIfChanged(
-    name: string,
-    urgency: PersistenceUrgency,
-    mutate: (data: PluginData) => PluginData | null
-  ): ConditionalTransactionResult {
-    if (this.state.mode === "loading") {
-      return { type: "blocked-loading" };
-    }
-    if (this.state.mode === "safe") {
-      return { type: "blocked-safe-mode" };
-    }
-    const candidate = mutate(structuredClone(this.state.data));
-    return candidate === null
-      ? { type: "noop" }
-      : this.transact(name, urgency, () => candidate);
   }
 
   private scheduleCurrent(name: string, urgency: PersistenceUrgency): void {

@@ -27,6 +27,7 @@ export class HomepageView extends ItemView {
   private cancelTaskDrag: (() => void) | null = null;
   private textInputInteractionActive = false;
   private renderPending = false;
+  private suppressNextFullNotification = false;
   private closing = false;
 
   public constructor(
@@ -41,7 +42,7 @@ export class HomepageView extends ItemView {
   }
 
   public override getDisplayText(): string {
-    return this.application.getSnapshot().title;
+    return this.application.getHomepageTitle();
   }
 
   public override getIcon(): string {
@@ -51,14 +52,45 @@ export class HomepageView extends ItemView {
   public override onOpen(): Promise<void> {
     this.closing = false;
     this.register(this.application.subscribeHomepageState(() => {
+      if (this.suppressNextFullNotification) {
+        this.suppressNextFullNotification = false;
+        return;
+      }
       this.requestRender();
     }));
+    this.register(this.application.subscribeHomepageLocalTime(
+      (dateChanged) => {
+        if (dateChanged) {
+          this.suppressNextFullNotification = true;
+          this.containerEl.ownerDocument.defaultView?.queueMicrotask(() => {
+            this.suppressNextFullNotification = false;
+          });
+          this.requestRender();
+          return;
+        }
+        this.requestTemporalRefresh();
+      }
+    ));
+    if (typeof this.app.workspace?.on === "function") {
+      this.registerEvent(this.app.workspace.on(
+        "active-leaf-change",
+        (leaf) => {
+          if (leaf === this.leaf && this.renderPending) {
+            this.requestRender(true);
+          }
+        }
+      ));
+    }
     this.requestRender();
     return Promise.resolve();
   }
 
-  private requestRender(): void {
+  private requestRender(allowHidden = false): void {
     if (this.closing) {
+      return;
+    }
+    if (!allowHidden && this.isInactiveTab()) {
+      this.renderPending = true;
       return;
     }
     if (this.taskDragActive) {
@@ -93,6 +125,25 @@ export class HomepageView extends ItemView {
     }
     this.renderPending = false;
     this.render();
+  }
+
+  private isInactiveTab(): boolean {
+    const leaf = this.containerEl.closest<HTMLElement>(".workspace-leaf");
+    return leaf?.style.display === "none";
+  }
+
+  private requestTemporalRefresh(): void {
+    if (this.closing) {
+      return;
+    }
+    if (this.isInactiveTab()) {
+      this.renderPending = true;
+      return;
+    }
+    const snapshot = this.application.getTemporalSnapshot();
+    if (snapshot !== null) {
+      refreshHomepageTemporalContent(this.contentEl, snapshot);
+    }
   }
 
   private beginFileGroupEntryDrag(): void {
@@ -503,6 +554,7 @@ export class HomepageView extends ItemView {
     this.cancelTaskDrag = null;
     this.textInputInteractionActive = false;
     this.renderPending = false;
+    this.suppressNextFullNotification = false;
     this.contentEl.empty();
     this.contentEl.removeClass("homepage-studio");
     this.contentEl.removeAttribute("data-status");
