@@ -2,6 +2,20 @@
 
 All notable changes to Homepage Studio are documented in this file.
 
+## 1.2.2 — 2026-09-08
+
+### 中文
+
+- 优化笔记打开和首页切换的响应速度，减少不必要的刷新与保存。
+- 修复重复刷新后的事件监听器累积问题，改善长时间使用的流畅度。
+- 改善热力图统计及后台刷新行为。
+
+### English
+
+- Improved responsiveness when opening notes and switching to the homepage by reducing unnecessary refreshes and saves.
+- Fixed event listeners accumulating after repeated refreshes, improving responsiveness during extended use.
+- Improved heatmap tracking and background refresh behavior.
+
 ## 1.2.1 — 2026-09-02
 
 ### Fixed
