@@ -1187,6 +1187,7 @@ const renderModule = (
       }
       detailScope?.unload();
       detailScope = new Component();
+      detailScope.load();
       detail.empty();
       const detailHeader = detail.createDiv({
         cls: "homepage-studio-heatmap-detail-header"

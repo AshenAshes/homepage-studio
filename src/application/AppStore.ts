@@ -66,6 +66,10 @@ export class AppStore {
     return this.state.mode === "ready";
   }
 
+  public getDataGeneration(): number {
+    return this.generation;
+  }
+
   public selectReadyScalar<T extends StoreScalar>(
     selector: (data: PluginData) => T
   ): T | null {

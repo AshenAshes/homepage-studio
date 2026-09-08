@@ -270,6 +270,7 @@ export default class HomepageStudioPlugin extends Plugin {
         return;
       }
       const scope = new Component();
+      scope.load();
       clockWindowScopes.set(targetWindow, scope);
       clockDocuments.add(targetWindow.document);
       scope.registerDomEvent(targetWindow, "focus", () => {

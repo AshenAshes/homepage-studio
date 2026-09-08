@@ -12,7 +12,7 @@ export interface SelectedHeatmapDay {
 const normalizeFolder = (path: string): string =>
   path.replace(/^\/+|\/+$/gu, "");
 
-const isExcluded = (
+export const isHeatmapPathExcluded = (
   path: string,
   excludedFolders: readonly string[]
 ): boolean => {
@@ -49,7 +49,7 @@ export const selectHeatmapDay = (
 
   const files = Object.fromEntries(
     entries.filter(([path, contribution]) =>
-      contribution > 0 && !isExcluded(path, excludedFolders)
+      contribution > 0 && !isHeatmapPathExcluded(path, excludedFolders)
     )
   );
   return {

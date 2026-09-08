@@ -21,15 +21,14 @@ const isLegacyCjk = (character: string): boolean => {
 };
 
 export const countLegacyWords = (text: string): number => {
-  const matches = text.match(LEGACY_WORD_PATTERN);
-  if (matches === null) {
-    return 0;
+  LEGACY_WORD_PATTERN.lastIndex = 0;
+  let total = 0;
+  let match: RegExpExecArray | null;
+  while ((match = LEGACY_WORD_PATTERN.exec(text)) !== null) {
+    const value = match[0];
+    total += isLegacyCjk(value[0] ?? "") ? value.length : 1;
   }
-
-  return matches.reduce(
-    (total, match) => total + (isLegacyCjk(match[0] ?? "") ? match.length : 1),
-    0
-  );
+  return total;
 };
 
 export const countWritingUnits = (

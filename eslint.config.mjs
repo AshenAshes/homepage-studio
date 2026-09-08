@@ -9,6 +9,7 @@ export default defineConfig([
       ".agents/**",
       ".claude/**",
       ".scratch/**",
+      ".tmp/**",
       "coverage/**",
       "docs/**",
       "test-vault/**",
@@ -63,6 +64,14 @@ export default defineConfig([
     files: ["scripts/**/*.mjs"],
     rules: {
       "obsidianmd/hardcoded-config-path": "off"
+    }
+  },
+  {
+    // Node-only test harness: imports bundled local source and instruments Node globals.
+    files: ["scripts/performance-regression.mjs"],
+    rules: {
+      "no-unsanitized/method": "off",
+      "obsidianmd/no-global-this": "off"
     }
   }
 ]);

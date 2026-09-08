@@ -8,6 +8,7 @@
     "dev": "node esbuild.config.mjs",
     "build": "node esbuild.config.mjs production",
     "typecheck": "tsc --noEmit",
+    "test:performance": "node scripts/performance-regression.mjs",
     "lint": "eslint . --max-warnings 0",
     "lint:css": "stylelint \"src/**/*.css\"",
     "verify": "npm run typecheck && npm run lint && npm run lint:css && npm run build"

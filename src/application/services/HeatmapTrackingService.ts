@@ -4,10 +4,11 @@ import type { PluginData } from "../../domain/data/types";
 import {
   changeHeatmapCountType,
   applyHeatmapRetention,
-  establishFileBaseline,
   recordFileContent,
   rolloverHeatmapDate
 } from "../../domain/heatmap/history";
+import { isHeatmapPathExcluded } from "../../domain/heatmap/selection";
+import { countWritingUnits } from "../../domain/heatmap/count";
 
 export type HeatmapCountType = PluginData["heatmap"]["countType"];
 export type HeatmapDateRange =
@@ -18,44 +19,112 @@ export type HeatmapThresholds =
   PluginData["heatmap"]["preferences"]["thresholds"];
 
 export class HeatmapTrackingService {
+  private readonly pendingBaselines = new Map<string, number>();
+  private baselineContext = "";
+
   public constructor(
     private readonly store: AppStore,
     private readonly clock: Clock
   ) {}
 
+  public shouldTrackPath(path: string): boolean {
+    return this.store.selectReadyScalar((data) =>
+      !isHeatmapPathExcluded(
+        path,
+        data.heatmap.preferences.excludeFolders
+      )
+    ) ?? false;
+  }
+
+  public shouldEstablishBaseline(path: string): boolean {
+    this.syncBaselineContext();
+    if (this.pendingBaselines.has(path)) {
+      return false;
+    }
+    return this.store.selectReadyScalar((data) =>
+      !isHeatmapPathExcluded(
+        path,
+        data.heatmap.preferences.excludeFolders
+      )
+      && (
+        data.heatmap.sessionDate !== this.clock.localDateKey()
+        || data.heatmap.todaySession[path] === undefined
+      )
+    ) ?? false;
+  }
+
   public establishBaseline(
     path: string,
     content: string
   ): TransactionResult | null {
-    const baselineExists = this.store.selectReadyScalar((data) =>
-      data.heatmap.sessionDate === this.clock.localDateKey()
-      && data.heatmap.todaySession[path] !== undefined
-    );
-    if (baselineExists) {
+    if (!this.shouldEstablishBaseline(path)) {
       return null;
     }
 
-    return this.updateHeatmap("establish heatmap baseline", (heatmap) =>
-      establishFileBaseline(
-        heatmap,
-        path,
-        content,
-        this.clock.localDateKey(),
-        this.clock.now().getTime()
-      )
+    const countType = this.store.selectReadyScalar(
+      (data) => data.heatmap.countType
     );
+    if (countType !== null) {
+      // Opening a note must not clone, validate, persist or render plugin data.
+      // Commit its baseline together with the first actual count change.
+      this.pendingBaselines.set(path, countWritingUnits(content, countType));
+    }
+    return null;
   }
 
-  public recordEditorContent(path: string, content: string): TransactionResult {
-    return this.updateHeatmap("record heatmap editor change", (heatmap) =>
-      recordFileContent(
-        heatmap,
+  public recordEditorContent(
+    path: string,
+    content: string
+  ): TransactionResult | null {
+    this.syncBaselineContext();
+    if (!this.shouldTrackPath(path)) {
+      return null;
+    }
+    const dateKey = this.clock.localDateKey();
+    const pendingBaseline = this.pendingBaselines.get(path);
+    const unchanged = this.store.selectReadyScalar((data) => {
+      const session = data.heatmap.sessionDate === dateKey
+        ? data.heatmap.todaySession[path]
+        : undefined;
+      return (session?.current ?? pendingBaseline)
+        === countWritingUnits(content, data.heatmap.countType);
+    });
+    if (unchanged) {
+      return null;
+    }
+    const result = this.updateHeatmap("record heatmap editor change", (heatmap) => {
+      const current = rolloverHeatmapDate(
+        heatmap, dateKey, this.clock.now().getTime()
+      );
+      return recordFileContent(
+        pendingBaseline === undefined || current.todaySession[path] !== undefined
+          ? current
+          : {
+            ...current,
+            todaySession: {
+              ...current.todaySession,
+              [path]: { initial: pendingBaseline, current: pendingBaseline }
+            }
+          },
         path,
         content,
-        this.clock.localDateKey(),
+        dateKey,
         this.clock.now().getTime()
-      )
-    );
+      );
+    });
+    if (result.type === "applied") {
+      this.pendingBaselines.delete(path);
+    }
+    return result;
+  }
+
+  private syncBaselineContext(): void {
+    const countType = this.store.selectReadyScalar((data) => data.heatmap.countType);
+    const context = `${this.store.getDataGeneration()}:${this.clock.localDateKey()}:${countType}`;
+    if (context !== this.baselineContext) {
+      this.pendingBaselines.clear();
+      this.baselineContext = context;
+    }
   }
 
   public refreshDate(): TransactionResult | null {
@@ -89,7 +158,7 @@ export class HeatmapTrackingService {
       return null;
     }
 
-    return this.store.transact("change heatmap count type", "immediate", (data) => ({
+    const result = this.store.transact("change heatmap count type", "immediate", (data) => ({
       ...data,
       heatmap: changeHeatmapCountType(
         data.heatmap,
@@ -98,6 +167,8 @@ export class HeatmapTrackingService {
         this.clock.now().getTime()
       )
     }));
+    this.syncBaselineContext();
+    return result;
   }
 
   public setDateRange(dateRange: HeatmapDateRange): TransactionResult | null {

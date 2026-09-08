@@ -209,6 +209,8 @@ export interface HeatmapSettings {
 }
 
 export interface HeatmapTrackingPort {
+  shouldTrackPath(path: string): boolean;
+  shouldEstablishBaseline(path: string): boolean;
   establishBaseline(path: string, content: string): void;
   recordEditorContent(path: string, content: string): void;
   refreshDate(): void;
@@ -468,6 +470,8 @@ const NOOP_SETTINGS_NAVIGATION: SettingsNavigationPort = {
 };
 
 const NOOP_HEATMAP_TRACKING: HeatmapTrackingPort = {
+  shouldTrackPath: () => false,
+  shouldEstablishBaseline: () => false,
   establishBaseline: () => undefined,
   recordEditorContent: () => undefined,
   refreshDate: () => undefined,
@@ -647,10 +651,12 @@ export class HomepageApplicationFacade {
   ) {}
 
   public getSnapshot(): HomepageSnapshot {
-    const state = this.store.getState();
+    // Build from the store's data, then detach only the visible view model.
+    // Historical file details outside the displayed range need no clone.
+    const state = this.store.isReady() ? null : this.store.getState();
     const localTime = this.store.getLocalTime();
     const messages = this.localization.getMessages();
-    if (state.mode === "loading") {
+    if (state?.mode === "loading") {
       return {
         title: messages.homepageTitle,
         description: messages.homepageLoadingDescription,
@@ -661,7 +667,7 @@ export class HomepageApplicationFacade {
         recoveryActions: null
       };
     }
-    if (state.mode === "safe") {
+    if (state?.mode === "safe") {
       return {
         title: messages.homepageTitle,
         description: messages.homepageSafeModeDescription,
@@ -688,8 +694,8 @@ export class HomepageApplicationFacade {
       description: messages.homepageDescription,
       status: "ready",
       localTime,
-      shell: createHomepageShellViewModel(
-        state.data,
+      shell: this.store.selectReadySnapshot((data) => createHomepageShellViewModel(
+        data,
         localTime,
         messages,
         this.localization.getResolvedLocale(),
@@ -715,7 +721,7 @@ export class HomepageApplicationFacade {
           getVaultResourceUrl: (path) =>
             this.bannerResource.getVaultResourceUrl(path)
         }
-      ),
+      )),
       diagnostics: [],
       recoveryActions: null
     };
@@ -747,6 +753,7 @@ export class HomepageApplicationFacade {
     let disposed = false;
     let layoutReady = false;
     let opening: Promise<void> | null = null;
+    let layoutEvaluationQueued = false;
 
     const evaluate = (startup: boolean): void => {
       if (disposed || !layoutReady || opening !== null) {
@@ -793,7 +800,14 @@ export class HomepageApplicationFacade {
     };
 
     const unsubscribeLayout = this.workspace.subscribeLayoutChange(() => {
-      evaluate(false);
+      if (layoutEvaluationQueued) {
+        return;
+      }
+      layoutEvaluationQueued = true;
+      void Promise.resolve().then(() => {
+        layoutEvaluationQueued = false;
+        evaluate(false);
+      });
     });
     const unsubscribeStore = this.store.subscribeState(() => {
       evaluate(false);
@@ -1046,7 +1060,7 @@ export class HomepageApplicationFacade {
             type: "ready",
             path: result.path,
             taskSource: result.taskSource
-          });
+          }, true);
           return;
         }
         const hasStaleRecurringTask = result.taskSource.tasks.some((task) =>
@@ -1059,7 +1073,7 @@ export class HomepageApplicationFacade {
             type: "ready",
             path: result.path,
             taskSource: result.taskSource
-          });
+          }, true);
           return;
         }
         const refreshed = await this.taskSource.mutate(path, {
@@ -1094,7 +1108,7 @@ export class HomepageApplicationFacade {
             path: latest.path,
             taskSource: latest.taskSource
           }
-          : latest);
+          : latest, true);
       });
     };
 
@@ -3473,8 +3487,20 @@ export class HomepageApplicationFacade {
     }
   }
 
-  private setTaskRuntimeState(state: TaskRuntimeState): void {
+  private setTaskRuntimeState(
+    state: TaskRuntimeState,
+    skipUnchanged = false
+  ): void {
     const previous = this.taskRuntimeState;
+    if (
+      skipUnchanged
+      && previous.type === "ready"
+      && state.type === "ready"
+      && previous.path === state.path
+      && previous.taskSource.source === state.taskSource.source
+    ) {
+      return;
+    }
     const sourceChanged = previous.type !== state.type
       || (
         previous.type === "ready"
@@ -3647,6 +3673,14 @@ export class HomepageApplicationFacade {
 
   public establishHeatmapBaseline(path: string, content: string): void {
     this.heatmapTracking.establishBaseline(path, content);
+  }
+
+  public shouldTrackHeatmapPath(path: string): boolean {
+    return this.heatmapTracking.shouldTrackPath(path);
+  }
+
+  public shouldEstablishHeatmapBaseline(path: string): boolean {
+    return this.heatmapTracking.shouldEstablishBaseline(path);
   }
 
   public recordHeatmapEditorContent(path: string, content: string): void {

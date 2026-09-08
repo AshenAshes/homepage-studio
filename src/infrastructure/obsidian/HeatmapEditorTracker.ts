@@ -8,6 +8,8 @@ import type {
 } from "obsidian";
 
 export interface HeatmapEditorTrackingPort {
+  shouldTrackHeatmapPath(path: string): boolean;
+  shouldEstablishHeatmapBaseline(path: string): boolean;
   establishHeatmapBaseline(path: string, content: string): void;
   recordHeatmapEditorContent(path: string, content: string): void;
 }
@@ -22,8 +24,15 @@ interface PendingEditorContent {
   readonly handle: number;
 }
 
+interface PendingBaseline {
+  readonly file: TFile;
+  readonly handle: number;
+}
+
 export class HeatmapEditorTracker {
   private readonly pendingByPath = new Map<string, PendingEditorContent>();
+  private readonly pendingBaselines = new Map<string, PendingBaseline>();
+  private readonly baselineOperations = new Map<string, Promise<void>>();
   private readonly eventRefs: EventRef[] = [];
   private started = false;
 
@@ -31,7 +40,8 @@ export class HeatmapEditorTracker {
     private readonly app: App,
     private readonly tracking: HeatmapEditorTrackingPort,
     private readonly timers: HeatmapTimerDriver,
-    private readonly debounceMs = 300
+    private readonly debounceMs = 300,
+    private readonly baselineDelayMs = 500
   ) {}
 
   public start(): void {
@@ -70,18 +80,31 @@ export class HeatmapEditorTracker {
       this.timers.clear(pending.handle);
     }
     this.pendingByPath.clear();
+    for (const pending of this.pendingBaselines.values()) {
+      this.timers.clear(pending.handle);
+    }
+    this.pendingBaselines.clear();
+    this.baselineOperations.clear();
   }
 
   private handleFileOpen(file: TFile | null): void {
     if (!isMarkdownFile(file)) {
       return;
     }
-
-    void this.app.vault.cachedRead(file).then((content) => {
-      if (this.started) {
-        this.tracking.establishHeatmapBaseline(file.path, content);
-      }
-    });
+    if (
+      !this.tracking.shouldEstablishHeatmapBaseline(file.path)
+      || this.baselineOperations.has(file.path)
+    ) {
+      return;
+    }
+    const existing = this.pendingBaselines.get(file.path);
+    if (existing !== undefined) {
+      this.timers.clear(existing.handle);
+    }
+    const handle = this.timers.set(() => {
+      void this.startPendingBaseline(file.path);
+    }, this.baselineDelayMs);
+    this.pendingBaselines.set(file.path, { file, handle });
   }
 
   private handleEditorChange(
@@ -96,7 +119,12 @@ export class HeatmapEditorTracker {
     const existing = this.pendingByPath.get(file.path);
     if (existing !== undefined) {
       this.timers.clear(existing.handle);
+      this.pendingByPath.delete(file.path);
     }
+    if (!this.tracking.shouldTrackHeatmapPath(file.path)) {
+      return;
+    }
+    const baselineOperation = this.startPendingBaseline(file.path);
     const readContent = (): string | null => {
       const currentFile = info.file;
       return isMarkdownFile(currentFile) && currentFile.path === file.path
@@ -105,12 +133,58 @@ export class HeatmapEditorTracker {
     };
     const handle = this.timers.set(() => {
       this.pendingByPath.delete(file.path);
-      const content = readContent();
-      if (content !== null) {
-        this.tracking.recordHeatmapEditorContent(file.path, content);
+      const record = (): void => {
+        if (!this.started) {
+          return;
+        }
+        const content = readContent();
+        if (content !== null) {
+          this.tracking.recordHeatmapEditorContent(file.path, content);
+        }
+      };
+      if (baselineOperation === null) {
+        record();
+      } else {
+        void baselineOperation.then(record);
       }
     }, this.debounceMs);
     this.pendingByPath.set(file.path, { readContent, handle });
+  }
+
+  private startPendingBaseline(path: string): Promise<void> | null {
+    const running = this.baselineOperations.get(path);
+    if (running !== undefined) {
+      return running;
+    }
+    const pending = this.pendingBaselines.get(path);
+    if (pending === undefined) {
+      return null;
+    }
+    this.timers.clear(pending.handle);
+    this.pendingBaselines.delete(path);
+    if (
+      !this.started
+      || !this.tracking.shouldEstablishHeatmapBaseline(path)
+    ) {
+      return null;
+    }
+    const operation = this.app.vault.cachedRead(pending.file)
+      .then((content) => {
+        if (
+          this.started
+          && this.tracking.shouldEstablishHeatmapBaseline(path)
+        ) {
+          this.tracking.establishHeatmapBaseline(path, content);
+        }
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        if (this.baselineOperations.get(path) === operation) {
+          this.baselineOperations.delete(path);
+        }
+      });
+    this.baselineOperations.set(path, operation);
+    return operation;
   }
 }
 

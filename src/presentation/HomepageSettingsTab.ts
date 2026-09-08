@@ -177,6 +177,7 @@ export class HomepageSettingsTab extends PluginSettingTab {
     this.taskStateUnsubscribe = null;
     this.settingsScope?.unload();
     this.settingsScope = new Component();
+    this.settingsScope.load();
     this.suggestionFileCache = null;
     this.settingsScope.registerEvent(this.app.vault.on(
       "create",

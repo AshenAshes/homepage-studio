@@ -27,6 +27,7 @@ export class HomepageView extends ItemView {
   private cancelTaskDrag: (() => void) | null = null;
   private textInputInteractionActive = false;
   private renderPending = false;
+  private temporalRefreshPending = false;
   private suppressNextFullNotification = false;
   private closing = false;
 
@@ -75,8 +76,12 @@ export class HomepageView extends ItemView {
       this.registerEvent(this.app.workspace.on(
         "active-leaf-change",
         (leaf) => {
-          if (leaf === this.leaf && this.renderPending) {
-            this.requestRender(true);
+          if (leaf === this.leaf) {
+            if (this.renderPending) {
+              this.requestRender(true);
+            } else if (this.temporalRefreshPending) {
+              this.requestTemporalRefresh(true);
+            }
           }
         }
       ));
@@ -116,30 +121,39 @@ export class HomepageView extends ItemView {
       this.fileGroupEntryDragActive
       || this.textInputInteractionActive
     ) {
-      const snapshot = this.application.getSnapshot();
-      if (snapshot.status === "ready" && snapshot.shell !== null) {
-        refreshHomepageTemporalContent(this.contentEl, snapshot.shell);
+      const snapshot = this.application.getTemporalSnapshot();
+      if (snapshot !== null) {
+        refreshHomepageTemporalContent(this.contentEl, snapshot);
       }
       this.renderPending = true;
       return;
     }
     this.renderPending = false;
+    this.temporalRefreshPending = false;
     this.render();
   }
 
   private isInactiveTab(): boolean {
     const leaf = this.containerEl.closest<HTMLElement>(".workspace-leaf");
-    return leaf?.style.display === "none";
+    if (leaf === null) {
+      return false;
+    }
+    if (leaf.style.display === "none") {
+      return true;
+    }
+    const targetWindow = leaf.ownerDocument.defaultView;
+    return targetWindow?.getComputedStyle(leaf).display === "none";
   }
 
-  private requestTemporalRefresh(): void {
+  private requestTemporalRefresh(allowHidden = false): void {
     if (this.closing) {
       return;
     }
-    if (this.isInactiveTab()) {
-      this.renderPending = true;
+    if (!allowHidden && this.isInactiveTab()) {
+      this.temporalRefreshPending = true;
       return;
     }
+    this.temporalRefreshPending = false;
     const snapshot = this.application.getTemporalSnapshot();
     if (snapshot !== null) {
       refreshHomepageTemporalContent(this.contentEl, snapshot);
@@ -219,6 +233,7 @@ export class HomepageView extends ItemView {
     };
     this.renderScope?.unload();
     const renderScope = new Component();
+    renderScope.load();
     this.renderScope = renderScope;
     renderScope.registerDomEvent(this.contentEl, "click", (event) => {
       const target = event.target;
@@ -554,6 +569,7 @@ export class HomepageView extends ItemView {
     this.cancelTaskDrag = null;
     this.textInputInteractionActive = false;
     this.renderPending = false;
+    this.temporalRefreshPending = false;
     this.suppressNextFullNotification = false;
     this.contentEl.empty();
     this.contentEl.removeClass("homepage-studio");
