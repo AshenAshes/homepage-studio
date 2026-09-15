@@ -2,6 +2,20 @@
 
 All notable changes to Homepage Studio are documented in this file.
 
+## 1.3.0 — 2026-09-16
+
+### 中文
+
+- 新增日记悬浮日历，支持快速切换年月、跳转日记和返回今天。
+- 标记已有日记、当前查看日期与今天，支持补写历史日记。
+- 适配全部主题，优化日历与日期入口的交互样式。
+
+### English
+
+- Added a journal calendar popover with quick month and year navigation, date selection, and a Today shortcut.
+- Highlighted existing entries, the selected date, and today, with support for writing past entries.
+- Matched the calendar and date controls to all homepage themes.
+
 ## 1.2.2 — 2026-09-08
 
 ### 中文
