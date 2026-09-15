@@ -1,0 +1,215 @@
+.homepage-studio .homepage-studio-journal-date-group[role="button"] {
+  --journal-date-hover-color: var(--homepage-focus);
+
+  min-height: 1.625rem;
+  box-sizing: border-box;
+  align-items: center;
+  padding: 0 var(--size-4-3);
+  border: var(--border-width, 1px) solid transparent;
+  cursor: pointer;
+  border-radius: var(--homepage-corner);
+}
+
+.homepage-studio .homepage-studio-journal-date-group[role="button"]:hover {
+  border-color: var(--journal-date-hover-color);
+  background: var(--homepage-surface-raised);
+}
+
+.homepage-studio .homepage-studio-journal-date-group[role="button"]:hover > span {
+  color: var(--journal-date-hover-color);
+}
+
+.homepage-studio[data-theme="klein-blue"] .homepage-studio-journal-date-group[role="button"] {
+  --journal-date-hover-color: var(--homepage-klein);
+
+  border-radius: 0;
+}
+
+.homepage-studio .homepage-studio-journal-calendar {
+  position: fixed;
+  inset: var(--journal-calendar-top, 0) auto auto var(--journal-calendar-left, 0);
+  width: min(14.52rem, calc(100vw - 1rem));
+  max-height: var(--journal-calendar-max-height, calc(100vh - 1rem));
+  box-sizing: border-box;
+  overflow: auto;
+  margin: 0;
+  padding: var(--size-4-2);
+  border: 1px solid var(--homepage-border);
+  border-radius: var(--homepage-corner);
+  color: var(--homepage-text);
+  background: var(--homepage-page);
+  box-shadow: var(--shadow-l);
+  font-family: var(--font-interface-theme);
+}
+
+.homepage-studio-calendar-toolbar,
+.homepage-studio-calendar-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--size-2-1);
+}
+
+.homepage-studio-calendar-toolbar input {
+  width: 3.3rem;
+  min-width: 0;
+}
+
+.homepage-studio-calendar-toolbar select {
+  min-width: 0;
+  flex: 1;
+}
+
+.homepage-studio .homepage-studio-calendar-toolbar select,
+.homepage-studio .homepage-studio-calendar-toolbar input {
+  height: 24px;
+  box-sizing: border-box;
+  padding: 0 var(--size-2-1);
+  border: 1px solid transparent;
+  border-radius: var(--homepage-corner);
+  color: var(--homepage-text);
+  background-color: var(--homepage-page);
+  box-shadow: none;
+  font-size: 0.75rem;
+  font-weight: var(--font-semibold);
+}
+
+.homepage-studio-calendar-weekdays,
+.homepage-studio-calendar-days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: var(--size-2-1);
+  text-align: center;
+}
+
+.homepage-studio-calendar-weekdays {
+  margin-block: var(--size-4-2) var(--size-4-1);
+  color: var(--homepage-muted);
+  font-size: 0.625rem;
+}
+
+.homepage-studio .homepage-studio-journal-calendar button {
+  height: auto;
+  min-height: 20px;
+  box-sizing: border-box;
+  font-size: 0.6875rem;
+  padding: 0 var(--size-2-1);
+  border: 1px solid transparent;
+  border-radius: var(--homepage-corner);
+  color: var(--homepage-muted);
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.homepage-studio .homepage-studio-calendar-toolbar button {
+  display: inline-flex;
+  width: 20px;
+  min-width: 20px;
+  height: 20px;
+  min-height: 20px;
+  flex: 0 0 20px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.homepage-studio .homepage-studio-calendar-toolbar button svg {
+  width: 12px;
+  height: 12px;
+}
+
+.homepage-studio .homepage-studio-calendar-days button {
+  position: relative;
+  display: inline-flex;
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  min-height: 0;
+  aspect-ratio: 1;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.homepage-studio .homepage-studio-calendar-days button[data-outside="true"] {
+  color: var(--homepage-faint);
+}
+
+.homepage-studio .homepage-studio-calendar-days button[data-entry="true"] {
+  color: var(--homepage-text);
+  font-weight: var(--font-semibold);
+}
+
+.homepage-studio-calendar-days button[data-entry="true"]::after {
+  position: absolute;
+  bottom: 2px;
+  left: calc(50% - 1px);
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: currentcolor;
+  content: "";
+}
+
+.homepage-studio .homepage-studio-journal-calendar button:disabled {
+  color: var(--homepage-faint);
+  opacity: 0.45;
+  cursor: default;
+}
+
+.homepage-studio .homepage-studio-journal-calendar button:hover:not(:disabled, [aria-pressed="true"]) {
+  border-color: var(--homepage-focus);
+  color: var(--homepage-focus);
+  background: var(--homepage-surface-raised);
+}
+
+.homepage-studio .homepage-studio-calendar-days button[aria-pressed="true"] {
+  border-color: var(--homepage-focus);
+  color: var(--homepage-page);
+  background: var(--homepage-focus);
+}
+
+.homepage-studio .homepage-studio-calendar-days button[aria-current="date"] {
+  border-color: var(--homepage-focus);
+}
+
+.homepage-studio .homepage-studio-journal-calendar :focus-visible {
+  outline: 2px solid var(--homepage-focus);
+  outline-offset: 2px;
+}
+
+.homepage-studio .homepage-studio-calendar-toolbar select:focus-visible,
+.homepage-studio .homepage-studio-calendar-toolbar input:focus-visible {
+  outline-offset: -2px;
+}
+
+.homepage-studio-calendar-footer {
+  margin-top: var(--size-4-2);
+  border-top: 1px solid var(--homepage-border);
+  padding-top: var(--size-4-1);
+}
+
+.homepage-studio-calendar-legend,
+.homepage-studio-calendar-status {
+  color: var(--homepage-muted);
+  font-size: 0.625rem;
+}
+
+.homepage-studio .homepage-studio-journal-date-group[role="button"]:focus-visible {
+  outline: none;
+  border-color: var(--journal-date-hover-color);
+  box-shadow: 0 0 0 1px var(--journal-date-hover-color);
+}
+
+.homepage-studio[data-theme="klein-blue"] .homepage-studio-journal-calendar {
+  --homepage-corner: 0;
+}
+
+.homepage-studio[data-theme="klein-blue"] .homepage-studio-journal-calendar button svg {
+  stroke-linecap: butt;
+  stroke-linejoin: miter;
+}

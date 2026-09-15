@@ -97,6 +97,17 @@ export interface Messages {
   readonly journalIoDescription: string;
   readonly journalPreviousDate: string;
   readonly journalNextDate: string;
+  readonly journalCalendarTitle: string;
+  readonly journalCalendarToday: string;
+  readonly journalCalendarMonth: string;
+  readonly journalCalendarYear: string;
+  readonly journalCalendarPrevious: string;
+  readonly journalCalendarNext: string;
+  readonly journalCalendarClose: string;
+  readonly journalCalendarEntry: string;
+  readonly journalCalendarSelected: string;
+  readonly journalCalendarFuture: string;
+  readonly journalCalendarFailed: string;
   readonly journalEditorLabel: string;
   readonly journalEmptyPreview: string;
   readonly journalConflictTitle: string;

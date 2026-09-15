@@ -44,7 +44,8 @@ const bundle = await build({
              export class ItemView extends Component {
                contentEl = {}; containerEl = { closest: () => null };
              }
-             export const MarkdownRenderer = {};`
+             export const MarkdownRenderer = {};
+             export const setIcon = () => {};`
           : `export const clearHomepageBannerImageState = () => {};
              export const refreshHomepageTemporalContent = () => {};
              export const renderHomepageShell = (container, model, actions, scope) => {
@@ -92,6 +93,24 @@ test("repeated homepage rendering and close release DOM and document listeners",
   assert.equal(view.contentEl.listeners.size, 0);
   assert.equal(view.contentEl.ownerDocument.listeners.size, 0);
 });
+test("calendar clicks keep full rendering deferred until the dialog closes", () => {
+  const view = new HomepageView({}, {
+    getSnapshot: () => ({ status: "ready", shell: { theme: "klein-blue" } })
+  });
+  view.contentEl = fakeElement();
+  view.contentEl.ownerDocument = fakeElement();
+  view.containerEl = fakeElement();
+  view.render();
+  for (const opening of [true, false]) {
+    view.journalCalendarOpening = opening;
+    view.journalCalendar = opening ? null : {};
+    view.textInputInteractionActive = true;
+    for (const callback of view.contentEl.listeners) callback({ target: {} });
+    assert.equal(view.textInputInteractionActive, true);
+  }
+  view.renderScope.unload();
+});
+
 function fixture() {
   let dateKey = "2026-09-08";
   let writes = 0;

@@ -1,3 +1,4 @@
+import { JournalCalendar } from "./JournalCalendar";
 import {
   Component,
   ItemView,
@@ -194,6 +195,47 @@ export class HomepageView extends ItemView {
     }
   }
 
+  private journalCalendar: JournalCalendar | null = null;
+  private journalCalendarOpening = false;
+
+  private async openJournalCalendar(): Promise<void> {
+    if (this.journalCalendar !== null) {
+      this.journalCalendar.dismiss();
+      return;
+    }
+    if (this.journalCalendarOpening) return;
+    this.journalCalendarOpening = true;
+    this.beginTextInputInteraction();
+    try {
+      await this.application.flushJournalDraft();
+    } catch {
+      this.endTextInputInteraction();
+      return;
+    } finally {
+      this.journalCalendarOpening = false;
+    }
+    if (this.closing) return;
+    const snapshot = this.application.getSnapshot();
+    const journal = snapshot.shell?.modules.find((module) => module.id === "journal")?.journal;
+    if (journal === undefined) {
+      this.endTextInputInteraction();
+      return;
+    }
+    this.journalCalendar = new JournalCalendar(
+      this.contentEl, journal,
+      (key) => this.application.selectJournalDate(key),
+      (restoreFocus) => {
+        if (this.journalCalendar !== null) this.removeChild(this.journalCalendar);
+        this.journalCalendar = null;
+        this.endTextInputInteraction();
+        if (restoreFocus) {
+          this.contentEl.querySelector<HTMLElement>(".homepage-studio-journal-date-group")?.focus({ preventScroll: true });
+        }
+      }
+    );
+    this.addChild(this.journalCalendar);
+  }
+
   private beginTextInputInteraction(): void {
     this.textInputInteractionActive = true;
   }
@@ -236,6 +278,7 @@ export class HomepageView extends ItemView {
     renderScope.load();
     this.renderScope = renderScope;
     renderScope.registerDomEvent(this.contentEl, "click", (event) => {
+      if (this.journalCalendar !== null || this.journalCalendarOpening) return;
       const target = event.target;
       if (
         target instanceof Element
@@ -280,6 +323,9 @@ export class HomepageView extends ItemView {
           },
           openFile: (path, newPane) => {
             void this.application.openFile(path, newPane);
+          },
+          openJournalCalendar: () => {
+            void this.openJournalCalendar();
           },
           moveJournalDate: (offsetDays) => {
             this.endTextInputInteraction();
@@ -558,6 +604,8 @@ export class HomepageView extends ItemView {
 
   public override async onClose(): Promise<void> {
     this.closing = true;
+    if (this.journalCalendar !== null) this.removeChild(this.journalCalendar);
+    this.journalCalendar = null;
     await this.application.flushJournalDraft();
     this.renderScope?.unload();
     clearHomepageBannerImageState(this.contentEl);

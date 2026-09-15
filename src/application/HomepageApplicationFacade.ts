@@ -1,3 +1,4 @@
+import { isJournalDateKey } from "../domain/journal/calendar";
 import type {
   AppStore,
   TransactionResult
@@ -3122,22 +3123,33 @@ export class HomepageApplicationFacade {
   }
 
   public async moveJournalDate(offsetDays: number): Promise<void> {
-    const todayKey = this.store.getLocalTime()?.dateKey ?? "";
     const currentKey = this.getSelectedJournalDateKey();
-    if (todayKey === "" || currentKey === "") {
-      return;
+    if (currentKey !== "") {
+      await this.selectJournalDate(shiftDateKey(currentKey, offsetDays));
     }
-    const nextKey = shiftDateKey(currentKey, offsetDays);
-    if (nextKey > todayKey) {
-      return;
+  }
+
+  public async selectJournalDate(dateKey: string): Promise<boolean> {
+    const todayKey = this.store.getLocalTime()?.dateKey ?? "";
+    if (!isJournalDateKey(dateKey) || todayKey === "" || dateKey > todayKey
+      || this.journalRuntimeState.type !== "ready") {
+      return false;
     }
+    const path = this.journalRuntimeState.path;
     await this.flushJournalDraft();
-    if (this.journalDrafts.hasUnsavedDraft()) {
-      return;
+    if (this.journalDrafts.hasUnsavedDraft()
+      || this.journalRuntimeState.type !== "ready"
+      || this.journalRuntimeState.path !== path) {
+      return false;
     }
-    this.selectedJournalDateKey = nextKey;
+    this.selectedJournalDateKey = dateKey;
     this.syncJournalDraft();
+    if (!this.journalRuntimeState.journal.sections.some((section) => section.dateKey === dateKey)
+      && this.store.selectReadyScalar((data) => data.journal.viewMode) === "preview") {
+      this.setJournalViewMode("edit");
+    }
     this.notifyJournalRuntime();
+    return true;
   }
 
   public reloadJournalDraft(): void {

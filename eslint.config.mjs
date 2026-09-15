@@ -68,7 +68,7 @@ export default defineConfig([
   },
   {
     // Node-only test harness: imports bundled local source and instruments Node globals.
-    files: ["scripts/performance-regression.mjs"],
+    files: ["scripts/performance-regression.mjs", "scripts/journal-calendar-regression.mjs"],
     rules: {
       "no-unsanitized/method": "off",
       "obsidianmd/no-global-this": "off"

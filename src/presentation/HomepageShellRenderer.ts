@@ -29,6 +29,7 @@ interface HomepageShellActions {
   openSettings(section?: HomepageSettingsSection): void;
   openFile(path: string, newPane: boolean): void;
   moveJournalDate(offsetDays: number): void;
+  openJournalCalendar(): void;
   updateJournalDraft(content: string): void;
   flushJournalDraft(): void;
   setJournalViewMode(viewMode: "edit" | "preview"): void;
@@ -1461,7 +1462,19 @@ const renderModule = (
     const date = navigation.createEl("time", {
       cls: "homepage-studio-journal-date-group",
       attr: {
-        datetime: module.journal.dateKey
+        datetime: module.journal.dateKey,
+        role: "button",
+        tabindex: "0",
+        "aria-haspopup": "dialog",
+        "aria-expanded": "false",
+        "aria-label": `${module.journal.dateLabel}: ${module.journal.calendar.labels.journalCalendarTitle}`
+      }
+    });
+    scope.registerDomEvent(date, "click", () => actions.openJournalCalendar());
+    scope.registerDomEvent(date, "keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        actions.openJournalCalendar();
       }
     });
     date.createSpan({

@@ -170,6 +170,24 @@ export interface HomepageModuleViewModel {
     readonly cells: readonly HeatmapCellViewModel[];
   };
   readonly journal?: {
+    readonly calendar: {
+      readonly locale: string;
+      readonly todayKey: string;
+      readonly entryDates: readonly string[];
+      readonly labels: {
+        readonly journalCalendarTitle: string;
+        readonly journalCalendarToday: string;
+        readonly journalCalendarMonth: string;
+        readonly journalCalendarYear: string;
+        readonly journalCalendarPrevious: string;
+        readonly journalCalendarNext: string;
+        readonly journalCalendarClose: string;
+        readonly journalCalendarEntry: string;
+        readonly journalCalendarSelected: string;
+        readonly journalCalendarFuture: string;
+        readonly journalCalendarFailed: string;
+      };
+    };
     readonly path: string;
     readonly dateKey: string;
     readonly dateLabel: string;
@@ -1196,6 +1214,24 @@ export const createHomepageShellViewModel = (
         ...(journalReady
           ? {
             journal: {
+              calendar: {
+                locale,
+                todayKey,
+                entryDates: journalRuntime.journal.sections.map((section) => section.dateKey),
+                labels: {
+                  journalCalendarTitle: messages.journalCalendarTitle,
+                  journalCalendarToday: messages.journalCalendarToday,
+                  journalCalendarMonth: messages.journalCalendarMonth,
+                  journalCalendarYear: messages.journalCalendarYear,
+                  journalCalendarPrevious: messages.journalCalendarPrevious,
+                  journalCalendarNext: messages.journalCalendarNext,
+                  journalCalendarClose: messages.journalCalendarClose,
+                  journalCalendarEntry: messages.journalCalendarEntry,
+                  journalCalendarSelected: messages.journalCalendarSelected,
+                  journalCalendarFuture: messages.journalCalendarFuture,
+                  journalCalendarFailed: messages.journalCalendarFailed,
+                }
+              },
               path: journalRuntime.path,
               dateKey: selectedJournalDate,
               dateLabel: selectedJournalDate === ""
