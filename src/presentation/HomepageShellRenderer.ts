@@ -1,3 +1,5 @@
+import type { TaskTextValidationReason } from "../domain/tasks/taskOperations";
+import { attachTaskNameEditor } from "./TaskNameEditor";
 import {
   Component,
   setIcon
@@ -41,6 +43,7 @@ interface HomepageShellActions {
   updateTaskEditDraft(text: string): void;
   saveTaskEdit(): Promise<boolean>;
   cancelTaskEdit(): void;
+  rejectTaskEdit(reason: TaskTextValidationReason): void;
   beginTextInputInteraction(): void;
   endTextInputInteraction(focusTarget?: "task-add"): void;
   setTaskCompleted(
@@ -1839,39 +1842,21 @@ const renderModule = (
           });
           attachAccessibleLabel(editInput, body, item.editLabel);
           editInput.value = item.editingText;
-          const save = rowActions.createEl("button", {
-            cls: "homepage-studio-task-text-button",
-            text: item.saveLabel,
-            attr: { type: "button" }
+          attachTaskNameEditor(editInput, scope, {
+            original: item.text,
+            autofocus: item.editingAutofocus,
+            invalid: item.editingInvalid,
+            failed: item.editingFailed,
+            invalidReason: item.editingInvalidReason,
+            invalidLabels: item.invalidNameLabels,
+            failureLabel: item.editFailureLabel,
+            update: (text) => actions.updateTaskEditDraft(text),
+            reject: (reason) => actions.rejectTaskEdit(reason),
+            save: () => actions.saveTaskEdit(),
+            cancel: () => actions.cancelTaskEdit(),
+            begin: () => actions.beginTextInputInteraction(),
+            end: () => actions.endTextInputInteraction()
           });
-          const cancel = rowActions.createEl("button", {
-            cls: "homepage-studio-task-text-button",
-            text: item.cancelLabel,
-            attr: { type: "button" }
-          });
-          scope.registerDomEvent(editInput, "input", () => {
-            actions.beginTextInputInteraction();
-            actions.updateTaskEditDraft(editInput.value);
-          });
-          scope.registerDomEvent(editInput, "focus", () => {
-            actions.beginTextInputInteraction();
-          });
-          scope.registerDomEvent(save, "click", () => {
-            save.disabled = true;
-            void actions.saveTaskEdit().then((applied) => {
-              if (applied) {
-                actions.endTextInputInteraction();
-              } else {
-                save.disabled = false;
-                editInput.focus({ preventScroll: true });
-              }
-            });
-          });
-          scope.registerDomEvent(cancel, "click", () => {
-            actions.cancelTaskEdit();
-            actions.endTextInputInteraction();
-          });
-          editInput.focus({ preventScroll: true });
         }
         scope.registerDomEvent(checkbox, "click", () => {
           const completed = checkbox.dataset.checked !== "true";

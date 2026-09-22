@@ -2227,6 +2227,25 @@ body > .homepage-studio-task-reorder-portal.homepage-studio::after {
   background: var(--background-secondary);
 }
 
+.homepage-studio input.homepage-studio-task-edit-input[data-invalid="true"]::placeholder {
+  color: var(--text-error);
+}
+
+.homepage-studio .homepage-studio-task-edit-error {
+  color: var(--text-error);
+  font-size: var(--font-ui-small);
+}
+
+.homepage-studio-task-edit-error:empty {
+  display: none;
+}
+
+.homepage-studio-recurring-task-row button.homepage-studio-recurring-task-delete {
+  width: var(--input-height);
+  min-width: var(--input-height);
+  padding: 0;
+}
+
 .homepage-studio-recurring-task-create .setting-item-control,
 .homepage-studio-recurring-task-row .setting-item-control {
   flex-wrap: wrap;
@@ -2496,6 +2515,18 @@ button.homepage-studio-settings-tab:focus-visible {
 
 .homepage-studio-plan-settings-error:empty {
   display: none;
+}
+
+.homepage-studio-plan-create-name {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--size-4-1);
+}
+
+.homepage-studio-plan-create-name .homepage-studio-plan-settings-error {
+  max-width: 22rem;
+  text-align: start;
 }
 
 .homepage-studio-plan-template-card {

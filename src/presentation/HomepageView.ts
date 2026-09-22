@@ -27,6 +27,7 @@ export class HomepageView extends ItemView {
   private taskDragSourceRevision: number | null = null;
   private cancelTaskDrag: (() => void) | null = null;
   private textInputInteractionActive = false;
+  private taskEditSaving = false;
   private renderPending = false;
   private temporalRefreshPending = false;
   private suppressNextFullNotification = false;
@@ -77,6 +78,9 @@ export class HomepageView extends ItemView {
       this.registerEvent(this.app.workspace.on(
         "active-leaf-change",
         (leaf) => {
+          if (leaf !== this.leaf) {
+            this.application.discardInvalidTaskEdit();
+          }
           if (leaf === this.leaf) {
             if (this.renderPending) {
               this.requestRender(true);
@@ -278,7 +282,7 @@ export class HomepageView extends ItemView {
     renderScope.load();
     this.renderScope = renderScope;
     renderScope.registerDomEvent(this.contentEl, "click", (event) => {
-      if (this.journalCalendar !== null || this.journalCalendarOpening) return;
+      if (this.journalCalendar !== null || this.journalCalendarOpening || this.taskEditSaving) return;
       const target = event.target;
       if (
         target instanceof Element
@@ -363,8 +367,16 @@ export class HomepageView extends ItemView {
             this.application.updateTaskEditDraft(text);
           },
           saveTaskEdit: async () => {
-            const result = await this.application.saveTaskEdit();
-            return result.type === "applied" || result.type === "noop";
+            this.taskEditSaving = true;
+            try {
+              const result = await this.application.saveTaskEdit();
+              return result.type === "applied" || result.type === "noop";
+            } finally {
+              this.taskEditSaving = false;
+            }
+          },
+          rejectTaskEdit: (reason) => {
+            this.application.rejectTaskEdit(reason);
           },
           cancelTaskEdit: () => {
             this.application.cancelTaskEdit();

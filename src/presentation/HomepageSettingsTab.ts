@@ -1,3 +1,5 @@
+import { attachSettingsAutoSave } from "./SettingsAutoSave";
+import { RecurringTaskDraft } from "./RecurringTaskDraft";
 import {
   Component,
   Notice,
@@ -143,6 +145,8 @@ export class HomepageSettingsTab extends PluginSettingTab {
   private draggedFileGroupId: string | null = null;
   private fileGroupUndoTimer: number | null = null;
   private settingsScope: Component | null = null;
+  private recurringDrafts: RecurringTaskDraft[] = [];
+  private taskSettingsRefreshPending = false;
   private suggestionFileCache: readonly TFile[] | null = null;
   private fileEntryStateUnsubscribe: (() => void) | null = null;
   private taskStateUnsubscribe: (() => void) | null = null;
@@ -170,6 +174,8 @@ export class HomepageSettingsTab extends PluginSettingTab {
   }
 
   public override display(): void {
+    this.reconcileRecurringDrafts(this.application.getTaskSettings());
+    for (const draft of this.recurringDrafts) void draft.flush();
     this.flushPendingSettingCommits();
     this.fileEntryStateUnsubscribe?.();
     this.fileEntryStateUnsubscribe = null;
@@ -309,9 +315,8 @@ export class HomepageSettingsTab extends PluginSettingTab {
         });
       this.renderRecurringTaskSettings(taskSettings, messages);
       this.taskStateUnsubscribe = this.application.subscribeTaskSettings(() => {
-        if (this.activeSection === "tasks") {
-          this.display();
-        }
+        this.taskSettingsRefreshPending = true;
+        this.refreshTaskSettingsIfIdle();
       });
     }
 
@@ -443,6 +448,9 @@ export class HomepageSettingsTab extends PluginSettingTab {
   }
 
   public override hide(): void {
+    for (const draft of this.recurringDrafts) {
+      void draft.close();
+    }
     this.flushPendingSettingCommits();
     this.fileEntryStateUnsubscribe?.();
     this.fileEntryStateUnsubscribe = null;
@@ -1727,9 +1735,11 @@ export class HomepageSettingsTab extends PluginSettingTab {
       });
       groupErrors.set(group.id, localError);
       let nextName = group.name;
+      const nameInputs: HTMLInputElement[] = [];
       new Setting(card)
         .setName(messages.fileGroupsName)
         .addText((text) => {
+          nameInputs.push(text.inputEl);
           text
             .setValue(group.name)
             .setDisabled(!settings.editable)
@@ -1737,17 +1747,18 @@ export class HomepageSettingsTab extends PluginSettingTab {
               nextName = value;
             });
         })
-        .addButton((button) => {
-          button
-            .setButtonText(messages.fileGroupsRename)
-            .setDisabled(!settings.editable)
-            .onClick(() => {
-              this.handleFileGroupMutation(
-                this.application.renameFileGroup(group.id, nextName),
-                localError,
-                messages
-              );
-            });
+        .then(() => {
+          attachSettingsAutoSave(nameInputs, scope, () => {
+            const result = this.application.renameFileGroup(group.id, nextName);
+            if (result.type !== "applied" && result.type !== "noop") {
+              this.handleFileGroupMutation(result, localError, messages);
+              return false;
+            }
+            heading.setName(nextName.trim());
+            card.setAttribute("data-file-group-name", nextName.trim());
+            localError.setText("");
+            return true;
+          }, () => localError.setText(""));
         })
         .addButton((button) => {
           button.buttonEl.addClass("mod-warning");
@@ -2148,14 +2159,22 @@ export class HomepageSettingsTab extends PluginSettingTab {
       });
 
     let newTemplateName = "";
-    new Setting(region)
+    const createSetting = new Setting(region);
+    const nameField = createSetting.controlEl.createDiv({ cls: "homepage-studio-plan-create-name" });
+    const createError = nameField.createEl("p", {
+      cls: "homepage-studio-plan-settings-error",
+      attr: { role: "alert", "aria-live": "polite" }
+    });
+    createSetting
       .setName(messages.planCreateTemplate)
       .addText((text) => {
+        nameField.prepend(text.inputEl);
         text
           .setPlaceholder(messages.planTemplateNamePlaceholder)
           .setDisabled(!settings.editable)
           .onChange((value) => {
             newTemplateName = value;
+            createError.setText("");
           });
         attachAccessibleLabel(
           text.inputEl,
@@ -2176,7 +2195,7 @@ export class HomepageSettingsTab extends PluginSettingTab {
             }
             this.handlePlanMutation(
               result,
-              error,
+              createError,
               messages
             );
           });
@@ -2222,14 +2241,22 @@ export class HomepageSettingsTab extends PluginSettingTab {
       });
 
     let newTemplateName = "";
-    new Setting(region)
+    const createSetting = new Setting(region);
+    const nameField = createSetting.controlEl.createDiv({ cls: "homepage-studio-plan-create-name" });
+    const createError = nameField.createEl("p", {
+      cls: "homepage-studio-plan-settings-error",
+      attr: { role: "alert", "aria-live": "polite" }
+    });
+    createSetting
       .setName(messages.planCreateWeeklyTemplate)
       .addText((text) => {
+        nameField.prepend(text.inputEl);
         text
           .setPlaceholder(messages.planTemplateNamePlaceholder)
           .setDisabled(!settings.editable)
           .onChange((value) => {
             newTemplateName = value;
+            createError.setText("");
           });
       })
       .addButton((button) => {
@@ -2243,7 +2270,7 @@ export class HomepageSettingsTab extends PluginSettingTab {
             if (result.type === "applied" && result.id !== undefined) {
               this.pendingPlanTemplateFocusId = result.id;
             }
-            this.handlePlanMutation(result, error, messages);
+            this.handlePlanMutation(result, createError, messages);
           });
       });
 
@@ -2280,9 +2307,16 @@ export class HomepageSettingsTab extends PluginSettingTab {
     heading.settingEl.addClass("homepage-studio-plan-template-title");
 
     let templateName = template.name;
+    let savedTemplateName = template.name;
+    const nameInputs: HTMLInputElement[] = [];
+    const nameError = card.createEl("p", {
+      cls: "homepage-studio-plan-settings-error",
+      attr: { role: "alert", "aria-live": "polite" }
+    });
     new Setting(card)
       .setName(messages.planTemplateNamePlaceholder)
       .addText((text) => {
+        nameInputs.push(text.inputEl);
         text
           .setValue(template.name)
           .setDisabled(!settings.editable)
@@ -2290,20 +2324,22 @@ export class HomepageSettingsTab extends PluginSettingTab {
             templateName = value;
           });
       })
-      .addButton((button) => {
-        button
-          .setButtonText(messages.planRename)
-          .setDisabled(!settings.editable)
-          .onClick(() => {
-            this.handlePlanMutation(
-              this.application.renameWeeklyPlanTemplate(
-                template.id,
-                templateName
-              ),
-              error,
-              messages
-            );
-          });
+      .then(() => {
+        if (this.settingsScope === null) return;
+        attachSettingsAutoSave(nameInputs, this.settingsScope, () => {
+          const result = this.application.renameWeeklyPlanTemplate(template.id, templateName);
+          if (result.type !== "applied") {
+            this.handlePlanMutation(result, nameError, messages);
+            return false;
+          }
+          savedTemplateName = templateName.trim();
+          heading.setName(savedTemplateName);
+          for (const option of this.containerEl.querySelectorAll<HTMLOptionElement>("option")) {
+            if (option.value === template.id) option.textContent = savedTemplateName;
+          }
+          nameError.setText("");
+          return true;
+        }, () => nameError.setText(""));
       })
       .addButton((button) => {
         button
@@ -2313,7 +2349,7 @@ export class HomepageSettingsTab extends PluginSettingTab {
             this.handlePlanMutation(
               this.application.copyWeeklyPlanTemplate(
                 template.id,
-                messages.planCopyName.replace("{name}", template.name)
+                messages.planCopyName.replace("{name}", savedTemplateName)
               ),
               error,
               messages
@@ -2452,9 +2488,16 @@ export class HomepageSettingsTab extends PluginSettingTab {
     );
 
     let templateName = template.name;
+    let savedTemplateName = template.name;
+    const nameInputs: HTMLInputElement[] = [];
+    const nameError = card.createEl("p", {
+      cls: "homepage-studio-plan-settings-error",
+      attr: { role: "alert", "aria-live": "polite" }
+    });
     new Setting(card)
       .setName(messages.planTemplateNamePlaceholder)
       .addText((text) => {
+        nameInputs.push(text.inputEl);
         text
           .setValue(template.name)
           .setDisabled(!settings.editable)
@@ -2462,20 +2505,22 @@ export class HomepageSettingsTab extends PluginSettingTab {
             templateName = value;
           });
       })
-      .addButton((button) => {
-        button
-          .setButtonText(messages.planRename)
-          .setDisabled(!settings.editable)
-          .onClick(() => {
-            this.handlePlanMutation(
-              this.application.renameDailyPlanTemplate(
-                template.id,
-                templateName
-              ),
-              error,
-              messages
-            );
-          });
+      .then(() => {
+        if (this.settingsScope === null) return;
+        attachSettingsAutoSave(nameInputs, this.settingsScope, () => {
+          const result = this.application.renameDailyPlanTemplate(template.id, templateName);
+          if (result.type !== "applied") {
+            this.handlePlanMutation(result, nameError, messages);
+            return false;
+          }
+          savedTemplateName = templateName.trim();
+          templateHeading.setName(savedTemplateName);
+          for (const option of this.containerEl.querySelectorAll<HTMLOptionElement>("option")) {
+            if (option.value === template.id) option.textContent = savedTemplateName;
+          }
+          nameError.setText("");
+          return true;
+        }, () => nameError.setText(""));
       })
       .addButton((button) => {
         button
@@ -2485,7 +2530,7 @@ export class HomepageSettingsTab extends PluginSettingTab {
             this.handlePlanMutation(
               this.application.copyDailyPlanTemplate(
                 template.id,
-                messages.planCopyName.replace("{name}", template.name)
+                messages.planCopyName.replace("{name}", savedTemplateName)
               ),
               error,
               messages
@@ -2565,6 +2610,7 @@ export class HomepageSettingsTab extends PluginSettingTab {
     messages: Messages,
     operations: PlanPeriodOperations
   ): void {
+    const periodInputs: HTMLInputElement[] = [];
     let label = period.label;
     let start = formatPlanMinute(period.startMinute);
     let end = formatPlanMinute(period.endMinute);
@@ -2589,6 +2635,7 @@ export class HomepageSettingsTab extends PluginSettingTab {
     });
     setting
       .addText((text) => {
+        periodInputs.push(text.inputEl);
         fields.appendChild(text.inputEl);
         text
           .setValue(label)
@@ -2604,6 +2651,7 @@ export class HomepageSettingsTab extends PluginSettingTab {
         );
       })
       .addText((text) => {
+        periodInputs.push(text.inputEl);
         fields.appendChild(text.inputEl);
         text
           .setValue(start)
@@ -2620,6 +2668,7 @@ export class HomepageSettingsTab extends PluginSettingTab {
         );
       })
       .addText((text) => {
+        periodInputs.push(text.inputEl);
         fields.appendChild(text.inputEl);
         text
           .setValue(end)
@@ -2635,21 +2684,18 @@ export class HomepageSettingsTab extends PluginSettingTab {
           messages.planPeriodEnd
         );
       })
-      .addButton((button) => {
-        actions.appendChild(button.buttonEl);
-        button
-          .setButtonText(messages.planSavePeriod)
-          .setDisabled(!editable)
-          .onClick(() => {
-            const next = this.parseDailyPeriod(label, start, end);
-            this.handlePlanMutation(
-              next.type === "valid"
-                ? operations.update(next.period)
-                : next,
-              localError,
-              messages
-            );
-          });
+      .then(() => {
+        if (this.settingsScope === null) return;
+        attachSettingsAutoSave(periodInputs, this.settingsScope, () => {
+          const next = this.parseDailyPeriod(label, start, end);
+          const result = next.type === "valid" ? operations.update(next.period) : next;
+          if (result.type !== "applied") {
+            this.handlePlanMutation(result, localError, messages);
+            return false;
+          }
+          localError.setText("");
+          return true;
+        }, () => localError.setText(""));
       })
       .addButton((button) => {
         actions.appendChild(button.buttonEl);
@@ -2997,6 +3043,35 @@ export class HomepageSettingsTab extends PluginSettingTab {
     });
   }
 
+  private reconcileRecurringDrafts(settings: TaskSettings): void {
+    if (settings.recurringState !== "ready") return;
+    const targets = settings.recurringTasks.map((task) => task.target);
+    this.recurringDrafts = this.recurringDrafts.filter((draft) =>
+      draft.path !== settings.filePath || draft.reconcile(targets));
+  }
+
+  private refreshTaskSettingsIfIdle(): void {
+    const path = this.application.getTaskSettings().filePath;
+    const focused = this.containerEl.ownerDocument.activeElement;
+    if (this.taskSettingsRefreshPending && this.settingsScope !== null
+      && this.activeSection === "tasks"
+      && !this.recurringDrafts.some((draft) => draft.path === path && (draft.dirty || draft.busy || draft.composing))
+      && !focused?.closest(".homepage-studio-recurring-task-row")) {
+      this.taskSettingsRefreshPending = false;
+      // Obsidian may scroll the tab itself or a surrounding settings pane.
+      // Clearing the tab during display can clamp either scroll position to zero.
+      const scrollPositions: { element: HTMLElement; top: number; left: number }[] = [];
+      for (let element: HTMLElement | null = this.containerEl; element !== null; element = element.parentElement) {
+        scrollPositions.push({ element, top: element.scrollTop, left: element.scrollLeft });
+      }
+      this.display();
+      for (const { element, top, left } of scrollPositions) {
+        element.scrollTop = top;
+        element.scrollLeft = left;
+      }
+    }
+  }
+
   private renderRecurringTaskSettings(
     settings: TaskSettings,
     messages: Messages
@@ -3119,89 +3194,102 @@ export class HomepageSettingsTab extends PluginSettingTab {
       });
     }
 
-    for (const task of settings.recurringTasks) {
-      let name = task.text;
-      let recurrence = task.recurrence;
-      let nameInput: HTMLInputElement | null = null;
+    const scope = this.settingsScope;
+    const targetWindow = this.containerEl.ownerDocument.defaultView;
+    if (scope === null || targetWindow === null || settings.filePath === null) return;
+    const path = settings.filePath;
+    this.reconcileRecurringDrafts(settings);
+    this.recurringDrafts = this.recurringDrafts.filter((draft) => draft.dirty || draft.busy || draft.composing);
+    const rows = settings.recurringTasks.map((task) => {
+      const existing = this.recurringDrafts.find((draft) => draft.path === path
+        && JSON.stringify(draft.target) === JSON.stringify(task.target));
+      if (existing !== undefined) return existing;
+      const draft = new RecurringTaskDraft(path, task.target, task.text, task.recurrence, targetWindow,
+        (target, text, recurrence) => this.application.getTaskSettings().filePath === path
+          ? this.application.updateRecurringTask(target, text, recurrence)
+          : Promise.resolve({ type: "missing-source", path }));
+      this.recurringDrafts.push(draft);
+      return draft;
+    });
+    // Keep drafts while a source is unavailable or a save is still settling.
+    for (const draft of this.recurringDrafts) {
+      if (draft.path === path && !rows.includes(draft)) rows.push(draft);
+    }
+    for (const draft of rows) {
+      const rowError = region.createEl("p", {
+        cls: "homepage-studio-recurring-task-error",
+        attr: { role: "alert", "aria-live": "polite" }
+      });
+      draft.onResult = (result) => {
+        const description = this.describeTaskMutationResult(result, messages);
+        rowError.setText(description);
+        targetWindow.setTimeout(() => this.refreshTaskSettingsIfIdle(), 0);
+        if (description !== "" && (!rowError.isConnected || this.settingsScope === null)) {
+          new Notice(description);
+        }
+      };
+      if (draft.error !== null) rowError.setText(this.describeTaskMutationResult(draft.error, messages));
       new Setting(region)
         .setName(messages.tasksRecurringTaskName)
-        .then((setting) => {
-          setting.settingEl.addClass(
-            "homepage-studio-recurring-task-row"
-          );
-        })
+        .then((setting) => setting.settingEl.addClass("homepage-studio-recurring-task-row"))
         .addText((text) => {
-          nameInput = text.inputEl;
-          text
-            .setValue(name)
+          text.setValue(draft.text)
             .setDisabled(!settings.recurringEditable)
             .onChange((value) => {
-              name = value;
+              draft.text = value;
+              draft.schedule();
             });
-          attachAccessibleLabel(
-            text.inputEl,
-            region,
-            messages.tasksRecurringTaskName
-          );
+          scope.registerDomEvent(text.inputEl, "compositionstart", () => {
+            draft.composing = true;
+            draft.cancelTimer();
+          });
+          scope.registerDomEvent(text.inputEl, "compositionend", () => {
+            draft.composing = false;
+            draft.text = text.inputEl.value;
+            draft.schedule();
+          });
+          scope.registerDomEvent(text.inputEl, "blur", () => {
+            draft.composing = false;
+            draft.text = text.inputEl.value;
+            void draft.flush().then(() => this.refreshTaskSettingsIfIdle());
+          });
+          attachAccessibleLabel(text.inputEl, region, messages.tasksRecurringTaskName);
         })
         .addDropdown((dropdown) => {
-          dropdown
-            .addOption("daily", messages.tasksRecurringDaily)
+          dropdown.addOption("daily", messages.tasksRecurringDaily)
             .addOption("weekly", messages.tasksRecurringWeekly)
-            .setValue(recurrence)
+            .setValue(draft.recurrence)
             .setDisabled(!settings.recurringEditable)
             .onChange((value) => {
               if (isTaskRecurrence(value)) {
-                recurrence = value;
+                draft.recurrence = value;
+                void draft.flush();
               }
             });
-          attachAccessibleLabel(
-            dropdown.selectEl,
-            region,
-            messages.tasksRecurringType
-          );
+          attachAccessibleLabel(dropdown.selectEl, region, messages.tasksRecurringType);
         })
         .addButton((button) => {
-          button
-            .setButtonText(messages.tasksRecurringSave)
+          button.setIcon("x")
+            .setTooltip(messages.tasksConfirmDelete)
             .setDisabled(!settings.recurringEditable)
-            .onClick(() => {
+            .onClick(async () => {
               button.setDisabled(true);
-              void this.application.updateRecurringTask(
-                task.target,
-                name.trim(),
-                recurrence
-              ).then((result) => {
-                error.setText(this.describeTaskMutationResult(
-                  result,
-                  messages
-                ));
-                if (result.type !== "applied") {
-                  button.setDisabled(false);
-                  nameInput?.focus();
-                }
-              });
+              await draft.cancel();
+              const result = this.application.getTaskSettings().filePath === path
+                ? await this.application.deleteTask(draft.target, draft.text)
+                : { type: "missing-source" as const, path };
+              if (result.type === "applied") {
+                this.recurringDrafts = this.recurringDrafts.filter((item) => item !== draft);
+                this.display();
+              } else {
+                draft.resume();
+                draft.onResult(result);
+                button.setDisabled(false);
+                if (result.type === "noop" && draft.dirty) draft.schedule();
+              }
             });
-        })
-        .addButton((button) => {
-          button
-            .setButtonText(messages.tasksConfirmDelete)
-            .setDisabled(!settings.recurringEditable)
-            .onClick(() => {
-              button.setDisabled(true);
-              void this.application.deleteTask(
-                task.target,
-                task.text
-              ).then((result) => {
-                error.setText(this.describeTaskMutationResult(
-                  result,
-                  messages
-                ));
-                if (result.type !== "applied") {
-                  button.setDisabled(false);
-                }
-              });
-            });
+          button.buttonEl.addClass("homepage-studio-recurring-task-delete");
+          button.buttonEl.setAttribute("aria-label", messages.tasksConfirmDelete);
         });
     }
   }

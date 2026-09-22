@@ -193,6 +193,10 @@ export interface Messages {
   readonly tasksDelete: string;
   readonly tasksSaveEdit: string;
   readonly tasksInvalidTask: string;
+  readonly tasksNameEmpty: string;
+  readonly tasksNameMultiline: string;
+  readonly tasksNameReservedMetadata: string;
+
   readonly tasksConflict: string;
   readonly tasksConflictTitle: string;
   readonly tasksConflictDescription: string;
@@ -200,6 +204,7 @@ export interface Messages {
   readonly tasksReloadExternal: string;
   readonly tasksOpenSource: string;
   readonly tasksWriteFailed: string;
+  readonly tasksEditSaveFailed: string;
   readonly currentPlanModuleTitle: string;
   readonly currentPlanEmptyTitle: string;
   readonly currentPlanEmptyDescription: string;

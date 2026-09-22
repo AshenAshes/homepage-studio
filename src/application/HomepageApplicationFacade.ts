@@ -1,3 +1,4 @@
+import type { TaskTextValidationReason } from "../domain/tasks/taskOperations";
 import { isJournalDateKey } from "../domain/journal/calendar";
 import type {
   AppStore,
@@ -445,6 +446,10 @@ export type TaskInteractionState =
     readonly path: string;
     readonly target: TaskTarget;
     readonly text: string;
+    readonly validationFailed?: boolean;
+    readonly validationReason?: TaskTextValidationReason | null;
+    readonly saveFailed?: boolean;
+    readonly focusRequested?: boolean;
   }
   | {
     readonly type: "conflict";
@@ -1413,7 +1418,8 @@ export class HomepageApplicationFacade {
       type: "editing",
       path: runtime.path,
       target,
-      text
+      text,
+      focusRequested: true
     };
     this.notifyTaskRuntime();
   }
@@ -1425,8 +1431,25 @@ export class HomepageApplicationFacade {
     }
     this.taskInteractionState = {
       ...state,
-      text
+      text,
+      validationFailed: false,
+      validationReason: null,
+      saveFailed: false,
+      focusRequested: false
     };
+  }
+
+  public rejectTaskEdit(reason: TaskTextValidationReason): void {
+    const state = this.taskInteractionState;
+    if (state.type !== "editing") return;
+    this.taskInteractionState = { ...state, text: "", validationFailed: true, validationReason: reason, focusRequested: false };
+    this.notifyTaskRuntime();
+  }
+
+  public discardInvalidTaskEdit(): void {
+    if (this.taskInteractionState.type === "editing" && this.taskInteractionState.validationFailed) {
+      this.cancelTaskEdit();
+    }
   }
 
   public cancelTaskEdit(): void {
@@ -1446,10 +1469,10 @@ export class HomepageApplicationFacade {
         type: "edit",
         target: state.target,
         text: state.text
-      }, state.text);
+      }, state.text, true);
     if (
       result.type === "noop"
-      && this.taskInteractionState.type === "editing"
+      && this.taskInteractionState === state
     ) {
       this.taskInteractionState = { type: "idle" };
       this.notifyTaskRuntime();
@@ -3544,7 +3567,8 @@ export class HomepageApplicationFacade {
 
   private async mutateTask(
     mutation: TaskMutation,
-    conflictDraft?: string | null
+    conflictDraft?: string | null,
+    preserveEditOnFailure = false
   ): Promise<TaskSourceMutationResult> {
     const runtime = this.taskRuntimeState;
     if (runtime.type !== "ready") {
@@ -3552,9 +3576,10 @@ export class HomepageApplicationFacade {
         ? runtime
         : { type: "missing-region" };
     }
+    const interactionAtStart = this.taskInteractionState;
     const result = await this.taskSource.mutate(runtime.path, mutation);
     if (result.type === "applied") {
-      if (conflictDraft !== undefined) {
+      if (conflictDraft !== undefined && (!preserveEditOnFailure || this.taskInteractionState === interactionAtStart)) {
         this.taskInteractionState = { type: "idle" };
       }
       const loaded = await this.taskSource.load(runtime.path);
@@ -3566,6 +3591,12 @@ export class HomepageApplicationFacade {
         }
         : loaded);
     } else if (result.type !== "noop") {
+      if (preserveEditOnFailure && this.taskInteractionState !== interactionAtStart) return result;
+      if (preserveEditOnFailure && this.taskInteractionState.type === "editing") {
+        this.taskInteractionState = { ...this.taskInteractionState, saveFailed: true, focusRequested: false };
+        this.notifyTaskRuntime();
+        return result;
+      }
       if (result.type === "conflict" && conflictDraft !== undefined) {
         this.taskInteractionState = {
           type: "conflict",

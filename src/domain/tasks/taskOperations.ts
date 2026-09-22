@@ -66,6 +66,7 @@ export type TaskMutationResult =
   | {
     readonly type: "applied";
     readonly source: string;
+    readonly updatedTarget?: TaskTarget;
   }
   | { readonly type: "noop" }
   | { readonly type: "missing-region" }
@@ -91,9 +92,11 @@ export type TaskMutationResult =
     readonly reason: "changed" | "deleted" | "ambiguous";
   };
 
-const validateText = (
+export type TaskTextValidationReason = "empty" | "multiline" | "reserved-metadata";
+
+export const validateTaskText = (
   text: string
-): Extract<TaskMutationResult, { readonly type: "invalid-task" }> | null => {
+): { readonly type: "invalid-task"; readonly reason: TaskTextValidationReason } | null => {
   if (/[\r\n]/u.test(text)) {
     return { type: "invalid-task", reason: "multiline" };
   }
@@ -171,7 +174,7 @@ const insertTask = (
   recurrence?: TaskRecurrence,
   period?: string
 ): TaskMutationResult => {
-  const invalid = validateText(text);
+  const invalid = validateTaskText(text);
   if (invalid !== null) {
     return invalid;
   }
@@ -213,6 +216,7 @@ const replaceLine = (
   }
   return {
     type: "applied",
+    updatedTarget: { ...task.target, rawLine: nextLine },
     source: [
       taskSource.source.slice(0, task.lineStart),
       nextLine,
@@ -494,7 +498,7 @@ export const mutateHomepageTaskSource = (
     return located;
   }
   if (mutation.type === "edit") {
-    const invalid = validateText(mutation.text);
+    const invalid = validateTaskText(mutation.text);
     if (invalid !== null) {
       return invalid;
     }
@@ -531,7 +535,7 @@ export const mutateHomepageTaskSource = (
     const text = mutation.type === "update-recurring"
       ? mutation.text
       : located.text;
-    const invalid = validateText(text);
+    const invalid = validateTaskText(text);
     if (invalid !== null) {
       return invalid;
     }

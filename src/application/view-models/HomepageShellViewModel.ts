@@ -1,3 +1,4 @@
+import type { TaskTextValidationReason } from "../../domain/tasks/taskOperations";
 import type { LocalTimeSnapshot } from "../ports/Clock";
 import type { HomepageSettingsSection } from "../ports/SettingsNavigation";
 import type {
@@ -84,6 +85,10 @@ export interface TaskInteractionInput {
     readonly path: string;
     readonly target: TaskTarget;
     readonly text: string;
+    readonly validationFailed?: boolean;
+    readonly validationReason?: TaskTextValidationReason | null;
+    readonly saveFailed?: boolean;
+    readonly focusRequested?: boolean;
   }
   | {
     readonly type: "conflict";
@@ -133,6 +138,12 @@ export interface HomepageTaskItemViewModel {
   readonly recurrence: "daily" | "weekly" | null;
   readonly recurrenceLabel: string | null;
   readonly editingText: string | null;
+  readonly editingInvalid: boolean;
+  readonly editingFailed: boolean;
+  readonly editingAutofocus: boolean;
+  readonly editingInvalidReason: TaskTextValidationReason | null;
+  readonly invalidNameLabels: Readonly<Record<TaskTextValidationReason, string>>;
+  readonly editFailureLabel: string;
   readonly checkboxLabel: string;
   readonly editLabel: string;
   readonly archiveLabel: string | null;
@@ -854,6 +865,16 @@ export const createHomepageShellViewModel = (
       completed: task.completed,
       recurrence: task.recurrence,
       recurrenceLabel,
+      editingInvalid: interactionState.type === "editing" && interactionState.validationFailed === true,
+      editingFailed: interactionState.type === "editing" && interactionState.saveFailed === true,
+      editingAutofocus: interactionState.type === "editing" && interactionState.focusRequested === true,
+      editingInvalidReason: interactionState.type === "editing" ? interactionState.validationReason ?? null : null,
+      invalidNameLabels: {
+        empty: messages.tasksNameEmpty,
+        multiline: messages.tasksNameMultiline,
+        "reserved-metadata": messages.tasksNameReservedMetadata
+      },
+      editFailureLabel: messages.tasksEditSaveFailed,
       editingText:
         interactionState.type === "editing"
         && editingRecord?.lineStart === task.lineStart
