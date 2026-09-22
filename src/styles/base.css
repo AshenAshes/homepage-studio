@@ -2246,6 +2246,15 @@ body > .homepage-studio-task-reorder-portal.homepage-studio::after {
   padding: 0;
 }
 
+.homepage-studio-settings input.homepage-studio-recurring-reset-time {
+  width: 5.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.homepage-studio-settings .homepage-studio-recurring-reset-day[hidden] {
+  display: none;
+}
+
 .homepage-studio-recurring-task-create .setting-item-control,
 .homepage-studio-recurring-task-row .setting-item-control {
   flex-wrap: wrap;

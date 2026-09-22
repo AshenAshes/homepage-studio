@@ -1,3 +1,4 @@
+import { validateTaskSchedule, type TaskResetSchedule } from "../domain/tasks/taskRecurrence";
 import type { TaskTextValidationReason } from "../domain/tasks/taskOperations";
 import { isJournalDateKey } from "../domain/journal/calendar";
 import type {
@@ -319,6 +320,7 @@ export interface TaskSettings {
   readonly filePath: string | null;
   readonly showCompleted: boolean;
   readonly showArchiveToggle: boolean;
+    readonly showRefreshTime: boolean;
   readonly recurringEditable: boolean;
   readonly recurringState: TaskRuntimeState["type"];
   readonly recurringConflict: boolean;
@@ -326,6 +328,7 @@ export interface TaskSettings {
     readonly target: TaskTarget;
     readonly text: string;
     readonly recurrence: TaskRecurrence;
+    readonly schedule: TaskResetSchedule;
   }[];
   readonly diagnostics: readonly TaskSourceDiagnostic[];
 }
@@ -1071,7 +1074,7 @@ export class HomepageApplicationFacade {
         }
         const hasStaleRecurringTask = result.taskSource.tasks.some((task) =>
           task.recurrence !== null
-          && task.period !== periodKeys[task.recurrence]
+          && task.period !== null && task.period < taskPeriodKeyFor(task.recurrence, periodKeys, task.schedule)
         );
         if (!hasStaleRecurringTask) {
           refreshFailureEpisode = "";
@@ -1127,7 +1130,7 @@ export class HomepageApplicationFacade {
         const periodKeys = this.getCurrentTaskPeriodKeys();
         const nextSignature = periodKeys === null
           ? ""
-          : `${periodKeys.daily}|${periodKeys.weekly}`;
+          : this.getTaskRefreshSignature(periodKeys);
         if (path !== null && nextSignature !== periodSignature) {
           periodSignature = nextSignature;
           loadPath(path, false);
@@ -1138,7 +1141,7 @@ export class HomepageApplicationFacade {
       const periodKeys = this.getCurrentTaskPeriodKeys();
       periodSignature = periodKeys === null
         ? ""
-        : `${periodKeys.daily}|${periodKeys.weekly}`;
+        : this.getTaskRefreshSignature(periodKeys);
       refreshFailureEpisode = "";
       this.taskInteractionState = { type: "idle" };
       this.taskAddDraft = "";
@@ -1171,11 +1174,7 @@ export class HomepageApplicationFacade {
 
     const unsubscribe = this.store.subscribeState(bindConfiguration);
     const unsubscribeLocalTime = this.store.subscribeLocalTime(
-      ({ dateChanged }) => {
-        if (dateChanged) {
-          bindConfiguration();
-        }
-      }
+      () => bindConfiguration()
     );
     const requestRefresh = (): void => {
       if (!disposed && configuredPath !== "") {
@@ -1208,7 +1207,8 @@ export class HomepageApplicationFacade {
           ? [{
             target: task.target,
             text: task.text,
-            recurrence: task.recurrence
+            recurrence: task.recurrence,
+            schedule: task.schedule
           }]
           : []
       )
@@ -1222,6 +1222,7 @@ export class HomepageApplicationFacade {
         filePath: settings.filePath,
         showCompleted: settings.showCompleted,
         showArchiveToggle: settings.showArchiveToggle,
+        showRefreshTime: settings.showRefreshTime,
         recurringEditable: this.taskRuntimeState.type === "ready",
         recurringState: this.taskRuntimeState.type,
         recurringConflict: this.taskInteractionState.type === "conflict",
@@ -1233,6 +1234,7 @@ export class HomepageApplicationFacade {
         filePath: null,
         showCompleted: true,
         showArchiveToggle: true,
+        showRefreshTime: false,
         recurringEditable: false,
         recurringState: "unconfigured",
         recurringConflict: false,
@@ -1330,10 +1332,24 @@ export class HomepageApplicationFacade {
     }));
   }
 
+  public setShowTaskRefreshTime(showRefreshTime: boolean): void {
+    this.store.transact("change task refresh time visibility", "normal", (data) => ({
+      ...data, tasks: { ...data.tasks, showRefreshTime }
+    }));
+  }
+
   public addRecurringTask(
     text: string,
-    recurrence: TaskRecurrence
+    recurrence: TaskRecurrence,
+    requestedSchedule?: TaskResetSchedule
   ): Promise<TaskSourceMutationResult> {
+    const existing = undefined;
+    const previousSchedule: TaskResetSchedule = requestedSchedule ?? existing ?? {};
+    const schedule: TaskResetSchedule = recurrence === "daily"
+      ? (previousSchedule.time === undefined ? {} : { time: previousSchedule.time })
+      : previousSchedule;
+    const scheduleIssue = validateTaskSchedule(recurrence, schedule);
+    if (scheduleIssue !== null) return Promise.resolve({ type: "invalid-task", reason: scheduleIssue });
     const periodKeys = this.getCurrentTaskPeriodKeys();
     return periodKeys === null
       ? Promise.resolve({ type: "invalid-task", reason: "invalid-period" })
@@ -1341,7 +1357,8 @@ export class HomepageApplicationFacade {
         type: "add-recurring",
         text,
         recurrence,
-        period: taskPeriodKeyFor(recurrence, periodKeys)
+        period: taskPeriodKeyFor(recurrence, periodKeys, schedule),
+        schedule
       });
   }
 
@@ -1365,8 +1382,18 @@ export class HomepageApplicationFacade {
 
   public setRecurringTaskType(
     target: TaskTarget,
-    recurrence: TaskRecurrence
+    recurrence: TaskRecurrence,
+    requestedSchedule?: TaskResetSchedule
   ): Promise<TaskSourceMutationResult> {
+    const existing = this.taskRuntimeState.type === "ready"
+      ? this.taskRuntimeState.taskSource.tasks.find((task) => task.rawLine === target.rawLine)?.schedule
+      : undefined;
+    const previousSchedule: TaskResetSchedule = requestedSchedule ?? existing ?? {};
+    const schedule: TaskResetSchedule = recurrence === "daily"
+      ? (previousSchedule.time === undefined ? {} : { time: previousSchedule.time })
+      : previousSchedule;
+    const scheduleIssue = validateTaskSchedule(recurrence, schedule);
+    if (scheduleIssue !== null) return Promise.resolve({ type: "invalid-task", reason: scheduleIssue });
     const periodKeys = this.getCurrentTaskPeriodKeys();
     return periodKeys === null
       ? Promise.resolve({ type: "invalid-task", reason: "invalid-period" })
@@ -1374,15 +1401,26 @@ export class HomepageApplicationFacade {
         type: "set-recurrence",
         target,
         recurrence,
-        period: taskPeriodKeyFor(recurrence, periodKeys)
+        period: taskPeriodKeyFor(recurrence, periodKeys, schedule),
+        schedule
       });
   }
 
   public updateRecurringTask(
     target: TaskTarget,
     text: string,
-    recurrence: TaskRecurrence
+    recurrence: TaskRecurrence,
+    requestedSchedule?: TaskResetSchedule
   ): Promise<TaskSourceMutationResult> {
+    const existing = this.taskRuntimeState.type === "ready"
+      ? this.taskRuntimeState.taskSource.tasks.find((task) => task.rawLine === target.rawLine)?.schedule
+      : undefined;
+    const previousSchedule: TaskResetSchedule = requestedSchedule ?? existing ?? {};
+    const schedule: TaskResetSchedule = recurrence === "daily"
+      ? (previousSchedule.time === undefined ? {} : { time: previousSchedule.time })
+      : previousSchedule;
+    const scheduleIssue = validateTaskSchedule(recurrence, schedule);
+    if (scheduleIssue !== null) return Promise.resolve({ type: "invalid-task", reason: scheduleIssue });
     const periodKeys = this.getCurrentTaskPeriodKeys();
     return periodKeys === null
       ? Promise.resolve({ type: "invalid-task", reason: "invalid-period" })
@@ -1391,7 +1429,8 @@ export class HomepageApplicationFacade {
         target,
         text,
         recurrence,
-        period: taskPeriodKeyFor(recurrence, periodKeys)
+        period: taskPeriodKeyFor(recurrence, periodKeys, schedule),
+        schedule
       }, text);
   }
 
@@ -3639,13 +3678,21 @@ export class HomepageApplicationFacade {
     return this.selectedJournalDateKey;
   }
 
+  private getTaskRefreshSignature(keys: TaskPeriodKeys): string {
+    const periods = this.taskRuntimeState.type === "ready"
+      ? this.taskRuntimeState.taskSource.tasks.flatMap((task) => task.recurrence === null
+        ? [] : [taskPeriodKeyFor(task.recurrence, keys, task.schedule)])
+      : [];
+    return [keys.daily, keys.weekly, ...periods].join("|");
+  }
+
   private getCurrentTaskPeriodKeys(): TaskPeriodKeys | null {
     const dateKey = this.store.getLocalTime()?.dateKey;
     if (dateKey === undefined) {
       return null;
     }
     try {
-      return taskPeriodKeysForDate(dateKey);
+      return taskPeriodKeysForDate(dateKey, this.store.getLocalTime()?.minuteOfDay ?? 0);
     } catch {
       return null;
     }

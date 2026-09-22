@@ -1,3 +1,4 @@
+import { TASK_RESET_DAYS } from "../../domain/tasks/taskRecurrence";
 import type { TaskTextValidationReason } from "../../domain/tasks/taskOperations";
 import type { LocalTimeSnapshot } from "../ports/Clock";
 import type { HomepageSettingsSection } from "../ports/SettingsNavigation";
@@ -851,11 +852,21 @@ export const createHomepageShellViewModel = (
   const mapTaskItem = (
     task: HomepageTaskRecord
   ): HomepageTaskItemViewModel => {
-    const recurrenceLabel = task.recurrence === "daily"
+    const recurrenceTypeLabel = task.recurrence === "daily"
       ? messages.tasksRecurringDaily
       : task.recurrence === "weekly"
         ? messages.tasksRecurringWeekly
         : null;
+    const resetDayLabels = [messages.planWeekdayMonday, messages.planWeekdayTuesday, messages.planWeekdayWednesday,
+      messages.planWeekdayThursday, messages.planWeekdayFriday, messages.planWeekdaySaturday, messages.planWeekdaySunday];
+    const resetDay = resetDayLabels[TASK_RESET_DAYS.indexOf(task.schedule.day ?? "mon")] ?? "";
+    const recurrenceLabel = recurrenceTypeLabel === null ? null
+      : !data.tasks.showRefreshTime ? recurrenceTypeLabel
+        : task.recurrence === "daily"
+          ? messages.tasksDailyRefreshLabel.replace("{time}", task.schedule.time ?? "00:00")
+          : messages.tasksWeeklyRefreshLabel
+            .replace("{day}", locale.startsWith("zh") ? resetDay.replace(/^星期/u, "") : resetDay)
+            .replace("{time}", task.schedule.time ?? "00:00");
     const accessibleText = recurrenceLabel === null
       ? task.text
       : `${task.text}, ${recurrenceLabel}`;

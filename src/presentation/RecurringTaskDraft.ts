@@ -1,3 +1,4 @@
+import { validateTaskSchedule, type TaskResetSchedule } from "../domain/tasks/taskRecurrence";
 import { validateTaskText } from "../domain/tasks/taskOperations";
 import type { TaskRecurrence, TaskTarget } from "../domain/tasks/taskSource";
 import type { TaskSourceMutationResult } from "../application/services/TaskSourceService";
@@ -8,6 +9,7 @@ export class RecurringTaskDraft {
   public onResult: (result: TaskSourceMutationResult) => void = () => {};
   private savedText: string;
   private savedRecurrence: TaskRecurrence;
+  private savedSchedule: TaskResetSchedule;
   private timer: number | null = null;
   private pending: Promise<boolean> | null = null;
   private cancelled = false;
@@ -19,14 +21,17 @@ export class RecurringTaskDraft {
     public text: string,
     public recurrence: TaskRecurrence,
     private readonly clock: Pick<Window, "setTimeout" | "clearTimeout">,
-    private readonly save: (target: TaskTarget, text: string, recurrence: TaskRecurrence) => Promise<TaskSourceMutationResult>
+    private readonly save: (target: TaskTarget, text: string, recurrence: TaskRecurrence, schedule: TaskResetSchedule) => Promise<TaskSourceMutationResult>,
+    public refreshSchedule: TaskResetSchedule = {}
   ) {
     this.savedText = text;
     this.savedRecurrence = recurrence;
+    this.savedSchedule = { ...this.refreshSchedule };
   }
 
   public get dirty(): boolean {
-    return this.text !== this.savedText || this.recurrence !== this.savedRecurrence;
+    return this.text !== this.savedText || this.recurrence !== this.savedRecurrence
+      || JSON.stringify(this.refreshSchedule) !== JSON.stringify(this.savedSchedule);
   }
 
   public get busy(): boolean { return this.pending !== null; }
@@ -67,11 +72,14 @@ export class RecurringTaskDraft {
     if (this.cancelled || this.composing || !this.dirty) return !this.dirty;
     const text = this.text;
     const recurrence = this.recurrence;
+    const schedule = { ...this.refreshSchedule };
     const operation = async (): Promise<boolean> => {
       let result: TaskSourceMutationResult;
       try {
+        const scheduleIssue = validateTaskSchedule(recurrence, schedule);
         result = validateTaskText(text.trim())
-          ?? await this.save(this.target, text.trim(), recurrence);
+          ?? (scheduleIssue === null ? await this.save(this.target, text.trim(), recurrence, schedule)
+            : { type: "invalid-task", reason: scheduleIssue });
       } catch (cause) {
         result = { type: "io-error", path: this.path, cause };
       }
@@ -79,6 +87,7 @@ export class RecurringTaskDraft {
       if (success) {
         this.savedText = text;
         this.savedRecurrence = recurrence;
+        this.savedSchedule = schedule;
         if (result.type === "applied" && result.updatedTarget !== undefined) {
           this.target = result.updatedTarget;
         }
@@ -98,7 +107,7 @@ export class RecurringTaskDraft {
     this.closing = true;
     this.composing = false;
     this.cancelTimer();
-    if (validateTaskText(this.text.trim()) !== null) {
+    if (validateTaskText(this.text.trim()) !== null || validateTaskSchedule(this.recurrence, this.refreshSchedule) !== null) {
       // Stop the in-flight save's follow-up loop from writing a discarded draft.
       this.cancelled = true;
       this.restoreSaved();
@@ -114,6 +123,7 @@ export class RecurringTaskDraft {
   private restoreSaved(): void {
     this.text = this.savedText;
     this.recurrence = this.savedRecurrence;
+    this.refreshSchedule = { ...this.savedSchedule };
     this.error = null;
   }
 

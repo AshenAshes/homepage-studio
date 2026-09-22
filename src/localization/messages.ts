@@ -153,6 +153,16 @@ export interface Messages {
   readonly tasksRecurringType: string;
   readonly tasksRecurringAdd: string;
   readonly tasksRecurringSave: string;
+  readonly tasksResetTime: string;
+  readonly tasksShowRefreshTime: string;
+  readonly tasksShowRefreshTimeDescription: string;
+  readonly tasksDailyRefreshLabel: string;
+  readonly tasksWeeklyRefreshLabel: string;
+
+  readonly tasksResetDay: string;
+  readonly tasksResetInvalidTime: string;
+  readonly tasksResetInvalidDay: string;
+
   readonly tasksRecurringEmpty: string;
   readonly tasksRecurringUnavailable: string;
   readonly tasksSourceActivated: string;

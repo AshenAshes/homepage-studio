@@ -102,6 +102,7 @@ export interface PluginData {
     readonly filePath: string | null;
     readonly showCompleted: boolean;
     readonly showArchiveToggle: boolean;
+    readonly showRefreshTime: boolean;
   };
   readonly plans: {
     readonly activeMode: "daily" | "weekly";

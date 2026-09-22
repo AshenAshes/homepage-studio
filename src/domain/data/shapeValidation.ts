@@ -300,16 +300,19 @@ export const validatePluginDataShape = (
   const tasks = object(root.tasks, "/tasks", [
     "filePath",
     "showCompleted",
-    "showArchiveToggle"
+    "showArchiveToggle",
+    "showRefreshTime"
   ], [
     "filePath",
     "showCompleted",
-    "showArchiveToggle"
+    "showArchiveToggle",
+    "showRefreshTime"
   ]);
   if (tasks !== undefined) {
     nullableVaultPath(tasks.filePath, "/tasks/filePath");
     boolean(tasks.showCompleted, "/tasks/showCompleted");
     boolean(tasks.showArchiveToggle, "/tasks/showArchiveToggle");
+    boolean(tasks.showRefreshTime, "/tasks/showRefreshTime");
   }
 
   const plans = object(

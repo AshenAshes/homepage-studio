@@ -1,3 +1,4 @@
+import { isTaskResetDay, isTaskResetTime, type TaskResetSchedule } from "./taskRecurrence";
 import {
   isMondayTaskDateKey,
   isTaskDateKey,
@@ -17,7 +18,9 @@ export type TaskSourceDiagnosticCode =
   | "TASK-RECURRING-METADATA"
   | "TASK-RECURRING-PERIOD"
   | "TASK-RECURRING-WEEK-PERIOD"
-  | "TASK-RECURRING-ARCHIVE";
+  | "TASK-RECURRING-ARCHIVE"
+  | "TASK-RECURRING-RESET-TIME"
+  | "TASK-RECURRING-RESET-DAY";
 
 export interface TaskSourceDiagnostic {
   readonly code: TaskSourceDiagnosticCode;
@@ -44,6 +47,7 @@ export interface HomepageTaskRecord {
   readonly completed: boolean;
   readonly recurrence: TaskRecurrence | null;
   readonly period: string | null;
+  readonly schedule: TaskResetSchedule;
   readonly target: TaskTarget;
 }
 
@@ -90,8 +94,8 @@ interface StructuralHeading {
 
 const STRUCTURAL_HEADING = /^(#{1,3})(?!#)(?:[ \t]+(.*?))?[ \t]*$/u;
 const TASK_LINE = /^- \[([ xX])\] (.+)$/u;
-const RECURRING_TASK_SUFFIX = /^(.*?) \[homepage-studio-repeat:: (daily|weekly)\] \[homepage-studio-period:: (\d{4}-\d{2}-\d{2})\]$/u;
-const RESERVED_RECURRING_FIELD = /\[homepage-studio-(?:repeat|period)\b/u;
+const RECURRING_TASK_SUFFIX = /^(.*?) \[homepage-studio-repeat:: (daily|weekly)\]((?: \[homepage-studio-reset-(?:time|day):: [^\]\r\n]*\])*) \[homepage-studio-period:: (\d{4}-\d{2}-\d{2})\]$/u;
+const RESERVED_RECURRING_FIELD = /\[homepage-studio-(?:repeat|period|reset-time|reset-day)\b/u;
 const FENCE_OPEN = /^ {0,3}(`{3,}|~{3,})/u;
 
 const scanLines = (source: string): readonly SourceLine[] => {
@@ -227,7 +231,18 @@ const parseSectionTasks = (
       });
     }
     const recurrence = recurring?.[2] as TaskRecurrence | undefined;
-    const period = recurring?.[3];
+    const schedule: { time?: string; day?: NonNullable<TaskResetSchedule["day"]> } = {};
+    const fields = recurring?.[3] ?? "";
+    const times = [...fields.matchAll(/\[homepage-studio-reset-time:: ([^\]]*)\]/gu)];
+    const days = [...fields.matchAll(/\[homepage-studio-reset-day:: ([^\]]*)\]/gu)];
+    if (times.length > 1 || (times[0] !== undefined && !isTaskResetTime(times[0][1] ?? ""))) {
+      diagnostics.push({ code: "TASK-RECURRING-RESET-TIME", line: line.number, details: "Refresh time must appear once and use HH:mm (00:00–23:59)." });
+    } else if (times[0]?.[1] !== undefined) schedule.time = times[0][1];
+    const day = days[0]?.[1];
+    if (days.length > 1 || (day !== undefined && (recurrence !== "weekly" || !isTaskResetDay(day)))) {
+      diagnostics.push({ code: "TASK-RECURRING-RESET-DAY", line: line.number, details: "Refresh day is only valid for weekly tasks and must appear once as mon–sun." });
+    } else if (day !== undefined && isTaskResetDay(day)) schedule.day = day;
+    const period = recurring?.[4];
     if (period !== undefined && !isTaskDateKey(period)) {
       diagnostics.push({
         code: "TASK-RECURRING-PERIOD",
@@ -268,7 +283,8 @@ const parseSectionTasks = (
       text: recurring?.[1] ?? text,
       completed,
       recurrence: recurrence ?? null,
-      period: period ?? null
+      period: period ?? null,
+      schedule
     });
   }
   return tasks;

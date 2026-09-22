@@ -1,3 +1,4 @@
+import { TASK_RESET_DAYS, isTaskResetDay, type TaskResetSchedule } from "../domain/tasks/taskRecurrence";
 import { attachSettingsAutoSave } from "./SettingsAutoSave";
 import { RecurringTaskDraft } from "./RecurringTaskDraft";
 import {
@@ -312,6 +313,13 @@ export class HomepageSettingsTab extends PluginSettingTab {
             .onChange((value) => {
               this.application.setShowTaskArchiveToggle(value);
             });
+        });
+      new Setting(this.containerEl)
+        .setName(messages.tasksShowRefreshTime)
+        .setDesc(messages.tasksShowRefreshTimeDescription)
+        .addToggle((toggle) => {
+          toggle.setValue(taskSettings.showRefreshTime).setDisabled(!taskSettings.editable)
+            .onChange((value) => this.application.setShowTaskRefreshTime(value));
         });
       this.renderRecurringTaskSettings(taskSettings, messages);
       this.taskStateUnsubscribe = this.application.subscribeTaskSettings(() => {
@@ -3072,6 +3080,52 @@ export class HomepageSettingsTab extends PluginSettingTab {
     }
   }
 
+  private addRecurringScheduleControls(
+    setting: Setting,
+    recurrence: () => TaskRecurrence,
+    getSchedule: () => TaskResetSchedule,
+    setSchedule: (schedule: TaskResetSchedule) => void,
+    editable: boolean,
+    messages: Messages,
+    changed: () => void,
+    flush: () => void = changed
+  ): () => void {
+    let daySelect: HTMLSelectElement | null = null;
+    setting.addDropdown((dropdown) => {
+      daySelect = dropdown.selectEl;
+      dropdown.selectEl.addClass("homepage-studio-recurring-reset-day");
+      const labels = [messages.planWeekdayMonday, messages.planWeekdayTuesday, messages.planWeekdayWednesday,
+        messages.planWeekdayThursday, messages.planWeekdayFriday, messages.planWeekdaySaturday, messages.planWeekdaySunday];
+      TASK_RESET_DAYS.forEach((day, index) => { dropdown.addOption(day, labels[index] ?? day); });
+      dropdown.setValue(getSchedule().day ?? "mon").setDisabled(!editable).onChange((value) => {
+        if (!isTaskResetDay(value)) return;
+        setSchedule({ ...getSchedule(), day: value });
+        changed();
+      });
+      attachAccessibleLabel(dropdown.selectEl, setting.controlEl, messages.tasksResetDay);
+    });
+    setting.addText((text) => {
+      text.setValue(getSchedule().time ?? "00:00").setPlaceholder("00:00").setDisabled(!editable)
+        .onChange((value) => {
+          setSchedule({ ...getSchedule(), time: value });
+          changed();
+        });
+      text.inputEl.addClass("homepage-studio-recurring-reset-time");
+      text.inputEl.inputMode = "numeric";
+      text.inputEl.maxLength = 5;
+      attachAccessibleLabel(text.inputEl, setting.controlEl, messages.tasksResetTime);
+      this.settingsScope?.registerDomEvent(text.inputEl, "blur", flush);
+    });
+    const updateVisibility = (): void => {
+      if (daySelect !== null) {
+        daySelect.hidden = recurrence() !== "weekly";
+        daySelect.value = getSchedule().day ?? "mon";
+      }
+    };
+    updateVisibility();
+    return updateVisibility;
+  }
+
   private renderRecurringTaskSettings(
     settings: TaskSettings,
     messages: Messages
@@ -3092,9 +3146,9 @@ export class HomepageSettingsTab extends PluginSettingTab {
     });
     const diagnostic = settings.diagnostics[0];
     if (diagnostic !== undefined) {
-      error.setText(messages.tasksSourceInvalid
-        .replace("{line}", String(diagnostic.line))
-        .replace("{code}", diagnostic.code));
+      error.setText(diagnostic.code === "TASK-RECURRING-RESET-TIME" ? messages.tasksResetInvalidTime
+        : diagnostic.code === "TASK-RECURRING-RESET-DAY" ? messages.tasksResetInvalidDay
+          : messages.tasksSourceInvalid.replace("{line}", String(diagnostic.line)).replace("{code}", diagnostic.code));
     } else if (settings.recurringConflict) {
       error.setText(messages.tasksConflict);
     } else if (
@@ -3121,6 +3175,8 @@ export class HomepageSettingsTab extends PluginSettingTab {
 
     let newName = "";
     let newRecurrence: TaskRecurrence = "daily";
+    let newSchedule: TaskResetSchedule = {};
+    let updateNewScheduleVisibility = (): void => {};
     let newNameInput: HTMLInputElement | null = null;
     new Setting(region)
       .setName(messages.tasksRecurringCreate)
@@ -3153,6 +3209,8 @@ export class HomepageSettingsTab extends PluginSettingTab {
           .onChange((value) => {
             if (isTaskRecurrence(value)) {
               newRecurrence = value;
+              if (value === "daily") newSchedule = newSchedule.time === undefined ? {} : { time: newSchedule.time };
+              updateNewScheduleVisibility();
             }
           });
         attachAccessibleLabel(
@@ -3160,6 +3218,10 @@ export class HomepageSettingsTab extends PluginSettingTab {
           region,
           messages.tasksRecurringType
         );
+      })
+      .then((setting) => {
+        updateNewScheduleVisibility = this.addRecurringScheduleControls(setting, () => newRecurrence,
+          () => newSchedule, (value) => { newSchedule = value; }, settings.recurringEditable, messages, () => {});
       })
       .addButton((button) => {
         button
@@ -3169,7 +3231,8 @@ export class HomepageSettingsTab extends PluginSettingTab {
             button.setDisabled(true);
             void this.application.addRecurringTask(
               newName.trim(),
-              newRecurrence
+              newRecurrence,
+              newSchedule
             ).then((result) => {
               const description = this.describeTaskMutationResult(
                 result,
@@ -3205,9 +3268,9 @@ export class HomepageSettingsTab extends PluginSettingTab {
         && JSON.stringify(draft.target) === JSON.stringify(task.target));
       if (existing !== undefined) return existing;
       const draft = new RecurringTaskDraft(path, task.target, task.text, task.recurrence, targetWindow,
-        (target, text, recurrence) => this.application.getTaskSettings().filePath === path
-          ? this.application.updateRecurringTask(target, text, recurrence)
-          : Promise.resolve({ type: "missing-source", path }));
+        (target, text, recurrence, schedule) => this.application.getTaskSettings().filePath === path
+          ? this.application.updateRecurringTask(target, text, recurrence, schedule)
+          : Promise.resolve({ type: "missing-source", path }), task.schedule);
       this.recurringDrafts.push(draft);
       return draft;
     });
@@ -3216,6 +3279,7 @@ export class HomepageSettingsTab extends PluginSettingTab {
       if (draft.path === path && !rows.includes(draft)) rows.push(draft);
     }
     for (const draft of rows) {
+      let updateScheduleVisibility = (): void => {};
       const rowError = region.createEl("p", {
         cls: "homepage-studio-recurring-task-error",
         attr: { role: "alert", "aria-live": "polite" }
@@ -3263,10 +3327,17 @@ export class HomepageSettingsTab extends PluginSettingTab {
             .onChange((value) => {
               if (isTaskRecurrence(value)) {
                 draft.recurrence = value;
+                if (value === "daily") draft.refreshSchedule = draft.refreshSchedule.time === undefined ? {} : { time: draft.refreshSchedule.time };
+                updateScheduleVisibility();
                 void draft.flush();
               }
             });
           attachAccessibleLabel(dropdown.selectEl, region, messages.tasksRecurringType);
+        })
+        .then((setting) => {
+          updateScheduleVisibility = this.addRecurringScheduleControls(setting, () => draft.recurrence,
+            () => draft.refreshSchedule, (value) => { draft.refreshSchedule = value; },
+            settings.recurringEditable, messages, () => draft.schedule(), () => { void draft.flush(); });
         })
         .addButton((button) => {
           button.setIcon("x")
@@ -3303,7 +3374,8 @@ export class HomepageSettingsTab extends PluginSettingTab {
       case "noop":
         return "";
       case "invalid-task":
-        return messages.tasksInvalidTask;
+        return result.reason === "invalid-reset-time" ? messages.tasksResetInvalidTime
+          : result.reason === "invalid-reset-day" ? messages.tasksResetInvalidDay : messages.tasksInvalidTask;
       case "conflict":
         return messages.tasksConflict;
       case "invalid-source": {
@@ -3437,7 +3509,8 @@ export class HomepageSettingsTab extends PluginSettingTab {
       case "append-cancelled":
         return messages.tasksAppendCancelled;
       case "invalid-task":
-        return messages.tasksInvalidTask;
+        return result.reason === "invalid-reset-time" ? messages.tasksResetInvalidTime
+          : result.reason === "invalid-reset-day" ? messages.tasksResetInvalidDay : messages.tasksInvalidTask;
       case "conflict":
         return messages.tasksConflict;
       case "noop":

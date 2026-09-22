@@ -17,7 +17,8 @@ const DEFAULT_DATA: PluginData = {
   tasks: {
     filePath: null,
     showCompleted: true,
-    showArchiveToggle: true
+    showArchiveToggle: true,
+    showRefreshTime: false
   },
   plans: {
     activeMode: "daily",
