@@ -2201,15 +2201,17 @@
 .homepage-studio[data-theme="archive-observatory"]
   .homepage-studio-task[data-editing="true"] {
   grid-template-columns: auto minmax(0, 1fr);
-  grid-template-rows: auto auto;
-  align-items: start;
+  grid-template-rows: auto;
+  align-items: center;
 }
 
 .homepage-studio[data-theme="archive-observatory"]
   .homepage-studio-task[data-editing="true"] .homepage-studio-task-body {
   grid-column: 2;
   grid-row: 1;
-  display: block;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
 }
 
 .homepage-studio[data-theme="archive-observatory"]
@@ -2219,9 +2221,12 @@
 
 .homepage-studio[data-theme="archive-observatory"]
   .homepage-studio-task[data-editing="true"] .homepage-studio-task-actions {
-  grid-column: 2;
-  grid-row: 2;
-  justify-self: end;
+  display: none;
+}
+
+.homepage-studio[data-theme="archive-observatory"]
+  .homepage-studio-task[data-editing="true"] input.homepage-studio-task-edit-input {
+  height: 1.5rem;
 }
 
 .homepage-studio[data-theme="archive-observatory"] .homepage-studio-task-status {
