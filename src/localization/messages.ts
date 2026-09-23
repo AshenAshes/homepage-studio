@@ -248,6 +248,7 @@ export interface Messages {
   readonly planPeriodEnd: string;
   readonly planAddPeriod: string;
   readonly planSavePeriod: string;
+  readonly planDragPeriod: string;
   readonly planMoveEarlier: string;
   readonly planMoveLater: string;
   readonly planRemovePeriod: string;

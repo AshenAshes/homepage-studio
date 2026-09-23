@@ -242,6 +242,7 @@
   "planPeriodEnd": "结束",
   "planAddPeriod": "添加时段",
   "planSavePeriod": "保存时段",
+  "planDragPeriod": "拖拽调整时段顺序；聚焦后可按上下方向键移动",
   "planMoveEarlier": "上移",
   "planMoveLater": "下移",
   "planRemovePeriod": "删除时段",

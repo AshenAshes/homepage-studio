@@ -1,3 +1,4 @@
+import { attachPlanPeriodDrag } from "./PlanPeriodDrag";
 import { TASK_RESET_DAYS, isTaskResetDay, type TaskResetSchedule } from "../domain/tasks/taskRecurrence";
 import { attachSettingsAutoSave } from "./SettingsAutoSave";
 import { RecurringTaskDraft } from "./RecurringTaskDraft";
@@ -8,6 +9,7 @@ import {
   PluginSettingTab,
   Setting,
   setTooltip,
+  setIcon,
   TFile,
   type App,
   type Plugin
@@ -114,7 +116,7 @@ interface PlanPeriodOperations {
   readonly update: (
     update: Omit<PlanPeriod, "id">
   ) => DailyPlanMutationResult;
-  readonly move: (offset: -1 | 1) => DailyPlanMutationResult;
+  readonly move: (offset: number) => DailyPlanMutationResult;
   readonly remove: () => DailyPlanMutationResult;
 }
 
@@ -2417,12 +2419,10 @@ export class HomepageSettingsTab extends PluginSettingTab {
         text: messages.planNoPeriods
       });
     }
-    periods.forEach((period, index) => {
+    periods.forEach((period) => {
       this.renderPlanPeriod(
         daySection,
         period,
-        index,
-        periods.length,
         editable,
         messages,
         {
@@ -2567,12 +2567,10 @@ export class HomepageSettingsTab extends PluginSettingTab {
         text: messages.planNoPeriods
       });
     }
-    template.periods.forEach((period, index) => {
+    template.periods.forEach((period) => {
       this.renderPlanPeriod(
         card,
         period,
-        index,
-        template.periods.length,
         settings.editable,
         messages,
         {
@@ -2612,13 +2610,12 @@ export class HomepageSettingsTab extends PluginSettingTab {
   private renderPlanPeriod(
     container: HTMLElement,
     period: PlanPeriod,
-    index: number,
-    periodCount: number,
     editable: boolean,
     messages: Messages,
     operations: PlanPeriodOperations
   ): void {
     const periodInputs: HTMLInputElement[] = [];
+    let flushPeriod = (): boolean => false;
     let label = period.label;
     let start = formatPlanMinute(period.startMinute);
     let end = formatPlanMinute(period.endMinute);
@@ -2627,13 +2624,20 @@ export class HomepageSettingsTab extends PluginSettingTab {
       "homepage-studio-plan-period-setting",
       "homepage-studio-plan-period-existing"
     );
+    const handle = setting.controlEl.createEl("button", {
+      cls: "homepage-studio-plan-period-drag",
+      attr: { type: "button", "aria-label": messages.planDragPeriod }
+    });
+    handle.disabled = !editable;
+    setIcon(handle, "grip-vertical");
+    setTooltip(handle, messages.planDragPeriod);
     const fields = setting.controlEl.createDiv({
       cls: "homepage-studio-plan-period-fields"
     });
     const actions = setting.controlEl.createDiv({
       cls: "homepage-studio-plan-period-actions"
     });
-    const localError = actions.createEl("p", {
+    const localError = setting.settingEl.createEl("p", {
       cls: "homepage-studio-plan-settings-error "
         + "homepage-studio-plan-period-error",
       attr: {
@@ -2694,7 +2698,7 @@ export class HomepageSettingsTab extends PluginSettingTab {
       })
       .then(() => {
         if (this.settingsScope === null) return;
-        attachSettingsAutoSave(periodInputs, this.settingsScope, () => {
+        flushPeriod = attachSettingsAutoSave(periodInputs, this.settingsScope, () => {
           const next = this.parseDailyPeriod(label, start, end);
           const result = next.type === "valid" ? operations.update(next.period) : next;
           if (result.type !== "applied") {
@@ -2707,35 +2711,11 @@ export class HomepageSettingsTab extends PluginSettingTab {
       })
       .addButton((button) => {
         actions.appendChild(button.buttonEl);
-        button
-          .setButtonText(messages.planMoveEarlier)
-          .setDisabled(!editable || index === 0)
-          .onClick(() => {
-            this.handlePlanMutation(
-              operations.move(-1),
-              localError,
-              messages
-            );
-          });
-      })
-      .addButton((button) => {
-        actions.appendChild(button.buttonEl);
-        button
-          .setButtonText(messages.planMoveLater)
-          .setDisabled(!editable || index === periodCount - 1)
-          .onClick(() => {
-            this.handlePlanMutation(
-              operations.move(1),
-              localError,
-              messages
-            );
-          });
-      })
-      .addButton((button) => {
-        actions.appendChild(button.buttonEl);
         button.buttonEl.addClass("mod-warning");
+        button.buttonEl.setAttribute("aria-label", messages.planRemovePeriod);
         button
-          .setButtonText(messages.planRemovePeriod)
+          .setIcon("x")
+          .setTooltip(messages.planRemovePeriod)
           .setDisabled(!editable)
           .onClick(() => {
             this.handlePlanMutation(
@@ -2745,6 +2725,18 @@ export class HomepageSettingsTab extends PluginSettingTab {
             );
           });
       });
+    if (this.settingsScope !== null) {
+      attachPlanPeriodDrag(container, setting.settingEl, handle, this.settingsScope,
+        () => flushPeriod(), (offset) => {
+          const result = operations.move(offset);
+          if (result.type !== "applied") {
+            this.handlePlanMutation(result, localError, messages);
+            return false;
+          }
+          localError.setText("");
+          return true;
+        });
+    }
   }
 
   private renderNewPlanPeriod(

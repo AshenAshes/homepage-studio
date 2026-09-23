@@ -1895,7 +1895,7 @@ export class HomepageApplicationFacade {
     templateId: string,
     day: Weekday,
     periodId: string,
-    offset: -1 | 1
+    offset: number
   ): DailyPlanMutationResult {
     return this.changeWeeklyPlanPeriods(
       templateId,
@@ -1904,15 +1904,9 @@ export class HomepageApplicationFacade {
         const next = [...periods];
         const index = next.findIndex((period) => period.id === periodId);
         const target = index + offset;
-        if (index < 0 || target < 0 || target >= next.length) {
-          return next;
-        }
-        const current = next[index];
-        const adjacent = next[target];
-        if (current !== undefined && adjacent !== undefined) {
-          next[index] = adjacent;
-          next[target] = current;
-        }
+        if (!Number.isInteger(offset) || index < 0 || target < 0 || target >= next.length) return next;
+        const [current] = next.splice(index, 1);
+        if (current !== undefined) next.splice(target, 0, current);
         return next;
       },
       "reorder weekly plan period",
@@ -2165,7 +2159,7 @@ export class HomepageApplicationFacade {
   public moveDailyPlanPeriod(
     templateId: string,
     periodId: string,
-    offset: -1 | 1
+    offset: number
   ): DailyPlanMutationResult {
     return this.changeDailyPlanPeriods(
       templateId,
@@ -2173,16 +2167,9 @@ export class HomepageApplicationFacade {
         const next = [...periods];
         const index = next.findIndex((period) => period.id === periodId);
         const target = index + offset;
-        if (index < 0 || target < 0 || target >= next.length) {
-          return next;
-        }
-        const current = next[index];
-        const adjacent = next[target];
-        if (current === undefined || adjacent === undefined) {
-          return next;
-        }
-        next[index] = adjacent;
-        next[target] = current;
+        if (!Number.isInteger(offset) || index < 0 || target < 0 || target >= next.length) return next;
+        const [current] = next.splice(index, 1);
+        if (current !== undefined) next.splice(target, 0, current);
         return next;
       },
       "reorder daily plan period",

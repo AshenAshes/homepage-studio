@@ -242,6 +242,7 @@
   "planPeriodEnd": "End",
   "planAddPeriod": "Add period",
   "planSavePeriod": "Save period",
+  "planDragPeriod": "Drag to reorder periods; use Up and Down arrow keys when focused",
   "planMoveEarlier": "Move up",
   "planMoveLater": "Move down",
   "planRemovePeriod": "Delete period",

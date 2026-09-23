@@ -2577,49 +2577,82 @@ button.homepage-studio-settings-tab:focus-visible {
   margin-bottom: var(--size-4-2);
 }
 
-.homepage-studio-plan-period-setting .setting-item-control {
-  flex-wrap: wrap;
+.homepage-studio-plan-period-setting {
+  display: block;
+  overflow-x: auto;
 }
 
-.homepage-studio-plan-period-existing .setting-item-info {
+.homepage-studio-plan-period-setting .setting-item-info {
   display: none;
 }
 
-.homepage-studio-plan-period-existing .setting-item-control {
-  display: grid;
+.homepage-studio-plan-period-setting .setting-item-control {
+  display: flex;
   width: 100%;
-  justify-content: stretch;
+  min-width: 22rem;
+  flex-wrap: nowrap;
+  align-items: center;
   gap: var(--size-4-2);
 }
 
 .homepage-studio-plan-period-fields {
   display: grid;
-  width: 100%;
-  grid-template-columns: minmax(0, 1fr) repeat(2, 5.25rem);
-  justify-self: start;
+  min-width: 0;
+  flex: 1;
+  grid-template-columns: minmax(6rem, 1fr) repeat(2, 4.5rem);
   gap: var(--size-4-2);
 }
 
 .homepage-studio-plan-period-actions {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: var(--size-4-2);
+  flex: 0 0 auto;
 }
 
-.homepage-studio-plan-period-actions .homepage-studio-plan-period-error {
-  flex: 1 1 16rem;
-  align-self: center;
-  margin-inline-end: auto;
-  text-align: start;
+.homepage-studio-settings .homepage-studio-plan-period-setting input[type="text"] {
+  width: 4.5rem;
+  min-width: 0;
+  box-sizing: border-box;
+  flex: 0 0 4.5rem;
 }
 
-.homepage-studio-plan-period-setting input {
-  min-width: 5.25rem;
+.homepage-studio-settings .homepage-studio-plan-period-setting input[type="text"]:first-of-type {
+  width: 100%;
+  min-width: 6rem;
+  flex: 1 1 6rem;
 }
 
-.homepage-studio-plan-period-setting input:first-of-type {
-  min-width: 10rem;
+.homepage-studio-settings .homepage-studio-plan-period-setting button {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.homepage-studio-plan-period-setting button.homepage-studio-plan-period-drag,
+.homepage-studio-settings .homepage-studio-plan-period-actions button {
+  width: var(--input-height);
+  padding: 0;
+}
+
+.homepage-studio-plan-period-setting button.homepage-studio-plan-period-drag {
+  color: var(--text-muted);
+  background: transparent;
+  box-shadow: none;
+  cursor: grab;
+}
+
+.homepage-studio-plan-period-existing[data-dragging="true"] {
+  opacity: 0.5;
+}
+
+.homepage-studio-plan-period-existing[data-drop-position="before"] {
+  box-shadow: inset 0 2px var(--interactive-accent);
+}
+
+.homepage-studio-plan-period-existing[data-drop-position="after"] {
+  box-shadow: inset 0 -2px var(--interactive-accent);
+}
+
+.homepage-studio-plan-period-setting > .homepage-studio-plan-period-error {
+  margin-top: var(--size-4-1);
 }
 
 .homepage-studio-plan-delete-warning {
