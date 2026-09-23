@@ -2,6 +2,20 @@
 
 All notable changes to Homepage Studio are documented in this file.
 
+## 1.4.0 — 2026-09-23
+
+### 中文
+
+- 简化任务编辑，设置中的任务、模板、分组名称及计划时段支持自动保存。
+- 周期任务支持自定义刷新星期和时间，并可选择是否显示具体刷新时间。
+- 计划时段支持拖拽排序，优化单行布局和输入校验提示。
+
+### English
+
+- Simplified task editing and added autosave for task, template and group names, and plan periods in settings.
+- Added custom refresh weekdays and times for recurring tasks, with optional schedule labels.
+- Added drag-and-drop ordering for plan periods, with a compact single-row layout and clearer validation messages.
+
 ## 1.3.0 — 2026-09-16
 
 ### 中文
