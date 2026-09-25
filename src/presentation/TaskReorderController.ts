@@ -402,9 +402,58 @@ export const attachTaskReorderController = (
     if (current === null || !current.active || current.slot === null) {
       return;
     }
+    const sourceList = current.source.element.closest<HTMLElement>(
+      ".homepage-studio-task-reorder-list"
+    );
+    const archiveGrid = options.container.closest<HTMLElement>(".homepage-studio")
+      ?.getAttribute("data-theme") === "archive-observatory"
+      && sourceList !== null && targetWindow.getComputedStyle(sourceList).display === "grid";
+    if (archiveGrid) {
+      // Hit-test the visible grid before removing the placeholder shifts its cells.
+      if (containsPoint(current.slot, x, y)) return;
+      const hovered = resolveDrop(x, y, eventTarget);
+      if (hovered.type === "row"
+        && hovered.row.element !== current.source.element
+        && hovered.row.element.closest(".homepage-studio-task-reorder-list") === sourceList
+        && containsPoint(hovered.row.element, x, y)) {
+        const afterSlot = (current.slot.compareDocumentPosition(hovered.row.element)
+          & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
+        current.slot.remove();
+        placeSlot(hovered.row, !afterSlot);
+        return;
+      }
+    }
     current.slot.remove();
     current.drop = null;
     options.container.removeAttribute("data-task-reorder-state");
+    const bounds = sourceList?.getBoundingClientRect();
+    if (bounds && x >= bounds.left && x <= bounds.right) {
+      const candidates = rowsInScope(current.source.scope).filter((row) =>
+        row.element !== current.source.element
+        && row.element.closest(".homepage-studio-task-reorder-list") === sourceList
+      );
+      const first = candidates[0];
+      const last = candidates[candidates.length - 1];
+      if (candidates.length === 0) {
+        current.source.element.parentElement?.insertBefore(current.slot, current.source.element);
+        current.drop = { before: null, position: 1 };
+        options.container.setAttribute("data-task-reorder-state", "active");
+        return;
+      }
+      if (first !== undefined && last !== undefined) {
+        const rectangles = candidates.map((row) => row.element.getBoundingClientRect());
+        const top = Math.min(...rectangles.map((rect) => rect.top));
+        const bottom = Math.max(...rectangles.map((rect) => rect.bottom));
+        if (y < top) {
+          placeSlot(first, true);
+          return;
+        }
+        if (y > bottom) {
+          placeSlot(last, false);
+          return;
+        }
+      }
+    }
     const resolution = resolveDrop(x, y, eventTarget);
     if (resolution.type === "unavailable") {
       return;
