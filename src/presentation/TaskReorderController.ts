@@ -505,13 +505,30 @@ export const attachTaskReorderController = (
     setDrop(x, y, target);
   };
 
+  const getDragScrollContainer = (): HTMLElement => {
+    const archive = drag?.source.scope === "archive"
+      ? drag.source.element.closest<HTMLElement>(".homepage-studio-task-archive-list")
+      : null;
+    return archive !== null && archive.scrollHeight > archive.clientHeight
+      ? archive : scrollContainer;
+  };
+
   const getScrollDirection = (clientY: number): number => {
-    const rect = scrollContainer.getBoundingClientRect();
-    const top = rect.height > 0 ? rect.top : 0;
-    const bottom = rect.height > 0 ? rect.bottom : targetWindow.innerHeight;
-    return clientY < top + 72
+    const scroller = getDragScrollContainer();
+    const rect = scroller.getBoundingClientRect();
+    if (scroller !== scrollContainer && drag !== null
+      && (drag.lastX < rect.left || drag.lastX > rect.right)) return 0;
+    const outer = scrollContainer.getBoundingClientRect();
+    const top = Math.max(0, rect.height > 0 ? rect.top : 0,
+      outer.height > 0 ? outer.top : 0);
+    const bottom = Math.min(targetWindow.innerHeight,
+      rect.height > 0 ? rect.bottom : targetWindow.innerHeight,
+      outer.height > 0 ? outer.bottom : targetWindow.innerHeight);
+    if (bottom <= top) return 0;
+    const edge = Math.min(72, (bottom - top) / 3);
+    return clientY < top + edge
       ? -1
-      : clientY > bottom - 72
+      : clientY > bottom - edge
         ? 1
         : 0;
   };
@@ -526,9 +543,10 @@ export const attachTaskReorderController = (
       clearAutoScroll();
       return;
     }
-    const previous = scrollContainer.scrollTop;
-    scrollContainer.scrollTop += autoScrollDirection * 12;
-    if (scrollContainer.scrollTop === previous) {
+    const scroller = getDragScrollContainer();
+    const previous = scroller.scrollTop;
+    scroller.scrollTop += autoScrollDirection * 12;
+    if (scroller.scrollTop === previous) {
       clearAutoScroll();
       return;
     }
@@ -733,6 +751,26 @@ export const attachTaskReorderController = (
     options.container.ownerDocument,
     "pointercancel",
     handlePointerCancel
+  );
+  options.scope.registerDomEvent(
+    options.container.ownerDocument,
+    "wheel",
+    (event) => {
+      const current = drag;
+      if (current === null || !current.active || current.committing
+        || current.source.scope !== "archive" || event.ctrlKey || event.deltaY === 0) return;
+      const archive = current.source.element.closest<HTMLElement>(".homepage-studio-task-archive-list");
+      if (archive === null) return;
+      // The drag shield intercepts native wheel scrolling. Route it to the archive
+      // even at its limits, so the homepage does not scroll behind the drag.
+      event.preventDefault();
+      event.stopPropagation();
+      clearAutoScroll();
+      const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? archive.clientHeight : 1;
+      archive.scrollTop += event.deltaY * unit;
+      flushDrop(current.lastX, current.lastY, current.lastTarget);
+    },
+    { capture: true, passive: false }
   );
   options.scope.registerDomEvent(
     options.container.ownerDocument,
