@@ -376,6 +376,7 @@
   "fileGroupsRemoveFile": "Remove entry: {path}",
   "fileGroupsReorderFile": "Reorder {path}. Use Alt with arrow, Home, or End keys.",
   "fileGroupsMoveEntryAnnouncement": "Moved {path} to {group}, position {position}.",
+  "fileGroupsDragGroup": "Drag to reorder groups; scroll with the mouse wheel, Escape to cancel, or use arrow keys when focused",
   "fileGroupsMoveGroupUp": "Move group up",
   "fileGroupsMoveGroupDown": "Move group down",
   "fileGroupsMoveFileUp": "Move file up",

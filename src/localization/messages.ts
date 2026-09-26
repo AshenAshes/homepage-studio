@@ -382,6 +382,7 @@ export interface Messages {
   readonly fileGroupsRemoveFile: string;
   readonly fileGroupsReorderFile: string;
   readonly fileGroupsMoveEntryAnnouncement: string;
+  readonly fileGroupsDragGroup: string;
   readonly fileGroupsMoveGroupUp: string;
   readonly fileGroupsMoveGroupDown: string;
   readonly fileGroupsMoveFileUp: string;

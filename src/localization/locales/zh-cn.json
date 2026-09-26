@@ -376,6 +376,7 @@
   "fileGroupsRemoveFile": "移除入口：{path}",
   "fileGroupsReorderFile": "移动 {path}，请使用 Alt 与方向键、Home 或 End 键。",
   "fileGroupsMoveEntryAnnouncement": "已将 {path} 移动到“{group}”第 {position} 位。",
+  "fileGroupsDragGroup": "拖拽调整分组顺序；拖动时可滚轮滚动，按 Esc 取消；聚焦后可用上下键移动",
   "fileGroupsMoveGroupUp": "分组上移",
   "fileGroupsMoveGroupDown": "分组下移",
   "fileGroupsMoveFileUp": "文件上移",

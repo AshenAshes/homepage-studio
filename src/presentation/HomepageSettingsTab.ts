@@ -1,3 +1,4 @@
+import { attachFileGroupDrag } from "./FileGroupDrag";
 import { attachPlanPeriodDrag } from "./PlanPeriodDrag";
 import { TASK_RESET_DAYS, isTaskResetDay, type TaskResetSchedule } from "../domain/tasks/taskRecurrence";
 import { attachSettingsAutoSave } from "./SettingsAutoSave";
@@ -145,7 +146,8 @@ export class HomepageSettingsTab extends PluginSettingTab {
     readonly name: string;
   } | null = null;
   private draggedLayoutModuleId: ModuleId | null = null;
-  private draggedFileGroupId: string | null = null;
+  private fileGroupDragActive = false;
+  private fileGroupRefreshPending = false;
   private fileGroupUndoTimer: number | null = null;
   private settingsScope: Component | null = null;
   private recurringDrafts: RecurringTaskDraft[] = [];
@@ -361,7 +363,8 @@ export class HomepageSettingsTab extends PluginSettingTab {
       this.fileEntryStateUnsubscribe =
         this.application.subscribeFileEntryStates(() => {
           if (this.activeSection === "file-groups") {
-            this.display();
+            if (this.fileGroupDragActive) this.fileGroupRefreshPending = true;
+            else this.display();
           }
         });
     }
@@ -1658,7 +1661,8 @@ export class HomepageSettingsTab extends PluginSettingTab {
       return;
     }
 
-    for (const [groupIndex, group] of settings.groups.entries()) {
+    const groupFlushers: (() => boolean)[] = [];
+    for (const group of settings.groups) {
       const card = region.createEl("section", {
         cls: "homepage-studio-file-group-settings-card",
         attr: {
@@ -1666,76 +1670,16 @@ export class HomepageSettingsTab extends PluginSettingTab {
           "data-file-group-name": group.name
         }
       });
-      const heading = new Setting(card)
-        .setName(group.name)
-        .setHeading()
-        .addButton((button) => {
-          button
-            .setButtonText(messages.fileGroupsMoveGroupUp)
-            .setDisabled(!settings.editable || groupIndex === 0)
-            .onClick(() => {
-              this.handleFileGroupMutation(
-                this.application.moveFileGroup(group.id, -1),
-                error,
-                messages
-              );
-            });
-        })
-        .addButton((button) => {
-          button
-            .setButtonText(messages.fileGroupsMoveGroupDown)
-            .setDisabled(
-              !settings.editable
-              || groupIndex === settings.groups.length - 1
-            )
-            .onClick(() => {
-              this.handleFileGroupMutation(
-                this.application.moveFileGroup(group.id, 1),
-                error,
-                messages
-              );
-            });
-        });
-      const groupDragHandle = heading.settingEl.querySelector<HTMLElement>(
-        ".setting-item-info"
-      );
-      if (groupDragHandle !== null) {
-        groupDragHandle.draggable = settings.editable;
+      const heading = new Setting(card).setName(group.name).setHeading();
+      const groupDragHandle = heading.settingEl;
+      if (settings.editable) {
         groupDragHandle.addClass("homepage-studio-file-group-drag-handle");
-        scope.registerDomEvent(groupDragHandle, "dragstart", (event) => {
-          this.draggedFileGroupId = group.id;
-          event.dataTransfer?.setData("text/plain", group.id);
-          if (event.dataTransfer !== null) {
-            event.dataTransfer.effectAllowed = "move";
-          }
-        });
-        scope.registerDomEvent(groupDragHandle, "dragend", () => {
-          this.draggedFileGroupId = null;
-        });
+        groupDragHandle.setAttribute("role", "button");
+        groupDragHandle.setAttribute("tabindex", "0");
+        groupDragHandle.setAttribute("aria-label", messages.fileGroupsDragGroup);
+        groupDragHandle.setAttribute("aria-keyshortcuts", "ArrowUp ArrowDown");
+        setTooltip(groupDragHandle, messages.fileGroupsDragGroup);
       }
-      scope.registerDomEvent(card, "dragover", (event) => {
-        if (
-          this.draggedFileGroupId !== null
-          && this.draggedFileGroupId !== group.id
-        ) {
-          event.preventDefault();
-        }
-      });
-      scope.registerDomEvent(card, "drop", (event) => {
-        const sourceId = this.draggedFileGroupId;
-        if (sourceId === null || sourceId === group.id) {
-          return;
-        }
-        event.preventDefault();
-        this.draggedFileGroupId = null;
-        this.moveFileGroupTo(
-          settings,
-          sourceId,
-          group.id,
-          error,
-          messages
-        );
-      });
       const localError = card.createEl("p", {
         cls: "homepage-studio-file-group-settings-error",
         attr: {
@@ -1758,7 +1702,7 @@ export class HomepageSettingsTab extends PluginSettingTab {
             });
         })
         .then(() => {
-          attachSettingsAutoSave(nameInputs, scope, () => {
+          groupFlushers.push(attachSettingsAutoSave(nameInputs, scope, () => {
             const result = this.application.renameFileGroup(group.id, nextName);
             if (result.type !== "applied" && result.type !== "noop") {
               this.handleFileGroupMutation(result, localError, messages);
@@ -1768,7 +1712,7 @@ export class HomepageSettingsTab extends PluginSettingTab {
             card.setAttribute("data-file-group-name", nextName.trim());
             localError.setText("");
             return true;
-          }, () => localError.setText(""));
+          }, () => localError.setText("")));
         })
         .addButton((button) => {
           button.buttonEl.addClass("mod-warning");
@@ -1935,6 +1879,35 @@ export class HomepageSettingsTab extends PluginSettingTab {
         card.querySelector<HTMLInputElement>("input")?.focus();
       }
     }
+    if (settings.editable) {
+      attachFileGroupDrag({
+        container: region, scope,
+        prepare: () => groupFlushers.every((flush) => flush()),
+        move: (id, offset) => {
+          const result = this.application.moveFileGroup(id, offset);
+          if (result.type !== "applied" && result.type !== "noop") {
+            this.handleFileGroupMutation(result, error, messages);
+            return false;
+          }
+          return true;
+        },
+        onActive: (active) => {
+          this.fileGroupDragActive = active;
+          if (!active && this.fileGroupRefreshPending && this.settingsScope !== null) {
+            this.fileGroupRefreshPending = false;
+            this.containerEl.ownerDocument.defaultView?.setTimeout(() => {
+              if (this.settingsScope !== scope || this.activeSection !== "file-groups") return;
+              const scrollers: { element: HTMLElement; top: number }[] = [];
+              for (let element: HTMLElement | null = this.containerEl; element !== null; element = element.parentElement) {
+                scrollers.push({ element, top: element.scrollTop });
+              }
+              this.display();
+              for (const { element, top } of scrollers) element.scrollTop = top;
+            }, 0);
+          }
+        }
+      });
+    }
     attachFileEntryReorderController({
       container: region,
       scope,
@@ -1995,40 +1968,6 @@ export class HomepageSettingsTab extends PluginSettingTab {
       blocked: messages.fileGroupsUnavailable
     };
     error.setText(messageByResult[result.type]);
-  }
-
-  private moveFileGroupTo(
-    settings: FileGroupSettings,
-    sourceId: string,
-    targetId: string,
-    error: HTMLElement,
-    messages: Messages
-  ): void {
-    const sourceIndex = settings.groups.findIndex(
-      (group) => group.id === sourceId
-    );
-    const targetIndex = settings.groups.findIndex(
-      (group) => group.id === targetId
-    );
-    if (sourceIndex < 0 || targetIndex < 0 || sourceIndex === targetIndex) {
-      return;
-    }
-    const offset = sourceIndex < targetIndex ? 1 : -1;
-    let result: FileGroupMutationResult = {
-      type: "applied",
-      id: sourceId
-    };
-    for (
-      let step = 0;
-      step < Math.abs(targetIndex - sourceIndex);
-      step += 1
-    ) {
-      result = this.application.moveFileGroup(sourceId, offset);
-      if (result.type !== "applied") {
-        break;
-      }
-    }
-    this.handleFileGroupMutation(result, error, messages);
   }
 
   private renderFileGroupEntryReplacement(

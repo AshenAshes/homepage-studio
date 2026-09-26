@@ -7,7 +7,7 @@ export type FileGroupMutationIssue =
   | "invalid-name"
   | "duplicate-path";
 
-export type FileGroupMoveOffset = -1 | 1;
+export type FileGroupMoveOffset = number;
 
 export type ReplaceFileGroupEntryPathResult =
   | {
@@ -73,7 +73,8 @@ const moveItem = <Item extends { readonly id: string }>(
   const sourceIndex = items.findIndex((item) => item.id === id);
   const targetIndex = sourceIndex + offset;
   if (
-    sourceIndex < 0
+    !Number.isInteger(offset)
+    || sourceIndex < 0
     || targetIndex < 0
     || targetIndex >= items.length
   ) {
