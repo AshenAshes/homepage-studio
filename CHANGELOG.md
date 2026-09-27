@@ -2,6 +2,22 @@
 
 All notable changes to Homepage Studio are documented in this file.
 
+## 1.5.0 — 2026-09-27
+
+### 中文
+
+- 新增可视化布局编辑，支持拖拽调整模块位置、宽度及显示状态，并实时预览各主题布局。
+- 文件分组支持拖拽排序和滚轮滚动，优化分组内文件显示。
+- 改进任务拖拽定位与归档列表滚动，修复任务编辑对齐问题。
+- 修复布局预览高亮、恢复默认及浅色模式文字显示，简化布局设置操作。
+
+### English
+
+- Added a visual layout editor with drag-and-drop positioning, width controls, visibility toggles, and live theme previews.
+- Added drag-and-drop ordering and wheel scrolling for file groups, with more compact file rows.
+- Improved task drop positioning and archived-list scrolling, and fixed task editor alignment.
+- Fixed layout preview highlights, repeated layout resets, and light-mode text visibility, and simplified layout controls.
+
 ## 1.4.0 — 2026-09-23
 
 ### 中文
