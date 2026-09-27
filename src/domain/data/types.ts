@@ -14,7 +14,15 @@ export type ModuleId =
   | "file-groups";
 export type ModuleSize = "compact" | "standard" | "expanded";
 
+export interface LayoutColumn {
+  readonly size: ModuleSize;
+  readonly modules: readonly ModuleId[];
+}
+export interface LayoutRow {
+  readonly columns: readonly LayoutColumn[];
+}
 export interface Layout {
+  readonly board?: { readonly version: 1; readonly rows: readonly LayoutRow[] };
   readonly moduleOrder: readonly ModuleId[];
   readonly hiddenModules: readonly ModuleId[];
   readonly sizes: Readonly<Partial<Record<ModuleId, ModuleSize>>>;

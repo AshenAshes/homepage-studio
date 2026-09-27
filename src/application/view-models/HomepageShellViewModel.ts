@@ -1,3 +1,4 @@
+import type { Layout } from "../../domain/data/types";
 import { TASK_RESET_DAYS } from "../../domain/tasks/taskRecurrence";
 import type { TaskTextValidationReason } from "../../domain/tasks/taskOperations";
 import type { LocalTimeSnapshot } from "../ports/Clock";
@@ -310,6 +311,7 @@ HomepageModuleViewModel["fileGroups"]
 >;
 
 export interface HomepageShellViewModel {
+  readonly layout?: Layout;
   readonly theme: PluginData["theme"];
   readonly appearanceMode: PluginData["appearanceMode"];
   readonly title: string;
@@ -1435,6 +1437,7 @@ export const createHomepageShellViewModel = (
   });
   return {
     ...shell,
+    layout,
     banner: {
       ...shell.banner,
       visible: layout.bannerVisible

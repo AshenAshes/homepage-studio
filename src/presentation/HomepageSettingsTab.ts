@@ -1,3 +1,4 @@
+import { renderLayoutEditor } from "./LayoutEditor";
 import { attachFileGroupDrag } from "./FileGroupDrag";
 import { attachPlanPeriodDrag } from "./PlanPeriodDrag";
 import { TASK_RESET_DAYS, isTaskResetDay, type TaskResetSchedule } from "../domain/tasks/taskRecurrence";
@@ -57,7 +58,6 @@ import type {
   DailyTemplate,
   BannerTheme,
   ModuleId,
-  ModuleSize,
   PlanPeriod,
   ThemeId,
   Weekday,
@@ -98,9 +98,6 @@ const isAppearanceMode = (
 ): value is "auto" | "light" | "dark" =>
   value === "auto" || value === "light" || value === "dark";
 
-const isModuleSize = (value: string): value is ModuleSize =>
-  value === "compact" || value === "standard" || value === "expanded";
-
 const isTaskRecurrence = (value: string): value is TaskRecurrence =>
   value === "daily" || value === "weekly";
 
@@ -138,14 +135,12 @@ export class HomepageSettingsTab extends PluginSettingTab {
   private pendingFileGroupFocusId: string | null = null;
   private pendingFileEntryFocusId: string | null = null;
   private pendingFileEntryAnnouncement: string | null = null;
-  private pendingLayoutModuleFocusId: ModuleId | null = null;
   private pendingLayoutControlFocus:
     "theme" | "appearance" | "banner" | "reset" | null = null;
   private pendingSettingsSearchFocus: {
     readonly section: HomepageSettingsSection;
     readonly name: string;
   } | null = null;
-  private draggedLayoutModuleId: ModuleId | null = null;
   private fileGroupDragActive = false;
   private fileGroupRefreshPending = false;
   private fileGroupUndoTimer: number | null = null;
@@ -911,7 +906,6 @@ export class HomepageSettingsTab extends PluginSettingTab {
               result,
               error,
               messages,
-              null,
               "theme"
             );
           });
@@ -936,7 +930,6 @@ export class HomepageSettingsTab extends PluginSettingTab {
                 this.application.setHomepageAppearanceMode(value),
                 error,
                 messages,
-                null,
                 "appearance"
               );
             }
@@ -969,7 +962,6 @@ export class HomepageSettingsTab extends PluginSettingTab {
                 this.application.setLayoutBannerVisible(value),
                 error,
                 messages,
-                null,
                 "banner"
               );
             });
@@ -981,138 +973,20 @@ export class HomepageSettingsTab extends PluginSettingTab {
       .setDesc(messages.layoutModulesDescription)
       .setHeading();
 
-    for (
-      const [moduleIndex, moduleId]
-      of settings.layout.moduleOrder.entries()
-    ) {
-      const card = region.createEl("section", {
-        cls: "homepage-studio-layout-module-card",
-        attr: {
-          "data-layout-module-id": moduleId,
-          "data-visible": (
-            !settings.layout.hiddenModules.includes(moduleId)
-          ).toString()
-        }
-      });
-      const heading = new Setting(card)
-        .setName(this.getLayoutModuleLabel(moduleId, messages))
-        .setHeading()
-        .addButton((button) => {
-          button
-            .setButtonText(messages.layoutMoveUp)
-            .setDisabled(!settings.editable || moduleIndex === 0)
-            .onClick(() => {
-              this.handleLayoutMutation(
-                this.application.moveLayoutModule(moduleId, -1),
-                error,
-                messages,
-                moduleId
-              );
-            });
-        })
-        .addButton((button) => {
-          button
-            .setButtonText(messages.layoutMoveDown)
-            .setDisabled(
-              !settings.editable
-              || moduleIndex === settings.layout.moduleOrder.length - 1
-            )
-            .onClick(() => {
-              this.handleLayoutMutation(
-                this.application.moveLayoutModule(moduleId, 1),
-                error,
-                messages,
-                moduleId
-              );
-            });
-        });
-      const dragHandle = heading.settingEl.querySelector<HTMLElement>(
-        ".setting-item-info"
-      );
-      if (dragHandle !== null) {
-        dragHandle.draggable = settings.editable;
-        dragHandle.addClass("homepage-studio-layout-drag-handle");
-        scope.registerDomEvent(dragHandle, "dragstart", (event) => {
-          this.draggedLayoutModuleId = moduleId;
-          event.dataTransfer?.setData("text/plain", moduleId);
-          if (event.dataTransfer !== null) {
-            event.dataTransfer.effectAllowed = "move";
-          }
-        });
-        scope.registerDomEvent(dragHandle, "dragend", () => {
-          this.draggedLayoutModuleId = null;
-        });
+    let enableLayoutReset = (): void => {};
+    const homepageWidth = this.app.workspace.containerEl.querySelector<HTMLElement>(".homepage-studio")?.clientWidth ?? 1200;
+    renderLayoutEditor(region, {
+      scope, theme: settings.theme, appearance: settings.appearanceMode, layout: settings.layout,
+      editable: settings.editable, messages, width: homepageWidth || 1200,
+      label: (module) => this.getLayoutModuleLabel(module, messages),
+      save: (layout) => {
+        const result = this.application.setLayoutBoard(layout, settings.theme);
+        if (result.type !== "applied") { error.setText(messages.layoutUnavailable); return false; }
+        error.setText("");
+        enableLayoutReset();
+        return true;
       }
-      scope.registerDomEvent(card, "dragover", (event) => {
-        if (
-          this.draggedLayoutModuleId !== null
-          && this.draggedLayoutModuleId !== moduleId
-        ) {
-          event.preventDefault();
-        }
-      });
-      scope.registerDomEvent(card, "drop", (event) => {
-        const sourceId = this.draggedLayoutModuleId;
-        if (sourceId === null || sourceId === moduleId) {
-          return;
-        }
-        event.preventDefault();
-        this.draggedLayoutModuleId = null;
-        this.moveLayoutModuleTo(
-          settings,
-          sourceId,
-          moduleId,
-          error,
-          messages
-        );
-      });
-
-      new Setting(card)
-        .setName(messages.layoutModuleVisible)
-        .addToggle((toggle) => {
-          toggle
-            .setValue(!settings.layout.hiddenModules.includes(moduleId))
-            .setDisabled(!settings.editable)
-            .onChange((value) => {
-              this.handleLayoutMutation(
-                this.application.setLayoutModuleVisibility(moduleId, value),
-                error,
-                messages,
-                moduleId
-              );
-            });
-        });
-      if (settings.theme !== "archive-observatory") {
-        new Setting(card)
-          .setName(messages.layoutModuleSize)
-          .addDropdown((dropdown) => {
-            dropdown
-              .addOption("compact", messages.layoutSizeCompact)
-              .addOption("standard", messages.layoutSizeStandard)
-              .addOption("expanded", messages.layoutSizeExpanded)
-              .setValue(settings.layout.sizes[moduleId] ?? "standard")
-              .setDisabled(!settings.editable)
-              .onChange((value) => {
-                if (isModuleSize(value)) {
-                  this.handleLayoutMutation(
-                    this.application.setLayoutModuleSize(moduleId, value),
-                    error,
-                    messages,
-                    moduleId
-                  );
-                }
-              });
-          });
-      }
-
-      if (this.pendingLayoutModuleFocusId === moduleId) {
-        this.pendingLayoutModuleFocusId = null;
-        card.scrollIntoView?.({ block: "nearest" });
-        card.querySelector<HTMLElement>(
-          "button:not([disabled]), select:not([disabled]), input:not([disabled])"
-        )?.focus();
-      }
-    }
+    });
 
     new Setting(region)
       .then((setting) => {
@@ -1121,6 +995,7 @@ export class HomepageSettingsTab extends PluginSettingTab {
       .setName(messages.layoutRestoreDefault)
       .setDesc(messages.layoutRestoreDefaultDescription)
       .addButton((button) => {
+        enableLayoutReset = () => { button.setDisabled(!settings.editable); };
         button
           .setButtonText(messages.layoutRestoreDefault)
           .setDisabled(!settings.editable || !settings.hasOverride)
@@ -1134,7 +1009,6 @@ export class HomepageSettingsTab extends PluginSettingTab {
               result,
               error,
               messages,
-              null,
               "reset"
             );
           });
@@ -1181,12 +1055,10 @@ export class HomepageSettingsTab extends PluginSettingTab {
     result: LayoutMutationResult,
     error: HTMLElement,
     messages: Messages,
-    focusId: ModuleId | null = null,
     focusControl:
       "theme" | "appearance" | "banner" | "reset" | null = null
   ): void {
     if (result.type === "applied") {
-      this.pendingLayoutModuleFocusId = focusId;
       this.pendingLayoutControlFocus = focusControl;
       this.refreshSettings();
       return;
@@ -1195,33 +1067,6 @@ export class HomepageSettingsTab extends PluginSettingTab {
       return;
     }
     error.setText(messages.layoutUnavailable);
-  }
-
-  private moveLayoutModuleTo(
-    settings: LayoutSettings,
-    sourceId: ModuleId,
-    targetId: ModuleId,
-    error: HTMLElement,
-    messages: Messages
-  ): void {
-    const sourceIndex = settings.layout.moduleOrder.indexOf(sourceId);
-    const targetIndex = settings.layout.moduleOrder.indexOf(targetId);
-    if (sourceIndex < 0 || targetIndex < 0 || sourceIndex === targetIndex) {
-      return;
-    }
-    const offset = sourceIndex < targetIndex ? 1 : -1;
-    let result: LayoutMutationResult = { type: "applied" };
-    for (
-      let step = 0;
-      step < Math.abs(targetIndex - sourceIndex);
-      step += 1
-    ) {
-      result = this.application.moveLayoutModule(sourceId, offset);
-      if (result.type !== "applied") {
-        break;
-      }
-    }
-    this.handleLayoutMutation(result, error, messages, sourceId);
   }
 
   private renderBannerSettings(

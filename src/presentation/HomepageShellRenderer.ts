@@ -1,3 +1,5 @@
+import { renderLayoutBoard } from "./LayoutBoard";
+import { getDefaultLayout } from "../domain/layout/layout";
 import type { TaskTextValidationReason } from "../domain/tasks/taskOperations";
 import { attachTaskNameEditor } from "./TaskNameEditor";
 import {
@@ -2837,15 +2839,13 @@ export const renderHomepageShell = (
     modules.prepend(backgroundArt);
   }
   attachAccessibleLabel(modules, modules, viewModel.modulesLabel);
-  for (const module of viewModel.modules) {
-    renderModule(
-      modules,
-      module,
-      actions,
-      scope,
-      viewModel.theme,
-      container
-    );
+  renderLayoutBoard(modules, viewModel.layout ?? getDefaultLayout(viewModel.theme), (parent, id) => {
+    const module = viewModel.modules.find((item) => item.id === id);
+    if (module !== undefined) renderModule(parent, module, actions, scope, viewModel.theme, container);
+  });
+  let ordinal = 0;
+  for (const marker of modules.querySelectorAll<HTMLElement>(".homepage-studio-module-title-marker")) {
+    marker.setAttribute("data-layout-number", String(++ordinal).padStart(2, "0"));
   }
   if (viewModel.theme === "cosmic-cartography") {
     const bottomArt = shell.createDiv({

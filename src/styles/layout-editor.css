@@ -1,0 +1,262 @@
+.homepage-studio-layout-editor {
+  display: grid;
+  gap: var(--size-4-3);
+}
+
+.homepage-studio-layout-editor-toolbar,
+.homepage-studio-layout-editor-inspector,
+.homepage-studio-layout-hidden {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--size-4-2);
+}
+
+.homepage-studio-layout-editor-status {
+  min-height: 1.5em;
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+}
+
+.homepage-studio-layout-editor-inspector button[aria-pressed="true"] {
+  box-shadow: inset 0 0 0 1px var(--interactive-accent);
+}
+
+.homepage-studio-layout-hidden {
+  min-height: 3rem;
+  padding: var(--size-4-2);
+  border: 1px dashed var(--background-modifier-border);
+}
+
+.homepage-studio-layout-preview-viewport {
+  position: relative;
+  height: var(--layout-preview-height, 30rem);
+  overflow: hidden;
+  border: 1px solid var(--background-modifier-border);
+}
+
+.homepage-studio.homepage-studio-layout-preview {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--layout-preview-width, 1200px);
+  height: auto;
+  min-height: 0;
+  overflow: visible;
+  box-sizing: border-box;
+  transform: scale(var(--layout-preview-scale, 1));
+  transform-origin: top left;
+}
+
+.homepage-studio-layout-preview .homepage-studio-layout-banner-sample {
+  display: flex;
+  min-height: 8rem;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: var(--size-4-6);
+  padding: var(--size-4-6);
+  color: var(--homepage-text);
+  background: var(--homepage-surface);
+}
+
+.homepage-studio-layout-preview .homepage-studio-layout-preview-module {
+  position: relative;
+}
+
+.homepage-studio-layout-preview .homepage-studio-layout-preview-module .homepage-studio-module-title {
+  color: var(--homepage-text);
+  font-size: calc(16px / var(--layout-preview-scale, 1));
+  line-height: 1.35;
+}
+
+.homepage-studio-layout-drop-zone {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  box-sizing: border-box;
+  border: 2px dashed var(--homepage-focus);
+  background: color-mix(in srgb, var(--homepage-focus) 12%, transparent);
+  color: var(--homepage-text);
+  pointer-events: none;
+}
+
+.homepage-studio-layout-drop-label {
+  display: inline-block;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: var(--size-4-1) var(--size-4-2);
+  color: var(--homepage-text);
+  background: var(--homepage-page);
+  font-size: calc(14px / var(--layout-preview-scale, 1));
+  line-height: 1.4;
+}
+
+.homepage-studio-layout-preview-module[data-selected="true"] {
+  outline: 2px solid var(--homepage-focus);
+  outline-offset: -2px;
+}
+
+.homepage-studio-layout-preview-module[data-preview-moving="true"] {
+  outline: none;
+}
+
+.homepage-studio-layout-move-controls {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--size-4-2);
+  overflow-x: auto;
+  padding-block: var(--size-4-1);
+}
+
+.homepage-studio-layout-move-description,
+.homepage-studio-layout-move-controls > button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.homepage-studio-layout-move-select {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.homepage-studio-layout-move-select[hidden] {
+  display: none;
+}
+
+.homepage-studio-layout-move-select select {
+  max-width: 16rem;
+  padding-inline-end: 1.75rem;
+  appearance: none;
+  background-image: none;
+}
+
+.homepage-studio-layout-move-select::before,
+.homepage-studio-layout-move-select::after {
+  position: absolute;
+  z-index: 1;
+  right: 0.65rem;
+  width: 0.3rem;
+  height: 0.3rem;
+  border-right: 1px solid var(--text-muted);
+  border-bottom: 1px solid var(--text-muted);
+  content: "";
+  pointer-events: none;
+}
+
+.homepage-studio-layout-move-select::before {
+  top: calc(50% - 0.25rem);
+  transform: rotate(225deg);
+}
+
+.homepage-studio-layout-move-select::after {
+  top: calc(50% + 0.05rem);
+  transform: rotate(45deg);
+}
+
+.homepage-studio-layout-preview-module[data-preview-origin="true"] {
+  outline: 2px dashed var(--homepage-focus);
+  outline-offset: -2px;
+  box-shadow: inset 0 0 0 2px var(--homepage-focus);
+}
+
+.homepage-studio-layout-preview [data-layout-drag-module] {
+  cursor: grab;
+  user-select: none;
+}
+
+.homepage-studio-layout-editor[data-dragging="true"] {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.homepage-studio-layout-preview .homepage-studio-layout-module-hide {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  color: var(--homepage-muted);
+  background: var(--homepage-page);
+}
+
+.homepage-studio-layout-preview .homepage-studio-layout-resize {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 2rem;
+  height: 1.75rem;
+  padding: 0;
+  color: var(--homepage-focus);
+  background: var(--homepage-page);
+  cursor: ew-resize;
+}
+
+.homepage-studio-layout-sample {
+  display: grid;
+  align-content: start;
+  gap: 0.9rem;
+  padding-block: 1rem;
+  min-height: 8rem;
+}
+
+.homepage-studio-layout-sample-mark {
+  display: block;
+  min-height: 0.55rem;
+  background: var(--homepage-border);
+}
+
+.homepage-studio-layout-sample-journal .homepage-studio-layout-sample-mark {
+  min-height: 1.2rem;
+  background: transparent;
+  border-bottom: 1px solid var(--homepage-border);
+}
+
+.homepage-studio-layout-sample-heatmap {
+  grid-template-columns: repeat(28, minmax(0, 1fr));
+  gap: 0.2rem;
+}
+
+.homepage-studio-layout-sample-heatmap .homepage-studio-layout-sample-mark {
+  aspect-ratio: 1;
+  min-height: 0;
+}
+
+
+.homepage-studio-layout-sample-file-groups {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.homepage-studio-layout-sample-file-groups .homepage-studio-layout-sample-mark {
+  min-height: 3rem;
+}
+
+.homepage-studio-layout-sample-tasks .homepage-studio-layout-sample-mark {
+  min-height: 1.5rem;
+  border-left: 1rem solid var(--homepage-focus);
+  opacity: 0.5;
+}
+
+
+.homepage-studio-layout-preview .homepage-studio-layout-preview-module:focus-within {
+  outline: 2px solid var(--homepage-focus);
+  outline-offset: -2px;
+}
+
+
+.homepage-studio-layout-sample-heatmap .homepage-studio-layout-sample-mark:nth-child(3n) {
+  background: var(--homepage-focus);
+  opacity: 0.4;
+}
+
+
+.homepage-studio-layout-empty-canvas {
+  min-height: 14rem;
+  display: grid;
+  place-items: center;
+  padding: var(--size-4-4);
+  border: 1px dashed var(--homepage-border);
+  color: var(--homepage-muted);
+}

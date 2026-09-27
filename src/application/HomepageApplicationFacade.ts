@@ -2316,6 +2316,11 @@ export class HomepageApplicationFacade {
     );
   }
 
+  public setLayoutBoard(layout: Layout, expectedTheme: ThemeId): LayoutMutationResult {
+    if (this.store.selectReadyScalar((data) => data.theme) !== expectedTheme) return { type: "blocked" };
+    return this.changeCurrentLayout(() => structuredClone(layout), "edit visual layout");
+  }
+
   public setLayoutModuleSize(
     module: ModuleId,
     size: ModuleSize

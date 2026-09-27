@@ -1,0 +1,128 @@
+.homepage-studio .homepage-studio-modules[data-layout-board="true"] {
+  display: flex;
+  flex-direction: column;
+}
+
+.homepage-studio .homepage-studio-layout-row {
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--size-4-6);
+  align-items: start;
+}
+
+.homepage-studio .homepage-studio-layout-column {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--size-4-6);
+}
+
+.homepage-studio:not([data-theme="minimal-paper"], [data-theme="archive-observatory"]) .homepage-studio-layout-row {
+  align-items: stretch;
+}
+
+.homepage-studio:not([data-theme="minimal-paper"], [data-theme="archive-observatory"]) .homepage-studio-layout-column > .homepage-studio-module {
+  flex: 1 0 auto;
+}
+
+.homepage-studio .homepage-studio-layout-column[data-width="compact"] {
+  grid-column: span 5;
+}
+
+.homepage-studio .homepage-studio-layout-column[data-width="standard"] {
+  grid-column: span 7;
+}
+
+.homepage-studio .homepage-studio-layout-column[data-width="expanded"] {
+  grid-column: 1 / -1;
+}
+
+
+.homepage-studio[data-theme] .homepage-studio-layout-column > .homepage-studio-module[data-module][data-size] {
+  width: 100%;
+  box-sizing: border-box;
+  grid-column: auto;
+  grid-row: auto;
+}
+
+.homepage-studio[data-theme="archive-observatory"] .homepage-studio-layout-row {
+  display: flex;
+  gap: 5%;
+}
+
+.homepage-studio[data-theme="archive-observatory"] .homepage-studio-layout-column {
+  gap: 6.25rem;
+}
+
+.homepage-studio[data-theme="archive-observatory"] .homepage-studio-layout-column[data-width="compact"] {
+  width: 35%;
+}
+
+.homepage-studio[data-theme="archive-observatory"] .homepage-studio-layout-column[data-width="standard"] {
+  width: 60%;
+}
+
+.homepage-studio[data-theme="archive-observatory"] .homepage-studio-layout-column[data-width="expanded"] {
+  width: 100%;
+}
+
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-layout-row,
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-layout-column {
+  gap: 1px;
+}
+
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-modules[data-layout-board="true"] {
+  background: transparent;
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-layout-row {
+  background: var(--homepage-cosmic-border);
+}
+
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-module-title-marker[data-layout-number]::before {
+  content: attr(data-layout-number);
+}
+
+.homepage-studio[data-theme="celestial-orbit"] .homepage-studio-module-title-marker[data-layout-number]::before {
+  content: attr(data-layout-number) " /";
+}
+
+@container homepage-studio (max-width: 1023px) {
+  .homepage-studio[data-theme="watercolor-journal"] .homepage-studio-layout-row {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .homepage-studio[data-theme="watercolor-journal"] .homepage-studio-layout-column[data-width] {
+    width: 100%;
+  }
+
+}
+
+@container homepage-studio (max-width: 899px) {
+  .homepage-studio:is([data-theme="minimal-paper"], [data-theme="celestial-orbit"], [data-theme="archive-observatory"], [data-theme="cosmic-cartography"]) .homepage-studio-layout-row {
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-4-6);
+  }
+
+  .homepage-studio:is([data-theme="minimal-paper"], [data-theme="celestial-orbit"], [data-theme="archive-observatory"], [data-theme="cosmic-cartography"]) .homepage-studio-layout-column[data-width] {
+    width: 100%;
+  }
+
+}
+
+@container homepage-studio (max-width: 719px) {
+  .homepage-studio .homepage-studio-layout-row {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .homepage-studio .homepage-studio-layout-column[data-width] {
+    width: 100%;
+  }
+
+}

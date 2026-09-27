@@ -242,7 +242,7 @@ export const validatePluginDataShape = (
         value,
         path,
         ["moduleOrder", "hiddenModules", "sizes", "bannerVisible"],
-        ["moduleOrder", "hiddenModules", "sizes", "bannerVisible"]
+        ["moduleOrder", "hiddenModules", "sizes", "bannerVisible", "board"]
       );
       if (layout === undefined) {
         continue;
@@ -280,6 +280,41 @@ export const validatePluginDataShape = (
             childPath(childPath(path, "sizes"), module),
             new Set(["compact", "standard", "expanded"])
           );
+        }
+      }
+      if (layout.board !== undefined) {
+        const boardPath = childPath(path, "board");
+        const board = object(layout.board, boardPath, ["version", "rows"], ["version", "rows"]);
+        if (board !== undefined) {
+          if (board.version !== 1) error(boardPath, "unsupported layout board version");
+          const rows = array(board.rows, childPath(boardPath, "rows"));
+          const seen: unknown[] = [];
+          if (rows && (rows.length < 1 || rows.length > 5)) error(boardPath, "must contain 1 to 5 rows");
+          for (const [rowIndex, value] of (rows ?? []).entries()) {
+            const rowPath = `${boardPath}/rows/${rowIndex}`;
+            const row = object(value, rowPath, ["columns"], ["columns"]);
+            if (!row) continue;
+            const columns = array(row.columns, `${rowPath}/columns`);
+            if (columns && (columns.length < 1 || columns.length > 2)) error(rowPath, "must contain 1 or 2 columns");
+            let width = 0;
+            for (const [columnIndex, columnValue] of (columns ?? []).entries()) {
+              const columnPath = `${rowPath}/columns/${columnIndex}`;
+              const column = object(columnValue, columnPath, ["size", "modules"], ["size", "modules"]);
+              if (!column) continue;
+              enumeration(column.size, `${columnPath}/size`, new Set(["compact", "standard", "expanded"]));
+              width += column.size === "compact" ? 5 : column.size === "standard" ? 7 : 12;
+              const members = array(column.modules, `${columnPath}/modules`);
+              if (members && members.length === 0) error(columnPath, "column must contain modules");
+              for (const member of members ?? []) {
+                enumeration(member, columnPath, MODULES);
+                seen.push(member);
+                if (sizes && typeof member === "string" && sizes[member] !== column.size) error(columnPath, "module size must match its column");
+              }
+            }
+            if (width > 12) error(rowPath, "columns exceed row width");
+          }
+          unique(seen, boardPath);
+          if (seen.length !== 5 || JSON.stringify(seen) !== JSON.stringify(order)) error(boardPath, "board must contain all modules in moduleOrder");
         }
       }
       boolean(layout.bannerVisible, childPath(path, "bannerVisible"));
