@@ -2,6 +2,42 @@
 
 All notable changes to Homepage Studio are documented in this file.
 
+## 1.6.0 — 2026-10-16
+
+### 更新内容
+
+#### 新增
+
+- 新增任务归档日期记录与显示，可在设置中开启或关闭。
+
+#### 改进
+
+- 新增和编辑任务时，输入框随内容自动换行增高。
+- 优化各主题的归档日期样式和任务布局间距。
+
+#### 修复
+
+- 修复任务跨行拖动及不同完成状态之间拖动时的预览闪烁和位置判定问题。
+- 修复多行归档任务重叠及水彩手账输入框提示文字未居中的问题。
+
+### What's changed
+
+#### Added
+
+- Added archive date recording and display for tasks, with a settings toggle.
+
+#### Improved
+
+- Task creation and editing inputs now expand automatically as text wraps.
+- Refined archive date styling and task spacing across themes.
+
+#### Fixed
+
+- Fixed flickering drag previews and inaccurate drop targeting across rows and completion states.
+- Fixed overlapping multiline archived tasks and placeholder alignment in the Watercolor Journal theme.
+
+**Full Changelog**: [https://github.com/AshenAshes/homepage-studio/compare/1.5.0...1.6.0](https://github.com/AshenAshes/homepage-studio/compare/1.5.0...1.6.0)
+
 ## 1.5.0 — 2026-09-27
 
 ### 中文
