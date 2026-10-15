@@ -11,12 +11,13 @@ await page.setContent('<main class="homepage-studio" data-theme="klein-blue" dat
 await page.addStyleTag({content:':root{--text-error:rgb(220,40,40)}'+css.outputFiles[0].text});
 await page.addScriptTag({content:`
 HTMLElement.prototype.createDiv=function(o){const el=document.createElement('div');el.className=o.cls;for(const[k,v]of Object.entries(o.attr||{}))el.setAttribute(k,v);this.append(el);return el};
+HTMLElement.prototype.setCssProps=function(props){for(const [key,value] of Object.entries(props))this.style.setProperty(key,value)};
 HTMLElement.prototype.setText=function(text){this.textContent=text};
 ${js.outputFiles[0].text}
 window.mount=(extra={})=>{
  if(window.cleanup)window.cleanup();
  document.querySelector('#body').replaceChildren();
- const input=document.createElement('input');input.className='homepage-studio-task-edit-input';input.value=extra.invalid?'':'Original';document.querySelector('#body').append(input);
+ const input=document.createElement('textarea');input.className='homepage-studio-task-edit-input';input.value=extra.invalid?'':'Original';document.querySelector('#body').append(input);
  window.calls={save:0,cancel:0,reject:0,end:0};window.value=input.value;window.outcome=true;
  const cleanups=[];window.cleanup=()=>{while(cleanups.length)cleanups.pop()()};
  const scope={register(fn){cleanups.push(fn)},registerDomEvent(el,type,fn){el.addEventListener(type,fn);cleanups.push(()=>el.removeEventListener(type,fn))}};
@@ -27,7 +28,7 @@ window.mount=(extra={})=>{
   cancel(){calls.cancel++},begin(){},end(){calls.end++},...extra
  });
 };`});
-const input=page.locator('input');
+const input=page.locator('textarea');
 await page.evaluate(()=>window.mount());
 assert.deepEqual(await input.evaluate(e=>[e.selectionStart,e.selectionEnd]),[0,8]);
 await input.fill('Renamed');await input.press('Enter');await page.click('#outside');await page.waitForTimeout(100);
@@ -46,4 +47,14 @@ await page.click('#outside');await page.waitForTimeout(100);await page.evaluate(
 await page.evaluate(()=>window.mount());await input.fill('[homepage-studio-repeat:daily]');await input.press('Enter');assert.equal(await input.getAttribute('placeholder'),'Reserved fields');
 await page.evaluate(()=>window.mount({invalid:true,invalidReason:'reserved-metadata',autofocus:false}));assert.equal(await input.getAttribute('placeholder'),'Reserved fields');
 await page.evaluate(()=>window.mount({invalid:true,invalidReason:'multiline',autofocus:false}));assert.equal(await input.getAttribute('placeholder'),'Single line only');
+await page.addStyleTag({content:'#body{width:220px}'});
+for (const theme of ['klein-blue','watercolor-journal','celestial-orbit','minimal-paper','archive-observatory','cosmic-cartography']) {
+ await page.evaluate(t=>{document.querySelector('main').dataset.theme=t;window.mount();},theme);
+ const short=await input.evaluate(e=>e.getBoundingClientRect().height);
+ await input.fill('Long task content '.repeat(30));
+ assert.ok(await input.evaluate(e=>e.getBoundingClientRect().height)>short,theme+' expands');
+ assert.ok(await input.evaluate(e=>e.scrollHeight<=e.clientHeight+1),theme+' no clipped text');
+ await input.fill('Short');
+ assert.equal(await input.evaluate(e=>e.getBoundingClientRect().height),short,theme+' shrinks');
+}
 assert.deepEqual(errors,[]);await browser.close();process.stdout.write('PASS: Enter/blur, deduplication, unchanged names, red placeholder, correction, IME, Escape, IO failure, and no focus stealing.\n');

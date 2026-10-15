@@ -1836,10 +1836,10 @@ const renderModule = (
             actions.deleteTask(item.target, item.text);
           });
         } else {
-          const editInput = body.createEl("input", {
+          const editInput = body.createEl("textarea", {
             cls: "homepage-studio-task-edit-input",
             attr: {
-              type: "text"
+              rows: "1"
             }
           });
           attachAccessibleLabel(editInput, body, item.editLabel);

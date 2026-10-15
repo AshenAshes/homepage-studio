@@ -585,10 +585,11 @@
 .homepage-studio[data-theme="celestial-orbit"]
   input.homepage-studio-task-add-input,
 .homepage-studio[data-theme="celestial-orbit"]
-  input.homepage-studio-task-edit-input,
+  textarea.homepage-studio-task-edit-input,
 .homepage-studio[data-theme="celestial-orbit"]
   button.homepage-studio-task-add-button {
-  height: 2.125rem;
+  height: var(--task-editor-height, 2.125rem);
+  min-height: 2.125rem;
   border-radius: 0;
   font-family: var(--font-monospace-theme);
   transition:
@@ -601,15 +602,15 @@
 .homepage-studio[data-theme="celestial-orbit"]
   input.homepage-studio-task-add-input:hover,
 .homepage-studio[data-theme="celestial-orbit"]
-  input.homepage-studio-task-edit-input:hover,
+  textarea.homepage-studio-task-edit-input:hover,
 .homepage-studio[data-theme="celestial-orbit"]
   input.homepage-studio-task-add-input:focus,
 .homepage-studio[data-theme="celestial-orbit"]
-  input.homepage-studio-task-edit-input:focus,
+  textarea.homepage-studio-task-edit-input:focus,
 .homepage-studio[data-theme="celestial-orbit"]
   input.homepage-studio-task-add-input:focus-visible,
 .homepage-studio[data-theme="celestial-orbit"]
-  input.homepage-studio-task-edit-input:focus-visible {
+  textarea.homepage-studio-task-edit-input:focus-visible {
   background: var(--homepage-surface-raised);
   box-shadow: none;
 }

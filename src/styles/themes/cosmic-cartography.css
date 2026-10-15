@@ -1135,8 +1135,9 @@
 }
 
 .homepage-studio[data-theme="cosmic-cartography"] input.homepage-studio-task-add-input,
-.homepage-studio[data-theme="cosmic-cartography"] input.homepage-studio-task-edit-input {
-  height: 2.125rem;
+.homepage-studio[data-theme="cosmic-cartography"] textarea.homepage-studio-task-edit-input {
+  height: var(--task-editor-height, 2.125rem);
+  min-height: 2.125rem;
   border: 0;
   border-bottom: 1px solid var(--homepage-cosmic-border-strong);
   border-radius: 0;
@@ -1148,7 +1149,7 @@
 }
 
 .homepage-studio[data-theme="cosmic-cartography"] input.homepage-studio-task-add-input:focus,
-.homepage-studio[data-theme="cosmic-cartography"] input.homepage-studio-task-edit-input:focus {
+.homepage-studio[data-theme="cosmic-cartography"] textarea.homepage-studio-task-edit-input:focus {
   border-bottom-color: var(--homepage-cosmic-accent);
   box-shadow: none;
   outline: none;

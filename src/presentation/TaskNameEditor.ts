@@ -17,7 +17,20 @@ interface TaskNameEditorOptions {
   end(): void;
 }
 
-export function attachTaskNameEditor(input: HTMLInputElement, scope: Component, options: TaskNameEditorOptions): void {
+export function attachTaskNameEditor(input: HTMLTextAreaElement, scope: Component, options: TaskNameEditorOptions): void {
+  const resize = (): void => {
+    input.setCssProps({ "--task-editor-height": "auto" });
+    const style = input.ownerDocument.defaultView?.getComputedStyle(input);
+    const border = style ? parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth) : 0;
+    input.setCssProps({ "--task-editor-height": `${input.scrollHeight + border}px` });
+  };
+  let lastWidth = input.clientWidth;
+  const widthObserver = new ResizeObserver(() => {
+    if (input.clientWidth !== lastWidth) { lastWidth = input.clientWidth; resize(); }
+  });
+  widthObserver.observe(input);
+  scope.register(() => widthObserver.disconnect());
+  resize();
   let composing = false;
   let saving = false;
   let finished = false;
@@ -25,6 +38,7 @@ export function attachTaskNameEditor(input: HTMLInputElement, scope: Component, 
   const error = input.parentElement?.createDiv({ cls: "homepage-studio-task-edit-error", attr: { role: "alert" } });
   const showInvalid = (reason: TaskTextValidationReason): void => {
     input.value = "";
+    resize();
     input.placeholder = options.invalidLabels[reason];
     input.setAttribute("aria-invalid", "true");
     input.setAttribute("data-invalid", "true");
@@ -66,6 +80,7 @@ export function attachTaskNameEditor(input: HTMLInputElement, scope: Component, 
   };
   scope.registerDomEvent(input, "focus", () => options.begin());
   scope.registerDomEvent(input, "input", () => {
+    resize();
     invalid = false;
     input.placeholder = "";
     input.removeAttribute("aria-invalid");

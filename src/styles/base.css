@@ -1352,7 +1352,7 @@
 }
 
 .homepage-studio input.homepage-studio-task-add-input,
-.homepage-studio input.homepage-studio-task-edit-input {
+.homepage-studio textarea.homepage-studio-task-edit-input {
   width: 100%;
   min-width: 0;
   height: 2rem;
@@ -1365,8 +1365,18 @@
   caret-color: var(--homepage-caret);
 }
 
+.homepage-studio[data-theme] textarea.homepage-studio-task-edit-input {
+  height: var(--task-editor-height, auto);
+  min-height: 2rem;
+  box-sizing: border-box;
+  resize: none;
+  overflow: hidden;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
 .homepage-studio input.homepage-studio-task-add-input::placeholder,
-.homepage-studio input.homepage-studio-task-edit-input::placeholder {
+.homepage-studio textarea.homepage-studio-task-edit-input::placeholder {
   color: var(--homepage-muted);
   opacity: 1;
 }
@@ -2227,7 +2237,7 @@ body > .homepage-studio-task-reorder-portal.homepage-studio::after {
   background: var(--background-secondary);
 }
 
-.homepage-studio input.homepage-studio-task-edit-input[data-invalid="true"]::placeholder {
+.homepage-studio textarea.homepage-studio-task-edit-input[data-invalid="true"]::placeholder {
   color: var(--text-error);
 }
 
@@ -3020,7 +3030,7 @@ body
 }
 
 .homepage-studio input.homepage-studio-task-add-input:focus-visible,
-.homepage-studio input.homepage-studio-task-edit-input:focus-visible {
+.homepage-studio textarea.homepage-studio-task-edit-input:focus-visible {
   outline: none;
   outline-offset: 0;
   border-color: var(--homepage-focus);
