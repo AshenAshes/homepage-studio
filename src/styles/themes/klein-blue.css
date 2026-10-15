@@ -39,22 +39,22 @@
 }
 
 .homepage-studio[data-theme="klein-blue"]
-  input.homepage-studio-task-add-input,
+  textarea.homepage-studio-task-add-input,
 .homepage-studio[data-theme="klein-blue"]
   textarea.homepage-studio-task-edit-input {
   border-radius: 0;
 }
 
 .homepage-studio[data-theme="klein-blue"]
-  input.homepage-studio-task-add-input:hover,
+  textarea.homepage-studio-task-add-input:hover,
 .homepage-studio[data-theme="klein-blue"]
   textarea.homepage-studio-task-edit-input:hover,
 .homepage-studio[data-theme="klein-blue"]
-  input.homepage-studio-task-add-input:focus,
+  textarea.homepage-studio-task-add-input:focus,
 .homepage-studio[data-theme="klein-blue"]
   textarea.homepage-studio-task-edit-input:focus,
 .homepage-studio[data-theme="klein-blue"]
-  input.homepage-studio-task-add-input:focus-visible,
+  textarea.homepage-studio-task-add-input:focus-visible,
 .homepage-studio[data-theme="klein-blue"]
   textarea.homepage-studio-task-edit-input:focus-visible {
   background: var(--homepage-surface-raised);

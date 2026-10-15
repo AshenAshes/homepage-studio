@@ -798,7 +798,7 @@
   margin-top: 0.625rem;
 }
 
-.homepage-studio[data-theme="archive-observatory"] input.homepage-studio-task-add-input,
+.homepage-studio[data-theme="archive-observatory"] textarea.homepage-studio-task-add-input,
 .homepage-studio[data-theme="archive-observatory"] textarea.homepage-studio-task-edit-input {
   height: var(--task-editor-height, 2.25rem);
   min-height: 2.25rem;
@@ -809,7 +809,7 @@
   font-family: var(--font-interface-theme), Inter, sans-serif;
 }
 
-.homepage-studio[data-theme="archive-observatory"] input.homepage-studio-task-add-input::placeholder,
+.homepage-studio[data-theme="archive-observatory"] textarea.homepage-studio-task-add-input::placeholder,
 .homepage-studio[data-theme="archive-observatory"] textarea.homepage-studio-task-edit-input::placeholder {
   color: var(--homepage-archive-muted);
 }

@@ -17,7 +17,7 @@ ${js.outputFiles[0].text}
 window.mount=(extra={})=>{
  if(window.cleanup)window.cleanup();
  document.querySelector('#body').replaceChildren();
- const input=document.createElement('textarea');input.className='homepage-studio-task-edit-input';input.value=extra.invalid?'':'Original';document.querySelector('#body').append(input);
+ const input=document.createElement('textarea');input.rows=1;input.className='homepage-studio-task-edit-input';input.value=extra.invalid?'':'Original';document.querySelector('#body').append(input);
  window.calls={save:0,cancel:0,reject:0,end:0};window.value=input.value;window.outcome=true;
  const cleanups=[];window.cleanup=()=>{while(cleanups.length)cleanups.pop()()};
  const scope={register(fn){cleanups.push(fn)},registerDomEvent(el,type,fn){el.addEventListener(type,fn);cleanups.push(()=>el.removeEventListener(type,fn))}};
@@ -48,8 +48,15 @@ await page.evaluate(()=>window.mount());await input.fill('[homepage-studio-repea
 await page.evaluate(()=>window.mount({invalid:true,invalidReason:'reserved-metadata',autofocus:false}));assert.equal(await input.getAttribute('placeholder'),'Reserved fields');
 await page.evaluate(()=>window.mount({invalid:true,invalidReason:'multiline',autofocus:false}));assert.equal(await input.getAttribute('placeholder'),'Single line only');
 await page.addStyleTag({content:'#body{width:220px}'});
-for (const theme of ['klein-blue','watercolor-journal','celestial-orbit','minimal-paper','archive-observatory','cosmic-cartography']) {
+for (const inputClass of ['homepage-studio-task-edit-input','homepage-studio-task-add-input']) for (const theme of ['klein-blue','watercolor-journal','celestial-orbit','minimal-paper','archive-observatory','cosmic-cartography']) {
  await page.evaluate(t=>{document.querySelector('main').dataset.theme=t;window.mount();},theme);
+ await input.evaluate((e,c)=>{e.className=c;e.dispatchEvent(new Event('input'));},inputClass);
+ if(theme==='watercolor-journal') {
+  await input.fill('');
+  const offset=await input.evaluate(e=>{const s=getComputedStyle(e);return parseFloat(s.borderTopWidth)+parseFloat(s.paddingTop)+parseFloat(s.lineHeight)/2-e.getBoundingClientRect().height/2;});
+  assert.ok(Math.abs(offset)<=1,'watercolor placeholder must be vertically centered: '+offset);
+  await input.fill('Short');
+ }
  const short=await input.evaluate(e=>e.getBoundingClientRect().height);
  await input.fill('Long task content '.repeat(30));
  assert.ok(await input.evaluate(e=>e.getBoundingClientRect().height)>short,theme+' expands');

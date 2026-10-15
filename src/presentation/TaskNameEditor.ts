@@ -1,4 +1,5 @@
 import type { Component } from "obsidian";
+import { attachTaskInputAutosize } from "./TaskInputAutosize";
 import { validateTaskText, type TaskTextValidationReason } from "../domain/tasks/taskOperations";
 
 interface TaskNameEditorOptions {
@@ -18,19 +19,7 @@ interface TaskNameEditorOptions {
 }
 
 export function attachTaskNameEditor(input: HTMLTextAreaElement, scope: Component, options: TaskNameEditorOptions): void {
-  const resize = (): void => {
-    input.setCssProps({ "--task-editor-height": "auto" });
-    const style = input.ownerDocument.defaultView?.getComputedStyle(input);
-    const border = style ? parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth) : 0;
-    input.setCssProps({ "--task-editor-height": `${input.scrollHeight + border}px` });
-  };
-  let lastWidth = input.clientWidth;
-  const widthObserver = new ResizeObserver(() => {
-    if (input.clientWidth !== lastWidth) { lastWidth = input.clientWidth; resize(); }
-  });
-  widthObserver.observe(input);
-  scope.register(() => widthObserver.disconnect());
-  resize();
+  const resize = attachTaskInputAutosize(input, scope);
   let composing = false;
   let saving = false;
   let finished = false;
@@ -80,7 +69,6 @@ export function attachTaskNameEditor(input: HTMLTextAreaElement, scope: Componen
   };
   scope.registerDomEvent(input, "focus", () => options.begin());
   scope.registerDomEvent(input, "input", () => {
-    resize();
     invalid = false;
     input.placeholder = "";
     input.removeAttribute("aria-invalid");

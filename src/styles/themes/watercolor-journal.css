@@ -512,11 +512,12 @@
 }
 
 .homepage-studio[data-theme="watercolor-journal"]
-  input.homepage-studio-task-add-input,
+  textarea.homepage-studio-task-add-input,
 .homepage-studio[data-theme="watercolor-journal"]
   textarea.homepage-studio-task-edit-input {
   height: var(--task-editor-height, 2.5rem);
   min-height: 2.5rem;
+  padding-block: max(0px, calc(1.25rem - 0.75em - 1px));
   padding-inline: var(--size-4-4);
   border-radius: 1.25rem;
   background: var(--homepage-surface-raised);

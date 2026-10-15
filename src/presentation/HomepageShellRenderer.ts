@@ -1,3 +1,4 @@
+import { attachTaskInputAutosize } from "./TaskInputAutosize";
 import { renderLayoutBoard } from "./LayoutBoard";
 import { getDefaultLayout } from "../domain/layout/layout";
 import type { TaskTextValidationReason } from "../domain/tasks/taskOperations";
@@ -1895,14 +1896,15 @@ const renderModule = (
         "data-open": (module.tasks.addDraft !== "").toString()
       }
     });
-    const addInput = addForm.createEl("input", {
+    const addInput = addForm.createEl("textarea", {
       cls: "homepage-studio-task-add-input",
       attr: {
-        type: "text",
+        rows: "1",
         placeholder: module.tasks.addPlaceholder
       }
     });
     addInput.value = module.tasks.addDraft;
+    const resizeAddInput = attachTaskInputAutosize(addInput, scope);
     attachAccessibleLabel(addInput, addForm, module.tasks.addPlaceholder);
     scope.registerDomEvent(addInput, "focus", () => {
       actions.beginTextInputInteraction();
@@ -1925,9 +1927,11 @@ const renderModule = (
       addForm.setAttribute("data-open", open.toString());
       addButton.setAttribute("aria-expanded", open.toString());
       if (open) {
+        resizeAddInput();
         addInput.focus({ preventScroll: true });
       } else {
         addInput.value = "";
+        resizeAddInput();
         actions.updateTaskAddDraft("");
         actions.endTextInputInteraction(
           restoreButtonFocus ? "task-add" : undefined
@@ -1970,6 +1974,12 @@ const renderModule = (
       }
     });
     scope.registerDomEvent(addInput, "keydown", (event) => {
+      if (event.isComposing) return;
+      if (event.key === "Enter") {
+        event.preventDefault();
+        if (!addButton.disabled) submitNewTask();
+        return;
+      }
       if (event.key === "Escape") {
         event.preventDefault();
         setAddFormOpen(false);

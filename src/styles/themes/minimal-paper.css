@@ -591,7 +591,7 @@
   box-sizing: border-box;
 }
 
-.homepage-studio[data-theme="minimal-paper"] input.homepage-studio-task-add-input,
+.homepage-studio[data-theme="minimal-paper"] textarea.homepage-studio-task-add-input,
 .homepage-studio[data-theme="minimal-paper"] textarea.homepage-studio-task-edit-input {
   height: var(--task-editor-height, 2.125rem);
   min-height: 2.125rem;
