@@ -22,4 +22,32 @@ for(const targetId of ['a','c']) for(const fraction of [0.2,0.8]) {
  assert.ok(slot && Math.abs(slot.x-target.x)<2 && Math.abs(slot.y-target.y)<2,'preview must occupy hovered card at horizontal fraction '+fraction);
  await page.mouse.up();await page.waitForTimeout(20);
 }
+
+await page.locator('main').evaluate(e=>e.dataset.theme='klein-blue');
+await page.locator('ul').evaluate(e=>e.dataset.layout='block');
+await page.evaluate(()=>window.mount());
+const picked=await page.locator('[data-id=b] .homepage-studio-task-reorder-surface').boundingBox();
+await page.mouse.move(picked.x+30,picked.y+12);await page.mouse.down();await page.waitForTimeout(260);
+const initialSlot=await page.locator('.homepage-studio-task-reorder-slot').boundingBox();
+await page.mouse.move(initialSlot.x+30,initialSlot.y+initialSlot.height-2);await page.waitForTimeout(60);
+const heldSlot=await page.locator('.homepage-studio-task-reorder-slot').boundingBox();
+assert.ok(heldSlot && Math.abs(heldSlot.y-initialSlot.y)<2,'pointer inside preview must not swap with a shifted neighbor');
+const nextCard=await page.locator('[data-id=c]').boundingBox();
+await page.mouse.move(nextCard.x+30,nextCard.y+2);await page.waitForTimeout(60);
+assert.equal(await page.locator('.homepage-studio-task-reorder-slot').evaluate(e=>e.previousElementSibling?.dataset.id),'c','entering visible next card must move preview after it');
+await page.mouse.up();
+
+await page.locator('main').evaluate(e=>e.dataset.theme='archive-observatory');
+await page.addStyleTag({content:'#tasks ul[data-layout=grid]{grid-template-columns:repeat(2,minmax(0,1fr))}#tasks li[data-long=true]{height:180px}'});
+for(const crossScope of [true,false]){
+ await page.evaluate(cross=>{window.mount();const list=document.querySelector('ul');list.dataset.layout='grid';for(const id of ['d','e','f']){const row=list.querySelector('[data-id=c]').cloneNode(true);row.dataset.id=id;list.append(row);}for(const row of list.children)row.dataset.scope=cross&&row.dataset.id==='b'?'active-incomplete':'active-completed';list.querySelector('[data-id=a]').dataset.long='true';},crossScope);
+ const b=await page.locator('[data-id=b] .homepage-studio-task-reorder-surface').boundingBox();
+ await page.mouse.move(b.x+20,b.y+10);await page.mouse.down();await page.waitForTimeout(260);
+ const c=await page.locator('[data-id=e]').boundingBox();
+ const positions=[];
+ for(let i=0;i<10;i++){await page.mouse.move(c.x+20+(i%2),c.y+10);await page.waitForTimeout(25);positions.push(await page.locator('.homepage-studio-task-reorder-slot').evaluateAll(es=>es.map(e=>[e.previousElementSibling?.dataset.id,e.getBoundingClientRect().y])));}
+ assert.equal(new Set(positions.map(p=>JSON.stringify(p))).size,1,'preview must remain stable with unequal grid heights, crossScope='+crossScope);
+ await page.mouse.up();await page.waitForTimeout(20);
+ if(crossScope)assert.equal(await page.evaluate(()=>window.moves.length),0,'cannot drop across completion scopes');
+}
 assert.deepEqual(errors,[]);await browser.close();process.stdout.write('PASS: top/bottom clamp preserves preview and commits legal scope endpoints; horizontal exits remain invalid.\n');

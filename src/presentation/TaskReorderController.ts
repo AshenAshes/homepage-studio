@@ -79,6 +79,7 @@ interface PointerDrag {
   ghost: HTMLElement | null;
   slot: HTMLElement | null;
   drop: PointerDrop | null;
+  hitRegion?: { rect: DOMRect; scrollTop: number; drop: PointerDrop | null };
 }
 
 type DropResolution =
@@ -405,27 +406,43 @@ export const attachTaskReorderController = (
     const sourceList = current.source.element.closest<HTMLElement>(
       ".homepage-studio-task-reorder-list"
     );
-    const archiveGrid = options.container.closest<HTMLElement>(".homepage-studio")
-      ?.getAttribute("data-theme") === "archive-observatory"
-      && sourceList !== null && targetWindow.getComputedStyle(sourceList).display === "grid";
-    if (archiveGrid) {
-      // Hit-test the visible grid before removing the placeholder shifts its cells.
-      if (containsPoint(current.slot, x, y)) return;
-      const hovered = resolveDrop(x, y, eventTarget);
-      if (hovered.type === "row"
-        && hovered.row.element !== current.source.element
-        && hovered.row.element.closest(".homepage-studio-task-reorder-list") === sourceList
-        && containsPoint(hovered.row.element, x, y)) {
-        const afterSlot = (current.slot.compareDocumentPosition(hovered.row.element)
-          & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
-        current.slot.remove();
-        placeSlot(hovered.row, !afterSlot);
-        return;
-      }
+    // Resolve against the layout the user can see, with its preview still in place.
+    const region = current.hitRegion;
+    const scrollTop = getDragScrollContainer().scrollTop;
+    if (region && region.scrollTop === scrollTop
+      && x >= region.rect.left && x <= region.rect.right
+      && y >= region.rect.top && y <= region.rect.bottom) {
+      current.drop = region.drop;
+      return;
     }
-    current.slot.remove();
-    current.drop = null;
-    options.container.removeAttribute("data-task-reorder-state");
+    delete current.hitRegion;
+    if (containsPoint(current.slot, x, y)) {
+      const candidates = rowsInScope(current.source.scope).filter(row => row.element !== current.source.element);
+      const next = candidates.find(row => (current.slot!.compareDocumentPosition(row.element) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0);
+      current.drop = { before: next?.target ?? null, position: next ? candidates.indexOf(next) + 1 : candidates.length + 1 };
+      options.container.setAttribute("data-task-reorder-state", "active");
+      return;
+    }
+    // An invalid target must not collapse the grid and move other cards under the pointer.
+    const otherScope = readRows().find(row => row.scope !== current.source.scope && containsPoint(row.element, x, y));
+    if (otherScope) {
+      current.drop = null;
+      options.container.removeAttribute("data-task-reorder-state");
+      return;
+    }
+    const hovered = resolveDrop(x, y, eventTarget);
+    if (hovered.type === "row"
+      && hovered.row.element !== current.source.element
+      && hovered.row.element.closest(".homepage-studio-task-reorder-list") === sourceList
+      && containsPoint(hovered.row.element, x, y)) {
+      const anchor = current.slot.isConnected ? current.slot : current.source.element;
+      const afterSlot = (anchor.compareDocumentPosition(hovered.row.element)
+        & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
+      const rect = hovered.row.element.getBoundingClientRect();
+      placeSlot(hovered.row, !afterSlot);
+      current.hitRegion = { rect, scrollTop, drop: current.drop };
+      return;
+    }
     const bounds = sourceList?.getBoundingClientRect();
     if (bounds && x >= bounds.left && x <= bounds.right) {
       const candidates = rowsInScope(current.source.scope).filter((row) =>
@@ -444,36 +461,14 @@ export const attachTaskReorderController = (
         const rectangles = candidates.map((row) => row.element.getBoundingClientRect());
         const top = Math.min(...rectangles.map((rect) => rect.top));
         const bottom = Math.max(...rectangles.map((rect) => rect.bottom));
-        if (y < top) {
-          placeSlot(first, true);
-          return;
-        }
-        if (y > bottom) {
-          placeSlot(last, false);
-          return;
-        }
+        if (y < top) { placeSlot(first, true); return; }
+        if (y > bottom) { placeSlot(last, false); return; }
       }
+      // Gaps between cards do not trigger a swap.
+      if (hovered.type !== "invalid" && y >= bounds.top && y <= bounds.bottom) return;
     }
-    const resolution = resolveDrop(x, y, eventTarget);
-    if (resolution.type === "unavailable") {
-      return;
-    }
-    if (resolution.type !== "row") {
-      return;
-    }
-    const rect = resolution.row.element.getBoundingClientRect();
-    const list = resolution.row.element.closest<HTMLElement>(
-      ".homepage-studio-task-reorder-list"
-    );
-    const isGrid = list !== null
-      && targetWindow.getComputedStyle(list).display === "grid";
-    const withinRow = y >= rect.top && y <= rect.bottom;
-    placeSlot(
-      resolution.row,
-      isGrid && withinRow
-        ? x < rect.left + rect.width / 2
-        : y < rect.top + rect.height / 2
-    );
+    current.drop = null;
+    options.container.removeAttribute("data-task-reorder-state");
   };
 
   const scheduleDrop = (
