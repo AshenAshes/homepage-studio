@@ -336,17 +336,20 @@ export const validatePluginDataShape = (
     "filePath",
     "showCompleted",
     "showArchiveToggle",
+    "recordArchiveDate",
     "showRefreshTime"
   ], [
     "filePath",
     "showCompleted",
     "showArchiveToggle",
+    "recordArchiveDate",
     "showRefreshTime"
   ]);
   if (tasks !== undefined) {
     nullableVaultPath(tasks.filePath, "/tasks/filePath");
     boolean(tasks.showCompleted, "/tasks/showCompleted");
     boolean(tasks.showArchiveToggle, "/tasks/showArchiveToggle");
+    boolean(tasks.recordArchiveDate, "/tasks/recordArchiveDate");
     boolean(tasks.showRefreshTime, "/tasks/showRefreshTime");
   }
 

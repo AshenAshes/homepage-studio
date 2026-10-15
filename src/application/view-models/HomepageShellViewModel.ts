@@ -155,6 +155,7 @@ export interface HomepageTaskItemViewModel {
 }
 
 export interface HomepageArchivedTaskItemViewModel {
+  readonly archivedDate: string | null;
   readonly target: TaskTarget;
   readonly text: string;
   readonly unarchiveLabel: string;
@@ -909,6 +910,7 @@ export const createHomepageShellViewModel = (
   };
   const allTaskItems = taskItems.map(mapTaskItem);
   const allArchivedTaskItems = archivedTaskRecords.map((task) => ({
+    archivedDate: data.tasks.recordArchiveDate ? task.archivedDate : null,
     target: task.target,
     text: task.text,
     unarchiveLabel: messages.tasksUnarchive.replace("{task}", task.text)

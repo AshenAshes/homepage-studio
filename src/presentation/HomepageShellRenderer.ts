@@ -2034,6 +2034,11 @@ const renderModule = (
             body,
             scope
           );
+          if (item.archivedDate) {
+            row.setAttribute("data-archive-date", "true");
+            row.createEl("time", { cls: "homepage-studio-task-archive-date",
+              text: item.archivedDate, attr: { datetime: item.archivedDate } });
+          }
           const restore = row.createEl("button", {
             cls: "homepage-studio-task-icon-button",
             attr: {

@@ -480,5 +480,7 @@
   "layoutSaved": "布局已保存",
   "layoutEmptyCanvas": "将下方的模块拖到这里，或点击模块恢复显示。",
   "layoutFirstRow": "放到最开始的新行",
-  "layoutMoveDescription": "将 {module} 移动到"
+  "layoutMoveDescription": "将 {module} 移动到",
+  "tasksRecordArchiveDate": "归档时记录日期并显示",
+  "tasksRecordArchiveDateDescription": "归档时记录当天日期，并在归档列表显示。关闭后隐藏已有日期，但不删除已记录的数据。"
 }

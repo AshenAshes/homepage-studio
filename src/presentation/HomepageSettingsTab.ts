@@ -320,6 +320,12 @@ export class HomepageSettingsTab extends PluginSettingTab {
           toggle.setValue(taskSettings.showRefreshTime).setDisabled(!taskSettings.editable)
             .onChange((value) => this.application.setShowTaskRefreshTime(value));
         });
+      new Setting(this.containerEl)
+        .setName(messages.tasksRecordArchiveDate)
+        .setDesc(messages.tasksRecordArchiveDateDescription)
+        .addToggle(toggle => toggle.setValue(taskSettings.recordArchiveDate)
+          .setDisabled(!taskSettings.editable)
+          .onChange(value => this.application.setRecordArchiveDate(value)));
       this.renderRecurringTaskSettings(taskSettings, messages);
       this.taskStateUnsubscribe = this.application.subscribeTaskSettings(() => {
         this.taskSettingsRefreshPending = true;

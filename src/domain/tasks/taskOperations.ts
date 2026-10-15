@@ -53,9 +53,10 @@ export type TaskMutation =
     readonly type: "refresh-recurring";
     readonly periodKeys: TaskPeriodKeys;
   }
-  | { readonly type: "archive"; readonly target: TaskTarget }
+  | { readonly type: "archive"; readonly recordDate?: boolean; readonly target: TaskTarget }
   | {
     readonly type: "archive-completed";
+    readonly recordDate?: boolean;
     readonly targets: readonly TaskTarget[];
   }
   | { readonly type: "unarchive"; readonly target: TaskTarget }
@@ -106,7 +107,7 @@ export const validateTaskText = (
   if (/[\r\n]/u.test(text)) {
     return { type: "invalid-task", reason: "multiline" };
   }
-  if (/\[homepage-studio-(?:repeat|period|reset-time|reset-day)\b/u.test(text)) {
+  if (/\[homepage-studio-(?:repeat|period|reset-time|reset-day|archived)\b/u.test(text)) {
     return { type: "invalid-task", reason: "reserved-metadata" };
   }
   return text.trim() === ""
@@ -222,6 +223,7 @@ const replaceLine = (
   task: HomepageTaskRecord,
   nextLine: string
 ): TaskMutationResult => {
+  if (task.archivedDate !== null) nextLine += ` [homepage-studio-archived:: ${task.archivedDate}]`;
   if (task.rawLine === nextLine) {
     return { type: "noop" };
   }
@@ -444,7 +446,9 @@ const appendTaskLines = (
 const moveTasks = (
   taskSource: TaskSourceDocument,
   tasks: readonly HomepageTaskRecord[],
-  destination: "active" | "archive"
+  destination: "active" | "archive",
+  now: Date,
+  recordDate = true
 ): TaskMutationResult => {
   if (tasks.length === 0) {
     return { type: "noop" };
@@ -455,13 +459,19 @@ const moveTasks = (
   return appendTaskLines(
     removeTaskLines(taskSource, ordered),
     destination,
-    ordered.map((task) => task.rawLine)
+    ordered.map((task) => {
+      const line = task.archivedDate === null ? task.rawLine
+        : task.rawLine.replace(/ \[homepage-studio-archived:: \d{4}-\d{2}-\d{2}\]$/u, "");
+      const date = [now.getFullYear(), String(now.getMonth() + 1).padStart(2, "0"), String(now.getDate()).padStart(2, "0")].join("-");
+      return destination === "archive" && recordDate ? line + " [homepage-studio-archived:: " + date + "]" : line;
+    })
   );
 };
 
 export const mutateHomepageTaskSource = (
   source: string,
-  mutation: TaskMutation
+  mutation: TaskMutation,
+  now: Date = new Date()
 ): TaskMutationResult => {
   if (mutation.type === "append-region") {
     return appendRegion(source);
@@ -503,7 +513,7 @@ export const mutateHomepageTaskSource = (
     return archivable.every(
       (task) => task.section === "active" && task.completed
     )
-      ? moveTasks(taskSource, archivable, "archive")
+      ? moveTasks(taskSource, archivable, "archive", now, mutation.recordDate)
       : { type: "invalid-task", reason: "not-completed" };
   }
   if (mutation.type === "reorder") {
@@ -589,12 +599,12 @@ export const mutateHomepageTaskSource = (
       return { type: "invalid-task", reason: "recurring" };
     }
     return located.section === "active" && located.completed
-      ? moveTasks(taskSource, [located], "archive")
+      ? moveTasks(taskSource, [located], "archive", now, mutation.recordDate)
       : { type: "invalid-task", reason: "not-completed" };
   }
   if (mutation.type === "unarchive") {
     return located.section === "archive"
-      ? moveTasks(taskSource, [located], "active")
+      ? moveTasks(taskSource, [located], "active", now)
       : { type: "invalid-task", reason: "not-archived" };
   }
   return {

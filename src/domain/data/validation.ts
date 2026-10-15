@@ -82,6 +82,7 @@ const normalizeLegacyOptionalFields = (input: unknown): unknown => {
     normalized.tasks.showArchiveToggle = true;
   }
 
+  if (isRecord(normalized.tasks) && !hasOwn(normalized.tasks, "recordArchiveDate")) normalized.tasks.recordArchiveDate = true;
   if (isRecord(normalized.tasks) && !hasOwn(normalized.tasks, "showRefreshTime")) {
     normalized.tasks.showRefreshTime = false;
   }

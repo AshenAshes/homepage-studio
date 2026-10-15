@@ -1118,6 +1118,7 @@
   content: none;
 }
 
+.homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-task.homepage-studio-task-archived .homepage-studio-task-archive-date,
 .homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-task.homepage-studio-task-archived .homepage-studio-task-body,
 .homepage-studio[data-theme="cosmic-cartography"] .homepage-studio-task.homepage-studio-task-archived .homepage-studio-task-body a {
   color: var(--homepage-cosmic-muted);

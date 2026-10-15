@@ -321,6 +321,7 @@ export interface TaskSettings {
   readonly showCompleted: boolean;
   readonly showArchiveToggle: boolean;
     readonly showRefreshTime: boolean;
+    readonly recordArchiveDate: boolean;
   readonly recurringEditable: boolean;
   readonly recurringState: TaskRuntimeState["type"];
   readonly recurringConflict: boolean;
@@ -1223,6 +1224,7 @@ export class HomepageApplicationFacade {
         showCompleted: settings.showCompleted,
         showArchiveToggle: settings.showArchiveToggle,
         showRefreshTime: settings.showRefreshTime,
+        recordArchiveDate: settings.recordArchiveDate,
         recurringEditable: this.taskRuntimeState.type === "ready",
         recurringState: this.taskRuntimeState.type,
         recurringConflict: this.taskInteractionState.type === "conflict",
@@ -1235,6 +1237,7 @@ export class HomepageApplicationFacade {
         showCompleted: true,
         showArchiveToggle: true,
         showRefreshTime: false,
+        recordArchiveDate: true,
         recurringEditable: false,
         recurringState: "unconfigured",
         recurringConflict: false,
@@ -1329,6 +1332,12 @@ export class HomepageApplicationFacade {
         ...data.tasks,
         showArchiveToggle
       }
+    }));
+  }
+
+  public setRecordArchiveDate(recordArchiveDate: boolean): void {
+    this.store.transact("change archive date recording", "normal", data => ({
+      ...data, tasks: { ...data.tasks, recordArchiveDate }
     }));
   }
 
@@ -1520,7 +1529,7 @@ export class HomepageApplicationFacade {
   }
 
   public archiveTask(target: TaskTarget): Promise<TaskSourceMutationResult> {
-    return this.mutateTask({ type: "archive", target }, null);
+    return this.mutateTask({ type: "archive", target, recordDate: this.getTaskSettings().recordArchiveDate }, null);
   }
 
   public archiveCompletedTasks(): Promise<TaskSourceMutationResult> {
@@ -1540,6 +1549,7 @@ export class HomepageApplicationFacade {
       .map((task) => task.target);
     return this.mutateTask({
       type: "archive-completed",
+      recordDate: this.getTaskSettings().recordArchiveDate,
       targets
     }, null);
   }

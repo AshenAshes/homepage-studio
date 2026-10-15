@@ -480,5 +480,7 @@
   "layoutSaved": "Layout saved",
   "layoutEmptyCanvas": "Drag a hidden module here, or click it to restore it.",
   "layoutFirstRow": "New row at beginning",
-  "layoutMoveDescription": "Move {module} to"
+  "layoutMoveDescription": "Move {module} to",
+  "tasksRecordArchiveDate": "Record and show archive dates",
+  "tasksRecordArchiveDateDescription": "Record the date when archiving tasks and display it in the archive list. Turning this off hides existing dates without deleting recorded data."
 }

@@ -111,6 +111,7 @@ export interface PluginData {
     readonly showCompleted: boolean;
     readonly showArchiveToggle: boolean;
     readonly showRefreshTime: boolean;
+    readonly recordArchiveDate: boolean;
   };
   readonly plans: {
     readonly activeMode: "daily" | "weekly";

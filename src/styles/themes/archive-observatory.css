@@ -871,6 +871,7 @@
 
 .homepage-studio[data-theme="archive-observatory"] .homepage-studio-task[data-completed="true"] .homepage-studio-task-body,
 .homepage-studio[data-theme="archive-observatory"] .homepage-studio-task[data-completed="true"] .homepage-studio-task-body a,
+.homepage-studio[data-theme="archive-observatory"] .homepage-studio-task.homepage-studio-task-archived .homepage-studio-task-archive-date,
 .homepage-studio[data-theme="archive-observatory"] .homepage-studio-task.homepage-studio-task-archived .homepage-studio-task-body,
 .homepage-studio[data-theme="archive-observatory"] .homepage-studio-task.homepage-studio-task-archived .homepage-studio-task-body a {
   color: var(--homepage-archive-muted);

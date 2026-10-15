@@ -45,6 +45,7 @@ export interface HomepageTaskRecord {
   readonly rawLine: string;
   readonly text: string;
   readonly completed: boolean;
+  readonly archivedDate: string | null;
   readonly recurrence: TaskRecurrence | null;
   readonly period: string | null;
   readonly schedule: TaskResetSchedule;
@@ -208,7 +209,9 @@ const parseSectionTasks = (
     }
     const match = TASK_LINE.exec(line.structuralText);
     const marker = match?.[1];
-    const text = match?.[2];
+    const rawText = match?.[2];
+    const archived = rawText?.match(/^(.*?) \[homepage-studio-archived:: (\d{4}-\d{2}-\d{2})\]$/u);
+    const text = archived?.[1] ?? rawText;
     if (marker === undefined || text === undefined) {
       diagnostics.push({
         code: "TASK-INVALID-CONTENT",
@@ -216,6 +219,11 @@ const parseSectionTasks = (
         details: "Managed task sections may contain only single-line checkboxes."
       });
       continue;
+    }
+    if ((rawText?.includes("[homepage-studio-archived") && !archived)
+      || (archived && (!isTaskDateKey(archived[2] ?? "") || text.includes("[homepage-studio-archived")))) {
+      diagnostics.push({ code: "TASK-INVALID-CONTENT", line: line.number,
+        details: "Archive date must appear once at the end as [homepage-studio-archived:: YYYY-MM-DD]." });
     }
     const completed = marker.toLowerCase() === "x";
     const recurring = RECURRING_TASK_SUFFIX.exec(text);
@@ -282,6 +290,7 @@ const parseSectionTasks = (
       rawLine: line.structuralText,
       text: recurring?.[1] ?? text,
       completed,
+      archivedDate: archived?.[2] ?? null,
       recurrence: recurrence ?? null,
       period: period ?? null,
       schedule

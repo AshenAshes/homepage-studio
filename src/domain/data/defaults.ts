@@ -18,6 +18,7 @@ const DEFAULT_DATA: PluginData = {
     filePath: null,
     showCompleted: true,
     showArchiveToggle: true,
+    recordArchiveDate: true,
     showRefreshTime: false
   },
   plans: {

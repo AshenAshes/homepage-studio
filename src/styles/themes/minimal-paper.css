@@ -655,6 +655,7 @@
   color: var(--homepage-paper-muted);
 }
 
+.homepage-studio[data-theme="minimal-paper"] .homepage-studio-task.homepage-studio-task-archived .homepage-studio-task-archive-date,
 .homepage-studio[data-theme="minimal-paper"] .homepage-studio-task.homepage-studio-task-archived .homepage-studio-task-body,
 .homepage-studio[data-theme="minimal-paper"] .homepage-studio-task.homepage-studio-task-archived .homepage-studio-task-body a,
 .homepage-studio[data-theme="minimal-paper"] .homepage-studio-task.homepage-studio-task-archived .homepage-studio-task-archive-icon {

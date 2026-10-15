@@ -154,6 +154,8 @@ export interface Messages {
   readonly tasksRecurringAdd: string;
   readonly tasksRecurringSave: string;
   readonly tasksResetTime: string;
+  readonly tasksRecordArchiveDate: string;
+  readonly tasksRecordArchiveDateDescription: string;
   readonly tasksShowRefreshTime: string;
   readonly tasksShowRefreshTimeDescription: string;
   readonly tasksDailyRefreshLabel: string;
