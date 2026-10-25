@@ -1,5 +1,10 @@
 # Homepage Studio
 
+[![GitHub release](https://img.shields.io/github/v/release/AshenAshes/homepage-studio)](https://github.com/AshenAshes/homepage-studio/releases)
+[![License](https://img.shields.io/github/license/AshenAshes/homepage-studio)](LICENSE)
+[![Downloads](https://img.shields.io/github/downloads/AshenAshes/homepage-studio/total)](https://github.com/AshenAshes/homepage-studio/releases)
+
+
 [简体中文](README_CN.md)
 
 Homepage Studio is a desktop-only homepage for Obsidian. It brings writing activity, a date-section journal, homepage tasks, time plans, curated file groups, and configurable banners into one dedicated view. Six built-in themes share the same data and capabilities in light and dark appearances.
